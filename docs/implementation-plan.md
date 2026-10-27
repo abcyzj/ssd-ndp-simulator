@@ -5,7 +5,7 @@
 依据：SSD_NDP_Simulator_V0.1_PRD.md，重点覆盖第 9、11 节及 FR-01～FR-10、AC-01～AC-11。  
 截至 M0.2 的历史状态：M0.1 静态归档及 M0.2 本机工具链、SST/原生 MQSim 构建与小读基线已完成，当时未修改依赖源码，平台集成、元素加载及 AC 尚未运行。运行证据见 [M0.2 记录](m0.2-native-baseline.md)；当前 M1.1 进展见下方补记。
 
-2026-10-27 M1.1 进展补记：已完成 PIC 库、`ndpsim.System` 加载及无 I/O 单设备生命周期验收；随后按用户要求将同样的改动直接落实到 `third_party/MQSim`，平台直接编译子模块，不再使用构建时 patch 栈。原生 oracle 保持不变，源码身份及维护方式见 [MQSim 源码维护约定](mqsim-source-management.md)。仅支持 `native-small` profile，事件桥、Host/I/O 路径及 AC 仍未验证；UBSan 随机数溢出、未做泄漏审计等限制见 [M1.1 记录](m1.1-library-lifecycle.md)。本文后续章节保留原设计依据，当前任务状态以 [任务清单](v0.1-tasks.md) 为准。 后续构建流程已按用户要求统一到根 CMake：通过单一 tools/prepare_sst.py 在配置阶段自动准备、构建并私有安装 SST，命中有效缓存则直接复用，可显式指定 SST_ROOT 复用安装，M0.2 脚本不再是前置步骤，实际入口见 [README](../README.md)。
+2026-10-27 M1.1 进展补记：已完成 PIC 库、`ndpsim.System` 加载及无 I/O 单设备生命周期验收；随后按用户要求将同样的改动直接落实到 `third_party/MQSim`，平台直接编译子模块，不再使用构建时 patch 栈。原生 oracle 保持不变，源码身份及维护方式见 [MQSim 源码维护约定](mqsim-source-management.md)。仅支持 `native-small` profile，事件桥、Host/I/O 路径及 AC 仍未验证；UBSan 随机数溢出、未做泄漏审计等限制见 [M1.1 记录](m1.1-library-lifecycle.md)。本文后续章节保留原设计依据，当前任务状态以 [任务清单](v0.1-tasks.md) 为准。 后续构建流程已按用户要求统一到根 CMake：通过单一 tools/prepare_sst.py 在配置阶段自动准备、构建并安装 SST 到仓库固定的 `.cache/sst/<配置键>/install`，由相同配置的不同平台构建目录共享，命中有效缓存则直接复用，可显式指定 SST_ROOT 复用安装，M0.2 脚本不再是前置步骤，实际入口见 [README](../README.md)。
 
 ## 1. 结论与范围
 
@@ -445,7 +445,7 @@ docs、AGENTS.md、.gitmodules、third_party/MQSim 和 third_party/sst-core 已�
     python3 tools/run.py --config configs/controller.json --output results/controller
     ctest --test-dir build --output-on-failure -L acceptance
 
-run.py 只校验配置、准备固定种子 smoke 数据和设置元素库路径，再调用 sst scripts/system.py；它不是算法性能模型。最小端到端命令应自动校验数据 hash，输出实际展开的 sst 命令。首次数据/图/真值准备与正式仿真墙钟分开计量。上面的 run.py/端到端形态仍为规划；当前已存在的根 CMake 构建、CTest 和 run_lifecycle 入口见 [README](../README.md)。默认 SST 私有前缀为当前构建目录的 _deps/sst-install，不依赖 M0.2 的历史安装。
+run.py 只校验配置、准备固定种子 smoke 数据和设置元素库路径，再调用 sst scripts/system.py；它不是算法性能模型。最小端到端命令应自动校验数据 hash，输出实际展开的 sst 命令。首次数据/图/真值准备与正式仿真墙钟分开计量。上面的 run.py/端到端形态仍为规划；当前已存在的根 CMake 构建、CTest 和 run_lifecycle 入口见 [README](../README.md)。默认 SST 前缀为仓库固定的 `.cache/sst/<配置键>/install`，可通过 NDPSIM_SST_CACHE_DIR 改变缓存根目录，不依赖 M0.2 的历史安装。
 
 源码依赖已采用 Git submodule：.gitmodules 保存 URL/路径，主仓 gitlink 锁定完整 commit。新检出使用 `git submodule update --init --recursive` 获取主仓记录的版本，不能使用 --remote 自动跟随分支。M0.2 已实现 [deps.lock.json](../deps.lock.json)，记录相同 URL/commit、空补丁哈希、工具链和配置，并由运行脚本校验其与 gitlink 一致。MQSim 改动直接修改 third_party/MQSim 并直接编译该目录，不维护构建时 patch 栈或另一个集成源码副本。提交时先保存到 abcyzj/MQSim fork 的完整 commit，再更新主仓 gitlink；未提交状态记录 HEAD、相对原生基线的 diff 和文件哈希，不自动提交或推送。SST Core 固定且不修改；未修改原生 oracle 由锁定的原生 commit 独立导出构建，详见 [源码维护约定](mqsim-source-management.md)。DiskANN 仅留核查记录，不加入默认依赖。
 

@@ -1,9 +1,10 @@
-"""Prepare a private SST installation; reuse valid installs and Make objects.
+"""Prepare a shared SST installation; reuse valid installs and Make objects.
 
 CMake calls this at configure time. No downloads, Git initialization or source
 edits: autogen runs only on an archive of the commit in deps.lock.json.
 """
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -34,8 +35,8 @@ def write_json(path, value):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--work-dir', type=Path, required=True)
-    parser.add_argument('--prefix', type=Path, required=True)
+    parser.add_argument('--cache-dir', type=Path, required=True)
+    parser.add_argument('--prefix-file', type=Path, required=True)
     parser.add_argument('--cc', required=True)
     parser.add_argument('--cxx', required=True)
     for name in ('cflags', 'cxxflags', 'ldflags', 'sdk', 'arch', 'deployment-target', 'python-config'):
@@ -85,14 +86,14 @@ def main():
     if not python_library or not (Path(sysconfig.get_path('include'))/'Python.h').is_file():
         raise RuntimeError('Python development headers and embedding library are required')
 
-    work, prefix = args.work_dir.resolve(), args.prefix.resolve()
+    work = args.cache_dir.resolve()
     flags = {'c': args.cflags.strip(), 'cxx': args.cxxflags.strip()+' -std=c++17 -ffp-contract=off',
              'ld': args.ldflags.strip()+f' -L{shlex.quote(str(libdir))} -Wl,-rpath,{shlex.quote(str(libdir))}'}
     for flag, value in [('-arch', args.arch), ('-isysroot', args.sdk)]:
         if value:
             for key in flags:
                 flags[key] += f' {flag} {shlex.quote(value)}'
-    recipe = {'commit': commit, 'prefix': str(prefix), 'script_sha256': sha(Path(__file__)),
+    recipe = {'commit': commit, 'cache_root': str(work), 'script_sha256': sha(Path(__file__)),
               'tools': tools, 'compiler_versions': {key: output([tools[key]['path'], '--version']) for key in ('cc', 'cxx')},
               'python': {'executable': sys.executable, 'version': sys.version,
                          'config': str(python_config), 'config_sha256': sha(python_config),
@@ -102,7 +103,23 @@ def main():
               'configure_options': ['--disable-mpi', '--without-hdf5', '--without-ncurses']}
     if args.sdk and (Path(args.sdk)/'SDKSettings.json').exists():
         recipe['sdk_settings_sha256'] = sha(Path(args.sdk)/'SDKSettings.json')
-    receipt_path = work/'receipt.json'
+    # Each recipe owns an immutable prefix so another platform configuration
+    # cannot replace the installation used by an existing build directory.
+    key = hashlib.sha256(json.dumps(recipe, sort_keys=True).encode()).hexdigest()[:20]
+    cache = work/key
+    cache.mkdir(parents=True, exist_ok=True)
+    with (cache/'prepare.lock').open('a') as lock:
+        print(f'SST: checking shared cache {cache}', flush=True)
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        prepare(args, source, commit, tools, python_bin, search, python_config,
+                flags, recipe, cache)
+    args.prefix_file.write_text(str(cache/'install')+'\n')
+
+
+def prepare(args, source, commit, tools, python_bin, search, python_config,
+            flags, recipe, cache):
+    prefix = cache/'install'
+    receipt_path = cache/'receipt.json'
     receipt = json.loads(receipt_path.read_text()) if receipt_path.exists() else {}
     if receipt.get('recipe') == recipe and receipt.get('installed_files') and all(
             (prefix/name).is_file() and sha(prefix/name) == digest
@@ -111,10 +128,7 @@ def main():
         print(f'SST: cache hit; reusing {prefix}', flush=True)
         return
 
-    # A toolchain/configuration change gets its own build tree. Make can safely
-    # reuse objects when repairing an installation or returning to that config.
-    key = hashlib.sha256(json.dumps(recipe, sort_keys=True).encode()).hexdigest()[:20]
-    cache = work/key
+    # Make can reuse objects when repairing an incomplete installation.
     src, build, logs = cache/'src', cache/'build', cache/'logs'
     for directory in (src, build, logs):
         directory.mkdir(parents=True, exist_ok=True)

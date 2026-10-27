@@ -15,7 +15,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
 endif()
-set(SST_ROOT "" CACHE PATH "Existing SST 16.0.0 prefix; empty prepares SST locally")
+set(SST_ROOT "" CACHE PATH "Existing SST 16.0.0 prefix; empty uses the shared SST cache")
 if(SST_ROOT)
     get_filename_component(NDPSIM_SST_PREFIX "${SST_ROOT}" ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
     set(NDPSIM_SST_MODE external)
@@ -28,11 +28,13 @@ else()
     find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
     set(NDPSIM_SST_BUILD_JOBS 2 CACHE STRING "Parallel make jobs for SST")
     set(NDPSIM_PYTHON_CONFIG "" CACHE FILEPATH "Optional matching python-config")
-    set(NDPSIM_SST_PREFIX "${PROJECT_BINARY_DIR}/_deps/sst-install")
+    set(NDPSIM_SST_CACHE_DIR "${PROJECT_SOURCE_DIR}/.cache/sst" CACHE PATH
+        "Shared SST source, build and installation cache")
+    get_filename_component(_sst_cache "${NDPSIM_SST_CACHE_DIR}" ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
     set(NDPSIM_SST_MODE bundled)
     string(TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
     execute_process(COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/prepare_sst.py"
-        "--work-dir=${PROJECT_BINARY_DIR}/_deps/sst" "--prefix=${NDPSIM_SST_PREFIX}"
+        "--cache-dir=${_sst_cache}" "--prefix-file=${PROJECT_BINARY_DIR}/sst-prefix.txt"
         "--cc=${CMAKE_C_COMPILER}" "--cxx=${CMAKE_CXX_COMPILER}"
         "--cflags=${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${_build_type}}"
         "--cxxflags=${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${_build_type}}"
@@ -40,6 +42,8 @@ else()
         "--arch=${CMAKE_OSX_ARCHITECTURES}" "--deployment-target=${CMAKE_OSX_DEPLOYMENT_TARGET}"
         "--python-config=${NDPSIM_PYTHON_CONFIG}" "--jobs=${NDPSIM_SST_BUILD_JOBS}"
         COMMAND_ERROR_IS_FATAL ANY)
+    file(READ "${PROJECT_BINARY_DIR}/sst-prefix.txt" NDPSIM_SST_PREFIX)
+    string(STRIP "${NDPSIM_SST_PREFIX}" NDPSIM_SST_PREFIX)
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
         tools/prepare_sst.py deps.lock.json)
 endif()
