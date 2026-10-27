@@ -1,6 +1,6 @@
 # SSD NDP Simulator
 
-V0.1 的单 SSD / SST + MQSim 仿真平台。目前完成库化、无 I/O 生命周期骨架与 M0.3a 事件桥 PoC；真实 I/O、ANNS 和性能验收尚未实现。任务状态见 [任务清单](docs/v0.1-tasks.md)。
+V0.1 的单 SSD / SST + MQSim 仿真平台。目前完成库化、生命周期骨架、M0.3a 事件桥及 M0.3b 本地读取 PoC，以及 [M0.4 最小契约冻结](docs/m0.4-minimal-contract.md)；正式 I/O 集成、ANNS 和性能验收尚未实现。任务状态见 [任务清单](docs/v0.1-tasks.md)。
 
 ## 构建与检查
 
@@ -17,7 +17,7 @@ cmake --build build --target run_lifecycle
 
 不需要先运行 `tools/macos_m0_2.py`。CMake 在配置阶段调用一个 [prepare_sst.py](tools/prepare_sst.py) 脚本，从锁定的 SST commit 准备源码，在仓库固定的 `.cache/sst/<配置键>/` 中执行 Autotools 引导、配置、编译和安装，然后导入 SST，再编译元素库。首次 `cmake -S . -B build` 会等待 SST 准备完成；后续配置命中有效缓存时直接复用，不执行 autogen、configure、make 或 install。不同平台构建目录在配置一致时共用同一份安装，删除或清理 `build` 不会删除 SST 缓存；缓存不写入系统目录；SST 子模块不被 autogen 修改。MQSim 直接从 `third_party/MQSim` 编译，保留其开发改动。
 
-默认结果为 `build/libndpsim.so`、`build/lifecycle_probe` 和 `.cache/sst/<配置键>/install/bin/sst`。`run_lifecycle` 会自动使用选定的 SST 安装和当前构建的元素库。正常输出应包含 `finish SST=1 ns MQSim=0 ns; device destroyed`；1 ns 仅为生命周期调度探针。CTest 共九项，包含生命周期、事件步进、原生事件循环、SST E1、元素加载与 SST 生命周期检查。事件桥实现、复现和范围见 [M0.3a 记录](docs/m0.3a-event-bridge.md)。
+默认结果为 `build/libndpsim.so`、`build/lifecycle_probe` 和 `.cache/sst/<配置键>/install/bin/sst`。`run_lifecycle` 会自动使用选定的 SST 安装和当前构建的元素库。正常输出应包含 `finish SST=1 ns MQSim=0 ns; device destroyed`；1 ns 仅为生命周期调度探针。CTest 共十三项，包含生命周期、事件步进、原生事件循环、本地读取、SST E1、元素加载与 SST 生命周期检查。事件桥实现、复现和范围见 [M0.3a 记录](docs/m0.3a-event-bridge.md)。
 
 ## 可选构建设置
 
@@ -38,3 +38,11 @@ macOS 默认通过 `xcrun` 选择 SDK，也可显式设置 `CMAKE_OSX_SYSROOT`�
 首次切换到共享缓存需重新构建一次 SST；旧构建目录中的 `_deps` 不会自动迁移。常规命令保持不变：`cmake -S . -B build-other` 会复用相同配置的共享安装。需要彻底重建 SST 时，可在没有构建或仿真使用它时删除对应配置键目录，再运行 CMake。
 
 [M0.2 原生基线工具](tools/macos_m0_2.py) 仅用于独立原生 oracle 与历史环境回归，不是平台构建前置条件。[M1.1 验证工具](tools/verify_m1_1.py) 可额外核对既有原生回执并运行完整回归；其默认平台构建同样由 CMake 准备 SST，可通过 `--sst-root` 显式复用已有安装。MQSim 维护约定见 [源码维护说明](docs/mqsim-source-management.md)，模型与生命周期限制见 [M1.1 说明](docs/m1.1-library-lifecycle.md)。
+
+M0.4 契约复核（手算数据流/账本、源 ABI 和文档检查，不是性能模拟）：
+
+```sh
+python3 tools/verify_m0_4.py --output results/m0.4-check
+```
+
+输出目录须为新目录；可加 `--ctest-build build` 对已有构建运行回归。固定输入及后续实现边界见 [契约](docs/m0.4-minimal-contract.md)。

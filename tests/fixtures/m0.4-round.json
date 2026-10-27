@@ -1,0 +1,321 @@
+{
+  "contract": "ndpsim-minimal/1",
+  "classification": "manual_contract_fixture_not_simulation",
+  "input": {
+    "dimension": 32,
+    "neighbor_ids": [
+      1,
+      2
+    ],
+    "degree": 2,
+    "sector_bytes": 512,
+    "page_sectors": 8,
+    "adjacency_lba": 32,
+    "vector_lbas": [
+      7,
+      8
+    ]
+  },
+  "pcie": {
+    "max_payload": 128,
+    "packet_overhead": 28,
+    "lanes": 4,
+    "lane_GBps": 1
+  },
+  "abi": {
+    "sqe_bytes": 72,
+    "cqe_bytes": 16,
+    "doorbell_bytes": 2
+  },
+  "service_owners": {
+    "nand_ftl_mapping": "MQSim",
+    "onfi_data_out": "MQSim",
+    "cache_cmt": "MQSim",
+    "buffer_credit": "BufferModel",
+    "buffer_staging_write": "BufferModel",
+    "buffer_compute_read": "BufferModel",
+    "buffer_result_write": "BufferModel",
+    "buffer_result_read": "BufferModel",
+    "controller_arithmetic": "ComputeModel",
+    "host_distance_control": "HostCpuModel",
+    "pcie": "MQSim.PCIe_Link",
+    "endpoint_fixed": "EndpointModel",
+    "functional_wallclock": "WallClockOnly"
+  },
+  "host": {
+    "messages": [
+      {
+        "id": "adj.sq_doorbell",
+        "direction": "H2D",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 2,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.sq_doorbell"
+      },
+      {
+        "id": "adj.sq_fetch",
+        "direction": "D2H",
+        "kind": "READ_REQ",
+        "payload_bytes": 4,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.sq_fetch"
+      },
+      {
+        "id": "adj.sqe",
+        "direction": "H2D",
+        "kind": "READ_COMP",
+        "payload_bytes": 72,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.sqe"
+      },
+      {
+        "id": "adj.data",
+        "direction": "D2H",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 512,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.data"
+      },
+      {
+        "id": "adj.cqe",
+        "direction": "D2H",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 16,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.cqe"
+      },
+      {
+        "id": "adj.cq_doorbell",
+        "direction": "H2D",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 2,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.cq_doorbell"
+      },
+      {
+        "id": "vector.sq_doorbell",
+        "direction": "H2D",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 2,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "vector.sq_doorbell"
+      },
+      {
+        "id": "vector.sq_fetch",
+        "direction": "D2H",
+        "kind": "READ_REQ",
+        "payload_bytes": 4,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "vector.sq_fetch"
+      },
+      {
+        "id": "vector.sqe",
+        "direction": "H2D",
+        "kind": "READ_COMP",
+        "payload_bytes": 72,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "vector.sqe"
+      },
+      {
+        "id": "vector.data",
+        "direction": "D2H",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 1024,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "vector.data"
+      },
+      {
+        "id": "vector.cqe",
+        "direction": "D2H",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 16,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "vector.cqe"
+      },
+      {
+        "id": "vector.cq_doorbell",
+        "direction": "H2D",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 2,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "vector.cq_doorbell"
+      }
+    ],
+    "expected": {
+      "H2D": {
+        "payload": 152,
+        "wire": 320
+      },
+      "D2H": {
+        "payload": 1576,
+        "wire": 2024
+      }
+    },
+    "storage_sector_bytes": 1536,
+    "vector_D2H_bytes": 1024
+  },
+  "controller": {
+    "messages": [
+      {
+        "id": "adj.sq_doorbell",
+        "direction": "H2D",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 2,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.sq_doorbell"
+      },
+      {
+        "id": "adj.sq_fetch",
+        "direction": "D2H",
+        "kind": "READ_REQ",
+        "payload_bytes": 4,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.sq_fetch"
+      },
+      {
+        "id": "adj.sqe",
+        "direction": "H2D",
+        "kind": "READ_COMP",
+        "payload_bytes": 72,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.sqe"
+      },
+      {
+        "id": "adj.data",
+        "direction": "D2H",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 512,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.data"
+      },
+      {
+        "id": "adj.cqe",
+        "direction": "D2H",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 16,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.cqe"
+      },
+      {
+        "id": "adj.cq_doorbell",
+        "direction": "H2D",
+        "kind": "WRITE_REQ",
+        "payload_bytes": 2,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "adj.cq_doorbell"
+      },
+      {
+        "id": "open",
+        "direction": "H2D",
+        "kind": "QueryOpen",
+        "payload_bytes": 192,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "open"
+      },
+      {
+        "id": "open_ack",
+        "direction": "D2H",
+        "kind": "QueryOpenAck",
+        "payload_bytes": 48,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "open_ack"
+      },
+      {
+        "id": "score",
+        "direction": "H2D",
+        "kind": "Score",
+        "payload_bytes": 72,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "score"
+      },
+      {
+        "id": "result",
+        "direction": "D2H",
+        "kind": "ScoreResult",
+        "payload_bytes": 80,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "result"
+      },
+      {
+        "id": "close",
+        "direction": "H2D",
+        "kind": "QueryClose",
+        "payload_bytes": 48,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "close"
+      },
+      {
+        "id": "close_ack",
+        "direction": "D2H",
+        "kind": "QueryCloseAck",
+        "payload_bytes": 48,
+        "owner": "MQSim.PCIe_Link",
+        "resource_event": "close_ack"
+      }
+    ],
+    "expected": {
+      "H2D": {
+        "payload": 388,
+        "wire": 584
+      },
+      "D2H": {
+        "payload": 708,
+        "wire": 960
+      }
+    },
+    "storage_sector_bytes": 1536,
+    "vector_D2H_bytes": 0,
+    "buffer_access_bytes": {
+      "query_write": 128,
+      "input_staging_write": 1024,
+      "compute_input_query_read": 1152,
+      "result_write": 24,
+      "result_read": 24
+    },
+    "credit_bytes": {
+      "query": 128,
+      "input": 1024,
+      "result": 24,
+      "command_scratch": 72
+    },
+    "expected_buffer_access_bytes": 2352,
+    "expected_peak_credit_bytes": 1248
+  },
+  "manual_review": [
+    {
+      "check": "same_logical_inputs_and_storage_extents",
+      "result": "pass",
+      "basis": "adj LBA32 one sector; vectors LBA7/8 two sectors across page boundary; both modes 1536 sector bytes"
+    },
+    {
+      "check": "host_visibility",
+      "result": "pass",
+      "basis": "adj/vector data plus CQ consumed before HostCpu L2 and continuation"
+    },
+    {
+      "check": "controller_visibility",
+      "result": "pass",
+      "basis": "query/command arrival -> all local transactions -> safe cleanup -> staging -> buffer read -> compute -> result write/read -> D2H -> host decision"
+    },
+    {
+      "check": "unique_billing",
+      "result": "pass",
+      "basis": "each message one PCIe owner; NAND/ONFI backend; independent buffer/compute/host service owners; no SelfLink or wallclock target charge"
+    },
+    {
+      "check": "query_lifetime",
+      "result": "pass",
+      "basis": "one Open/Ack and Close/Ack; credit reserved before upload/read; input/scratch after compute, result after return, query after CloseAck"
+    },
+    {
+      "check": "no_vector_host_copy_for_controller",
+      "result": "pass",
+      "basis": "local vector request has no SQ/CQ/data D2H; adjacency still uses ordinary read"
+    },
+    {
+      "check": "capability_status",
+      "result": "pass",
+      "basis": "E1/E2 PoC only; full phase/runtime/messages Planned; all AC unverified"
+    }
+  ]
+}
