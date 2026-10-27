@@ -73,7 +73,8 @@ set_target_properties(ndpsim_backend PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(ndpsim_backend PUBLIC src PRIVATE "${CMAKE_BINARY_DIR}/generated")
 target_link_libraries(ndpsim_backend PUBLIC mqsim_pic)
 
-add_library(ndpsim MODULE src/sst/system.cc src/sst/bridge_poc.cc)
+add_library(ndpsim MODULE src/sst/system.cc src/sst/bridge_poc.cc src/sst/event_bridge.cc)
+target_include_directories(ndpsim PRIVATE tests)
 target_link_libraries(ndpsim PRIVATE ndpsim_backend SST::SSTCore)
 if(APPLE)
     # SST resolves its core symbols when loading the element, as in its helper.
@@ -131,3 +132,13 @@ add_custom_target(run_lifecycle
     COMMAND "${NDPSIM_SST_EXECUTABLE}" "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>"
         "${PROJECT_SOURCE_DIR}/configs/m1.1/lifecycle.py"
     DEPENDS ndpsim USES_TERMINAL)
+
+if(BUILD_TESTING)
+    add_executable(formal_bridge_probe tests/formal_bridge_probe.cc)
+    target_link_libraries(formal_bridge_probe PRIVATE ndpsim_backend)
+    add_test(NAME formal_bridge_guards COMMAND formal_bridge_probe)
+    if(NOT NDPSIM_SANITIZE)
+        add_test(NAME sst_formal_bridge COMMAND "${NDPSIM_SST_EXECUTABLE}" "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/m1.2/bridge.py")
+        set_tests_properties(sst_formal_bridge PROPERTIES PASS_REGULAR_EXPRESSION "M1.2 PASS" TIMEOUT 30)
+    endif()
+endif()
