@@ -39,8 +39,9 @@ __pycache__/
 .ruff_cache/
 /.cache/
 
-# Generated experiment runs; keep reviewable evidence under docs/
+# Generated experiment runs and local validation evidence
 /results/
+/docs/evidence/
 
 # Local environment settings (example files remain versioned)
 .env
@@ -52,6 +53,7 @@ __pycache__/
 *.swp
 *.swo
 *~
+.vscode/
 
 # Keep source, configs, fixtures, lockfiles and submodule paths versioned.
 # Submodules manage their own ignore rules independently.

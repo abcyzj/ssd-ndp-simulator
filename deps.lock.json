@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "target": {"os": "Darwin", "arch": "arm64", "macos": "26.5.1", "sdk": "26.5", "sdk_path": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk", "deployment_target": "26.5"},
+  "dependencies": {
+    "MQSim": {"path": "third_party/MQSim", "url": "https://github.com/abcyzj/MQSim.git", "commit": "51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16", "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "patches": []},
+    "sst-core": {"path": "third_party/sst-core", "url": "https://github.com/sstsimulator/sst-core.git", "commit": "ffd71527bc26a1f2a4fb685fdeb2ca0799997d78", "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "patches": []}
+  },
+  "tools": {
+    "cc": {"path": "/Library/Developer/CommandLineTools/usr/bin/clang", "version_contains": "clang-2100.1.1.101"},
+    "cxx": {"path": "/Library/Developer/CommandLineTools/usr/bin/clang++", "version_contains": "clang-2100.1.1.101"},
+    "python": {"path": "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13", "version_contains": "Python 3.13.12"},
+    "python_config": {"path": "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13-config", "prefix": "/opt/homebrew/Caskroom/miniconda/base"},
+    "autoconf": {"path": "/opt/homebrew/bin/autoconf", "version_contains": "2.73"},
+    "automake": {"path": "/opt/homebrew/bin/automake", "version_contains": "1.19"},
+    "libtool": {"path": "/opt/homebrew/bin/glibtool", "version_contains": "2.6.2"},
+    "m4": {"path": "/opt/homebrew/opt/m4/bin/m4", "version_contains": "1.4.21"},
+    "make": {"path": "/usr/bin/make", "version_contains": "GNU Make 3.81"},
+    "cmake": {"path": "/opt/homebrew/bin/cmake", "version_contains": "4.4.4"}
+  },
+  "build": {
+    "jobs": 2,
+    "cflags": "-O2 -g -arch arm64",
+    "cxxflags": "-O2 -g -arch arm64 -std=c++17 -stdlib=libc++ -ffp-contract=off",
+    "mqsim_extra_cxxflags": "-Xclang -mconstructor-aliases",
+    "sst_configure": ["--disable-mpi", "--without-hdf5", "--without-ncurses"],
+    "native_makefile": "Unmodified MQSim Makefile, CC/LD/CC_FLAGS explicitly overridden; no library or integration patches."
+  }
+}

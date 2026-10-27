@@ -3,7 +3,7 @@
 日期：2026-10-23（Asia/Shanghai）  
 环境与依赖修订：2026-10-27，构建基线改为本机 macOS（Apple Silicon / arm64），两个依赖 submodule 已初始化；本机工具链见第 12 节。  
 依据：SSD_NDP_Simulator_V0.1_PRD.md，重点覆盖第 9、11 节及 FR-01～FR-10、AC-01～AC-11。  
-状态：规划评审稿；依赖子模块初始化和环境盘点已完成，未修改依赖功能源码、编写平台代码或执行构建与仿真。
+状态：设计依据保留；M0.1 静态归档及 M0.2 本机工具链、SST/原生 MQSim 构建与小读基线已完成。未修改依赖源码；平台集成、元素加载及 AC 尚未运行。运行证据见 [M0.2 记录](m0.2-native-baseline.md)。
 
 ## 1. 结论与范围
 
@@ -29,7 +29,7 @@ PRD 没有发现必须改变目标才能消除的直接冲突；以下边界需�
 
 ### 2.1 实际检查了什么
 
-原核查时工作目录只有 PRD，没有现有实现、构建文件或 Git 仓库，也未找到适用的 AGENTS.md。当前主项目已使用 Git，AGENTS.md 和两个依赖 submodule 均已存在。后续开发、构建与验收以本机 macOS / arm64 为基线，工具链已做路径和版本盘点，CPU/内存可用资源及完整构建验证仍由 M0.2 补齐；不填写未经测量的运行效率。
+原核查时工作目录只有 PRD，没有现有实现、构建文件或 Git 仓库，也未找到适用的 AGENTS.md。当前主项目已使用 Git，AGENTS.md 和两个依赖 submodule 均已存在。后续开发、构建与验收以本机 macOS / arm64 为基线，工具链已做路径和版本盘点，CPU/内存资源、本机构建及原生运行已由 M0.2 补齐，见第 12 节与证据索引；不填写未经测量的运行效率。
 
 本轮通过公开远端查询并下载了三份上游源码，逐文件检查下述入口；下载位于 /private/tmp/ssd-ndp-audit-20261023/，三个上游检出的 git status 均为空。临时目录不作为交付依赖，下面的完整提交号和源码永久链接才是复核依据。
 
@@ -48,7 +48,7 @@ PRD 没有发现必须改变目标才能消除的直接冲突；以下边界需�
 | MQSim | commit 51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16 | 必需后端；本次查询 master 指向此提交，实施后不再跟随 master 漂移 |
 | DiskANN C++ | cpp_main 的 commit 78256bbab4685e1774e78d331e081a153be26823 | 仅作复用工作量核查，不成为默认构建依赖；当前主页 main 与 C++ 分支不能混为一谈 |
 
-SST 的版本号还由该提交 configure.ac 的 AC_INIT 确认，[发布入口][S0]与[构建定义][S1]可复核。实际使用的 SST/MQSim 已锁定；**组合可构建性、时序等价性和性能仍未经过运行验证**。本机 macOS 工具链补齐、原生构建与 PoC 是下一阶段任务；DiskANN 仍仅作调研参考。
+SST 的版本号还由该提交 configure.ac 的 AC_INIT 确认，[发布入口][S0]与[构建定义][S1]可复核。实际使用的 SST/MQSim 已锁定；**M0.2 已验证本机原生可构建性；集成时序等价性和性能仍未经过验证**。工具链兼容措施与原生限制见 M0.2 记录，PoC 尚未开始；DiskANN 仍仅作调研参考。
 
 ### 2.2 SST：可用入口与改动边界
 
@@ -314,7 +314,7 @@ RequestContext 至少含 QueryId、TaskId、操作类别、对象范围、route�
 | 任务 | 依赖 | 可评审交付物 | 验收/退出条件 | 规模 |
 | --- | --- | --- | --- | --- |
 | M0.1 源码与版本核查 | PRD | 本文第 2 节、完整 commit、改动清单 | 本轮已完成静态核查；运行结论保持未验证 | M |
-| M0.2 本机 macOS 工具链/原生基线 | M0.1 | 已完成子模块初始化与初步工具链盘点；待补齐工具链、锁文件、原生 MQSim 构建和小 I/O 输入/输出 | 在本机 macOS / arm64 可重复运行；记录可用资源、RSS/墙钟/初始化；当前未通过构建验收 | M |
+| M0.2 本机 macOS 工具链/原生基线 | M0.1 | 已完成工具链与锁文件、SST 和原生 MQSim 构建、小读输入/输出；见 [M0.2 证据](evidence/m0.2/README.md) | 本机 arm64 构建、命令入口和两次小读验收通过；资源、初态、RSS/墙钟已记录；不含元素加载 | M |
 | M0.3 事件与本地路径先行验证 | M0.2 | 第 11 节 E1/E2 的最小 PoC、事件顺序和路径账本 | 精确插入外部事件；本地读取无向量主机回传；不满足则先修订桥/路径设计 | L，风险最高 |
 | M0.4 冻结接口/默认/能力 | M0.3 | 设计决定记录、resource owner、wire schema、能力矩阵 | 所有计费有唯一 owner；数据路径和完成边界可手工复核 | M |
 | M1.1 库化与生命周期 | M0.2 | MQSim PIC 库、保留的原生 oracle、SST 元素骨架 | 同进程只建一个设备，初始化/结束不挂交互输入 | M |
@@ -394,7 +394,7 @@ AC-08 的固定 trace 是存储适配 oracle；AC-02 和端到端示例仍由真
 
 ## 12. 目录、构建、运行与版本管理建议
 
-docs、AGENTS.md、.gitmodules、third_party/MQSim 和 third_party/sst-core 已存在；两个 third_party 目录是已初始化的 submodule。下列其余构建入口和平台实现目录仍是交付规划，后面的构建/运行命令尚未执行：
+docs、AGENTS.md、.gitmodules、third_party/MQSim 和 third_party/sst-core 已存在；两个 third_party 目录是已初始化的 submodule。M0.2 已增加 tools/macos_m0_2.py、configs/native 和 deps.lock.json；下列平台实现布局及端到端构建/运行命令仍是交付规划，不作为当前可运行入口：
 
     CMakeLists.txt
     deps.lock.json
@@ -419,7 +419,7 @@ docs、AGENTS.md、.gitmodules、third_party/MQSim 和 third_party/sst-core 已�
     docs/                       # 接口、模型、补丁维护、验收记录
     results/                    # 按 run_id 输出，默认不入版本库
 
-目标环境改为**本机 macOS（Apple Silicon / arm64）**。2026-10-27 只读盘点结果如下；这些是工具发现证据，不是构建通过记录：
+目标环境改为**本机 macOS（Apple Silicon / arm64）**。2026-10-27 开始实施前的只读盘点结果如下，保留为历史；最终工具链与通过证据见本节后文及 [M0.2 记录](m0.2-native-baseline.md)：
 
 | 项目 | 已发现的信息 | M0.2 尚需验证或补齐 |
 | --- | --- | --- |
@@ -446,7 +446,7 @@ docs、AGENTS.md、.gitmodules、third_party/MQSim 和 third_party/sst-core 已�
 
 run.py 只校验配置、准备固定种子 smoke 数据和设置元素库路径，再调用 sst scripts/system.py；它不是算法性能模型。最小端到端命令应自动校验数据 hash，输出实际展开的 sst 命令。首次数据/图/真值准备与正式仿真墙钟分开计量。SST 安装前缀、元素库加载参数和注册方式在 M0.2 以所锁定版本实际输出为准，不编造已可使用的命令行集成选项。
 
-源码依赖已采用 Git submodule：.gitmodules 保存 URL/路径，主仓 gitlink 锁定完整 commit。新检出使用 `git submodule update --init --recursive` 获取主仓记录的版本，不能使用 --remote 自动跟随分支。未来 deps.lock.json 记录相同 URL/commit、上游基线、工具链和配置，并校验其与 gitlink 一致；该文件目前尚未实现。MQSim 后续改动提交到 abcyzj/MQSim fork，先保存到可访问的 fork 提交，再更新主仓指针；SST Core 固定且不修改。fork 提交是 MQSim 改动的权威来源，patches/mqsim 仅可选导出审阅材料，不重复应用同一补丁。DiskANN 仅留核查记录，不加入默认依赖。
+源码依赖已采用 Git submodule：.gitmodules 保存 URL/路径，主仓 gitlink 锁定完整 commit。新检出使用 `git submodule update --init --recursive` 获取主仓记录的版本，不能使用 --remote 自动跟随分支。M0.2 已实现 [deps.lock.json](../deps.lock.json)，记录相同 URL/commit、空补丁哈希、工具链和配置，并由运行脚本校验其与 gitlink 一致。MQSim 后续改动提交到 abcyzj/MQSim fork，先保存到可访问的 fork 提交，再更新主仓指针；SST Core 固定且不修改。fork 提交是 MQSim 改动的权威来源，patches/mqsim 仅可选导出审阅材料，不重复应用同一补丁。DiskANN 仅留核查记录，不加入默认依赖。
 
 保留 SST、MQSim 和将来实际复用代码的许可证与版权文件；上游改动逐补丁解释目的、默认开关、基线影响和验证，不在未实现阶段宣称已能长期无冲突升级。
 
@@ -460,13 +460,21 @@ tiny SSD 几何可从 2 channel × 1 chip/channel × 2 die/chip × 1 plane/die �
 
 计算/控制 launch_ns、rate、slots、buffer_bytes、staging_bytes_per_ns、链路 lane bandwidth/count/packet 参数全部带单位与 source。第一套验证用参数允许人工设定并标为 configured_unvalidated；真实硬件比较另选有来源的配置。链路必须注明十进制 GB/s 与 B/ns 换算，避免 GiB/s 混用。不开工前伪填“校准吞吐”或“预计加速倍数”。
 
-M0.2 先测原生/桥接小 I/O 的墙钟与 peak RSS，再测单查询、32 查询和 max_inflight=1/2/4；依据本机可用 CPU/内存决定是否增大 N、d 和查询数。报告每个分位数的样本量，小样本 p99 不能当稳定尾延迟。大规模实验不作为 V0.1 交付前置条件。
+M0.2 已测原生小 I/O 的墙钟与 peak RSS；桥接小 I/O 在 M1、单查询及 32 查询和 max_inflight=1/2/4 在相应运行时任务中测量；依据本机可用 CPU/内存决定是否增大 N、d 和查询数。报告每个分位数的样本量，小样本 p99 不能当稳定尾延迟。大规模实验不作为 V0.1 交付前置条件。
+
+### M0.2 已验证的本机入口（2026-10-27）
+
+[运行与限制说明](m0.2-native-baseline.md)、[完整证据](evidence/m0.2/README.md) 和 [锁文件](../deps.lock.json) 为当前依据。Apple Clang 21 / arm64 / libc++ / C++17、SDK 26.5、配套 Python 3.13.12 已实际编译、链接及运行；CMake 4.4.4 已导入 SST 配置，但未验证元素 MODULE。Autotools 已补齐；SST 和 MQSim 的子模块 commit、gitlink、已跟踪源码及空补丁哈希保持一致。
+
+当前原生构建及小读入口为 `python3.13 tools/macos_m0_2.py --output <新目录>`（解释器绝对路径见运行说明）。脚本独立构建固定源码快照，显式选择 SDK、Python 库路径及 rpath；MQSim 单独使用 `-Xclang -mconstructor-aliases` 避免原生抽象基类完整析构入口 trap。源码未修改，非虚析构的 C++ 未定义行为仍未修复，不能据此声称生命周期已验证。默认安装前缀为 build/native-macos/install/sst，SST 的实际帮助入口为 `--usage` 和 `--help=timebase`，裸 `--help` 缺少参数。
+
+受控 tiny 几何已完成原生运行。初态为新进程、Reset、关闭 preconditioning、初始占用 0、SIMPLE/TURNED_OFF、保留 CMT，READ 懒建映射；不是 M1.3 的预装载/测量窗口实现。两次进程各完成 4 个小读、13312 B、零应用写入，退出 0，XML 完全相同。墙钟、RSS、输入和二进制哈希均已归档。未运行桥接、元素加载或 AC 验收。
 
 ## 13. 已完成与下一步门槛
 
-原规划完成：PRD 全文阅读、SST/MQSim/DiskANN C++ 固定提交静态源码核查、架构/路径/接口/资源设计、任务依赖、风险实验与 AC 映射。2026-10-27 已补充两个依赖 submodule 的路径、URL、固定 commit 与本机 macOS 工具链盘点；M0.2 仅部分完成。
+原规划完成：PRD 全文阅读、SST/MQSim/DiskANN C++ 固定提交静态源码核查、架构/路径/接口/资源设计、任务依赖、风险实验与 AC 映射。2026-10-27 已补充两个依赖 submodule 的路径、URL、固定 commit 与本机 macOS 工具链盘点；M0.2 现已完成本机环境、SST 命令入口和原生小读验收，见 [证据索引](evidence/m0.2/README.md)。
 
-尚未完成、也未声称通过：本机 macOS 构建、SST 模块加载、MQSim 原生基线、事件桥 PoC、本地路径 PoC、任何 AC 仿真测试、资源参数校准和运行规模测量。后续先补齐 M0.2 工具链与原生基线，再推进 PoC，并以 E1/E2 作为主体实现的准入条件。
+尚未完成、也未声称通过：SST 平台元素模块加载、事件桥 PoC、本地路径 PoC、任何 AC 仿真测试、资源参数校准及 ANNS 运行规模测量。M0.2 未启动 M1.1；后续按依赖推进，以 E1/E2 作为主体实现的准入条件。
 
 ## 源码永久链接
 
