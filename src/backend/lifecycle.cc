@@ -42,8 +42,8 @@ struct LifecycleBackend::Impl {
     }
 
     ~Impl() {
-        // No events are dispatched in M1.1. Clear the engine's non-owning object
-        // registry before deleting the device graph, including on early finish.
+        // Clear the engine's non-owning registry before deleting the device
+        // graph, including on early finish. In-flight I/O is not supported.
         if (device) {
             Simulator->Reset();
             device.reset();
@@ -68,7 +68,7 @@ void LifecycleBackend::initialize() {
 void LifecycleBackend::finish() {
     if (impl_->finished) return;
     if (!impl_->initialized) throw std::logic_error("Backend finish before initialization");
-    if (Simulator->Time() != 0) throw std::logic_error("M1.1 must not advance MQSim time");
+    if (Simulator->Peek_next_time()) throw std::logic_error("Backend finish with pending events");
     Simulator->Reset();
     impl_->device.reset();
     impl_->finished = true;

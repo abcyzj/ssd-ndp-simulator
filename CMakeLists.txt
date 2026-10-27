@@ -73,7 +73,7 @@ set_target_properties(ndpsim_backend PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(ndpsim_backend PUBLIC src PRIVATE "${CMAKE_BINARY_DIR}/generated")
 target_link_libraries(ndpsim_backend PUBLIC mqsim_pic)
 
-add_library(ndpsim MODULE src/sst/system.cc)
+add_library(ndpsim MODULE src/sst/system.cc src/sst/bridge_poc.cc)
 target_link_libraries(ndpsim PRIVATE ndpsim_backend SST::SSTCore)
 if(APPLE)
     # SST resolves its core symbols when loading the element, as in its helper.
@@ -97,7 +97,14 @@ if(BUILD_TESTING)
     add_test(NAME backend_error COMMAND lifecycle_probe error)
     add_test(NAME backend_early_teardown COMMAND lifecycle_probe early)
     add_test(NAME backend_invalid_mqsim_config COMMAND lifecycle_probe invalid-mqsim)
+    add_executable(event_bridge_probe tests/event_bridge_probe.cc)
+    target_link_libraries(event_bridge_probe PRIVATE ndpsim_backend)
+    add_test(NAME backend_event_bridge COMMAND event_bridge_probe)
+    add_test(NAME backend_native_event_loop COMMAND event_bridge_probe native)
     if(NOT NDPSIM_SANITIZE)
+        add_test(NAME sst_event_bridge COMMAND "${NDPSIM_SST_EXECUTABLE}"
+            "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/m0.3a/bridge.py")
+        set_tests_properties(sst_event_bridge PROPERTIES PASS_REGULAR_EXPRESSION "E1 PASS events=8" TIMEOUT 30)
         add_test(NAME sst_element_load COMMAND "${NDPSIM_SST_INFO_EXECUTABLE}"
             "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" ndpsim.System)
         set_tests_properties(sst_element_load PROPERTIES PASS_REGULAR_EXPRESSION "Component 0: System" TIMEOUT 30)
