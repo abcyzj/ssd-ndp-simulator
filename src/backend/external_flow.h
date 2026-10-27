@@ -11,6 +11,7 @@ class ExternalFlow : public Host_Components::IO_Flow_Base {
 public:
     struct Completion { uint64_t token, lba, time; unsigned sectors; bool write; };
     std::function<void(Completion)> completed;
+    std::function<void(uint64_t,uint64_t,unsigned)> submitted;
     ExternalFlow(Host_Components::PCIe_Root_Complex* root, uint64_t end)
       : IO_Flow_Base("external",0,0,end,1,16,16,IO_Flow_Priority_Class::HIGH,
         UINT64_MAX,0,0,HostInterface_Types::NVME,root,nullptr,false,1000000,"") {}
@@ -27,6 +28,7 @@ public:
         r->Start_LBA=lba; r->LBA_count=sectors; r->Arrival_time=Simulator->Time();
         r->Type=write?Host_Components::Host_IO_Request_Type::WRITE:Host_Components::Host_IO_Request_Type::READ;
         auto token=++sequence_; records_.emplace(r,Record{token,0});
+        if(submitted) submitted(token,lba,sectors);
         ++STAT_generated_request_count; Submit_io_request(r); return token;
     }
     Submission_Queue_Entry* NVMe_read_sqe(uint64_t address)
