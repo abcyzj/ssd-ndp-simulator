@@ -1,0 +1,6 @@
+[submodule "third_party/MQSim"]
+	path = third_party/MQSim
+	url = https://github.com/abcyzj/MQSim.git
+[submodule "third_party/sst-core"]
+	path = third_party/sst-core
+	url = https://github.com/sstsimulator/sst-core.git

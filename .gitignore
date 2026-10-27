@@ -1,0 +1,57 @@
+# macOS metadata
+.DS_Store
+._*
+.AppleDouble/
+
+# Out-of-source CMake builds, including local dependency installations
+/build/
+/build-*/
+/cmake-build-*/
+
+# CMake files from accidental in-source builds
+/CMakeCache.txt
+/CMakeFiles/
+/cmake_install.cmake
+/CTestTestfile.cmake
+/Testing/
+/install_manifest.txt
+/compile_commands.json
+/CMakeUserPresets.json
+
+# Native build, debug and coverage artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dSYM/
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+
+# Python tooling and local virtual environments
+__pycache__/
+*.py[cod]
+/.venv/
+/venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+/.cache/
+
+# Generated experiment runs; keep reviewable evidence under docs/
+/results/
+
+# Local environment settings (example files remain versioned)
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Editor temporary files
+*.swp
+*.swo
+*~
+
+# Keep source, configs, fixtures, lockfiles and submodule paths versioned.
+# Submodules manage their own ignore rules independently.

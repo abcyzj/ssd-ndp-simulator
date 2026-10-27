@@ -1,9 +1,9 @@
 # SSD 近存计算仿真平台 V0.1：源码核查与实施规划
 
 日期：2026-10-23（Asia/Shanghai）  
-环境修订：2026-10-26，目标系统确定为 Ubuntu 22.04 LTS；候选工具链见第 12 节。  
+环境与依赖修订：2026-10-27，构建基线改为本机 macOS（Apple Silicon / arm64），两个依赖 submodule 已初始化；本机工具链见第 12 节。  
 依据：SSD_NDP_Simulator_V0.1_PRD.md，重点覆盖第 9、11 节及 FR-01～FR-10、AC-01～AC-11。  
-状态：规划评审稿；本轮仅阅读源码和编写本文，未修改上游源码、编写平台代码或执行构建与仿真。
+状态：规划评审稿；依赖子模块初始化和环境盘点已完成，未修改依赖功能源码、编写平台代码或执行构建与仿真。
 
 ## 1. 结论与范围
 
@@ -29,9 +29,18 @@ PRD 没有发现必须改变目标才能消除的直接冲突；以下边界需�
 
 ### 2.1 实际检查了什么
 
-原核查时工作目录只有 PRD，没有现有实现、构建文件或 Git 仓库，也未找到适用的 AGENTS.md。后续开发、构建与验收以 Ubuntu 22.04 LTS 为目标，工具链、CPU 架构和可用 CPU/内存配额由 M0.2 在目标环境记录；不填写未经测量的运行效率。
+原核查时工作目录只有 PRD，没有现有实现、构建文件或 Git 仓库，也未找到适用的 AGENTS.md。当前主项目已使用 Git，AGENTS.md 和两个依赖 submodule 均已存在。后续开发、构建与验收以本机 macOS / arm64 为基线，工具链已做路径和版本盘点，CPU/内存可用资源及完整构建验证仍由 M0.2 补齐；不填写未经测量的运行效率。
 
 本轮通过公开远端查询并下载了三份上游源码，逐文件检查下述入口；下载位于 /private/tmp/ssd-ndp-audit-20261023/，三个上游检出的 git status 均为空。临时目录不作为交付依赖，下面的完整提交号和源码永久链接才是复核依据。
+
+上述下载记录属于 2026-10-23 静态核查。2026-10-27 已在主项目初始化以下依赖，当前开发使用仓库内的 submodule，不依赖原临时检出：
+
+| 依赖路径 | origin URL | 当前固定 commit | 状态与维护方式 |
+| --- | --- | --- | --- |
+| third_party/MQSim | https://github.com/abcyzj/MQSim.git | 51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16 | 已初始化；与原核查基线一致；后续改动提交到该 fork |
+| third_party/sst-core | https://github.com/sstsimulator/sst-core.git | ffd71527bc26a1f2a4fb685fdeb2ca0799997d78 | 已初始化；固定 v16.0.0_Final 对应 commit；不修改 SST Core |
+
+可用 `git submodule status --recursive`、各子模块的 `git rev-parse HEAD` 和 `git remote get-url origin` 复核；.gitmodules 保存路径/URL，主仓 gitlink 保存固定提交。当前两个子模块的已跟踪源码均无修改。初始化不表示编译、SST 模块加载、原生基线或 AC 已通过。
 
 | 项目 | 选定的核查基线 | 用途与决定 |
 | --- | --- | --- |
@@ -39,7 +48,7 @@ PRD 没有发现必须改变目标才能消除的直接冲突；以下边界需�
 | MQSim | commit 51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16 | 必需后端；本次查询 master 指向此提交，实施后不再跟随 master 漂移 |
 | DiskANN C++ | cpp_main 的 commit 78256bbab4685e1774e78d331e081a153be26823 | 仅作复用工作量核查，不成为默认构建依赖；当前主页 main 与 C++ 分支不能混为一谈 |
 
-SST 的版本号还由该提交 configure.ac 的 AC_INIT 确认，[发布入口][S0]与[构建定义][S1]可复核。版本已在规划中选定；**三者的组合可构建性、时序等价性和性能均未经过本轮运行验证**。Linux 环境建立与 PoC 是下一阶段任务。
+SST 的版本号还由该提交 configure.ac 的 AC_INIT 确认，[发布入口][S0]与[构建定义][S1]可复核。实际使用的 SST/MQSim 已锁定；**组合可构建性、时序等价性和性能仍未经过运行验证**。本机 macOS 工具链补齐、原生构建与 PoC 是下一阶段任务；DiskANN 仍仅作调研参考。
 
 ### 2.2 SST：可用入口与改动边界
 
@@ -49,7 +58,7 @@ SST 的版本号还由该提交 configure.ac 的 AC_INIT 确认，[发布入口]
 | Link::send_impl、SelfLink | 事件交付时间由当前时间、delay、link latency 合成；SelfLink 构造时 latency 为 0 [S3] | 平台资源延迟由自身模型产生；自链用于调度，不再额外计一次物理传输延迟 |
 | Activity 比较器 | 排序包含时间、优先级/顺序标签和队列序号 [S4] | 不依赖不同 Component 的隐式同刻顺序；V0.1 将有关事件汇入一个平台调度入口 |
 | primary component API | registerAsPrimaryComponent、DoNotEndSim、OKToEndSim 存在 [S5] | 所有查询和必需在途任务结束后才释放仿真存活约束 |
-| configure.ac、构建配置 | 使用 C++17；有禁用 MPI 的构建选项 [S1] | 推荐 Linux 单 rank、单线程；同一编译器和 C++ ABI 构建 SST 与元素库 |
+| configure.ac、构建配置 | 使用 C++17；有禁用 MPI 的构建选项 [S1] | 本机 macOS 单 rank、单线程；同一架构、编译器、标准库和 C++ ABI 构建 SST 与元素库 |
 
 SST 配置脚本使用 Python 是框架接线方式，不表示新增 Python 算法前端或 C++/Python 运行时绑定。
 
@@ -305,7 +314,7 @@ RequestContext 至少含 QueryId、TaskId、操作类别、对象范围、route�
 | 任务 | 依赖 | 可评审交付物 | 验收/退出条件 | 规模 |
 | --- | --- | --- | --- | --- |
 | M0.1 源码与版本核查 | PRD | 本文第 2 节、完整 commit、改动清单 | 本轮已完成静态核查；运行结论保持未验证 | M |
-| M0.2 Ubuntu 22.04 工具链/原生基线 | M0.1 | 工具链记录、锁文件、原生 MQSim 构建和小 I/O 输入/输出 | 在明确配额的 Ubuntu 22.04 LTS 环境可重复运行；记录 RSS/墙钟/初始化 | M |
+| M0.2 本机 macOS 工具链/原生基线 | M0.1 | 已完成子模块初始化与初步工具链盘点；待补齐工具链、锁文件、原生 MQSim 构建和小 I/O 输入/输出 | 在本机 macOS / arm64 可重复运行；记录可用资源、RSS/墙钟/初始化；当前未通过构建验收 | M |
 | M0.3 事件与本地路径先行验证 | M0.2 | 第 11 节 E1/E2 的最小 PoC、事件顺序和路径账本 | 精确插入外部事件；本地读取无向量主机回传；不满足则先修订桥/路径设计 | L，风险最高 |
 | M0.4 冻结接口/默认/能力 | M0.3 | 设计决定记录、resource owner、wire schema、能力矩阵 | 所有计费有唯一 owner；数据路径和完成边界可手工复核 | M |
 | M1.1 库化与生命周期 | M0.2 | MQSim PIC 库、保留的原生 oracle、SST 元素骨架 | 同进程只建一个设备，初始化/结束不挂交互输入 | M |
@@ -362,7 +371,7 @@ AC-08 的固定 trace 是存储适配 oracle；AC-02 和端到端示例仍由真
 | R5 近存缓冲形成死锁 | 并发不能完成或超容 | E4：query 常驻+仅一块工作空间，多查询、多 chunk、失败注入 | 保留可前进空间、过大请求失败、峰值和释放守恒 |
 | R6 逻辑内容绕过驻留/可见性 | 真实数值存在但数据路径不真实 | handle 权限与 AC-04；功能执行器独占 ContentStore 数据视图 | 算法不可直接取任意向量；每次有效化都有生产任务/事件 |
 | R7 初态/映射/CMT/后台活动混淆放置收益 | 两模式比较不公平 | E5：确定性预装载，比较测量起点映射/缓存摘要、种子及初态；首次读在线映射单独标注 | 两模式起点相同；未知初态不纳入收益结论 |
-| R8 源码静态全局、工具链和库化 | 多实例污染/构建或退出失败 | M0.2 Linux 原生构建；单设备/每实验新进程；SST16 C++17 PIC 兼容验证 | 最小构建和 oracle 可复现；不承诺同进程多次 Reset 完整隔离 |
+| R8 源码静态全局、工具链和库化 | 多实例污染/构建或退出失败 | M0.2 本机 macOS 原生构建；单设备/每实验新进程；SST16 C++17 PIC 与模块加载验证 | 最小构建和 oracle 可复现；不承诺同进程多次 Reset 完整隔离 |
 | R9 die/channel 指标命名与模型精度不符 | 利用率或可观测能力被夸大 | 明确定义 array、bus、wait；多事务命令用参与集合，统计按区间并集 | 事件可独立重算，不用 chip 或累计相加替代 |
 | R10 算法扩张/未校准参数 | 延迟交付或得出绝对预测 | 简化图、单距离、参数 sweep；所有参数标注 configured/unvalidated 或来源 | 平台正确性先通过；不设“盘控更快”门槛 |
 
@@ -371,7 +380,7 @@ AC-08 的固定 trace 是存储适配 oracle；AC-02 和端到端示例仍由真
 | 项目 | 推荐决定 | 尚待验证的内容 |
 | --- | --- | --- |
 | 语言/异步形式 | C++17，显式状态机+continuation token | 与 SST16 头文件/编译选项实际构建兼容 |
-| SST/MQSim 版本 | 使用第 2 节 commit，SST Core 无补丁 | Ubuntu 22.04 LTS 上构建与桥接基线 |
+| SST/MQSim 版本 | 使用第 2 节已初始化子模块及固定 commit，SST Core 无补丁 | 本机 macOS / arm64 上构建与桥接基线 |
 | 首算法/数值 | 简化确定性图，FP32 输入/FP64 平方 L2 | Recall/扩展预算在示例数据上的实测表现 |
 | 搜索控制 | 主机；邻接/候选在主机决策，距离可放盘控 | 命令格式和每个控制阶段的参数量级 |
 | 缓存 | 首个可交付配置采用 SIMPLE + TURNED_OFF 数据缓存；保留 CMT | 合法参数组合和真实初始化行为；ADVANCED/读缓存不作为默认已支持能力 |
@@ -385,13 +394,14 @@ AC-08 的固定 trace 是存储适配 oracle；AC-02 和端到端示例仍由真
 
 ## 12. 目录、构建、运行与版本管理建议
 
-下列目录和命令是将来的交付约定，当前尚不存在、不能宣称已经运行：
+docs、AGENTS.md、.gitmodules、third_party/MQSim 和 third_party/sst-core 已存在；两个 third_party 目录是已初始化的 submodule。下列其余构建入口和平台实现目录仍是交付规划，后面的构建/运行命令尚未执行：
 
     CMakeLists.txt
     deps.lock.json
     cmake/                       # SST 发现、编译标志与依赖检查
-    third_party/MQSim/           # 固定 commit 的本地/子模块检出
-    patches/mqsim/               # 可排序的小补丁；默认关闭的扩展不影响原生行为
+    third_party/MQSim/           # 已初始化：abcyzj/MQSim fork，主仓固定 commit
+    third_party/sst-core/        # 已初始化：SST 上游固定 commit，不修改
+    patches/mqsim/               # 可选导出审阅材料；不重复应用 fork 已包含的改动
     include/ndpsim/              # 公开 handles、operation、layout、observer 契约
     src/sst/                    # System Component、事件、ELI 注册
     src/runtime/                # 依赖、任务状态、结果门控
@@ -409,15 +419,26 @@ AC-08 的固定 trace 是存储适配 oracle；AC-02 和端到端示例仍由真
     docs/                       # 接口、模型、补丁维护、验收记录
     results/                    # 按 run_id 输出，默认不入版本库
 
-目标系统确定为 **Ubuntu 22.04 LTS（Jammy）**，Codex 云端开发也采用同一版本。CPU 架构暂沿用 x86_64 建议，由 M0.2 核对实际架构。候选工具链改为 GCC/G++ 11 系列、Python 3.10、CMake 3.22 系列，优先使用 Ubuntu 22.04 官方仓库软件包，实际 patch 版本和包修订号在 M0.2 记录并锁定。版本选择参考 Ubuntu 的 [GCC 11 软件包](https://packages.ubuntu.com/jammy-updates/gcc-11)、[Python 3 软件包](https://packages.ubuntu.com/jammy/amd64/python3)和 [CMake 软件包](https://packages.ubuntu.com/jammy/amd64/cmake)记录；这些来源不构成本项目的构建验证。
+目标环境改为**本机 macOS（Apple Silicon / arm64）**。2026-10-27 只读盘点结果如下；这些是工具发现证据，不是构建通过记录：
 
-所锁定 SST 的 configure.ac 要求 C++17；其 [Python 版本检查][S6]要求 Python >= 3.9，Python 3.10 满足该版本条件，但整个工具链组合仍待 M0.2 实际构建验证。后续平台 CMake 配置以 3.22 为基线，Python 工具兼容 3.10；若依赖实测确需更高工具版本，应在 Ubuntu 22.04 上单独锁定版本与来源并记录原因。
+| 项目 | 已发现的信息 | M0.2 尚需验证或补齐 |
+| --- | --- | --- |
+| 系统与架构 | macOS 26.5.1，build 25F80；uname -sm 为 Darwin arm64 | 可用 CPU/内存、构建与运行资源记录 |
+| C++ 工具链 | Xcode Command Line Tools；Apple Clang 21.0.0，目标 arm64-apple-darwin25.5.0 | M0.2 验证 C++17、MQSim 兼容性及 SST 编译；元素模块加载由 M1.1 验证 |
+| CMake | 已发现 CMake 4.4.4 | 验证所锁定 SST 的导出配置与平台包装在该版本可用 |
+| Python | PATH 默认 /usr/bin/python3 为 3.9.6；另有 arm64 Miniconda Python 3.13.12，PATH 的 python3-config 来自该 Miniconda 前缀 | 建议先以 Miniconda Python 3.13.12 及同前缀 python3-config 配套验证；不得把系统解释器与另一套开发头文件/库混用 |
+| Autotools / GNU Libtool | PATH 未发现 autoconf、automake、glibtoolize、glibtool；/usr/bin/libtool 是系统工具 | 补齐 SST autogen.sh 使用的 Autoconf、Automake、GNU Libtool；系统 libtool 不能替代完整 GNU Libtool 工具链 |
+| SST 运行入口 | PATH 未发现 sst | M0.2 从已固定的 third_party/sst-core 构建安装并验证命令入口；元素模块加载由 M1.1 验证 |
 
-平台不依赖 sst-elements；只需 SST Core。SST 从固定 commit 使用其 Autotools 流程构建，单机可禁用 MPI；平台用 CMake 导入同一安装前缀，读取 sst-config 的实际 flags，导出可由 SST 加载的 libndpsim.so。同一编译器及 C++ ABI 构建 SST、MQSim 库与平台元素库；目标环境的构建、原生基线和桥接验证通过前，不宣称该组合已兼容。
+盘点命令包括 `sw_vers`、`uname -sm`、`xcrun --find clang++`、`clang++ --version`、`cmake --version`、`python3 --version`、`command -v` 以及 `python3-config --prefix/--includes/--ldflags --embed`；均未执行编译、安装或仿真。
+
+所锁定 SST 的 configure.ac 要求 C++17；其 [Python 版本检查][S6]要求 Python >= 3.9。已发现的 Python 版本满足这一数值门槛，但 Python 头文件、嵌入链接及 SST API 兼容性仍需实际验证。M0.2 锁定最终选用的解释器、python3-config、前缀和版本；若现有候选构建失败，再依据错误选择并记录兼容版本。本机候选为 Apple Clang 21、CMake 4.4.4、配套的 Miniconda Python 3.13.12；后续平台 CMake 最低版本约定仍为 3.22，不代表当前 CMake 4 已通过验证。
+
+平台不依赖 sst-elements；只需 SST Core。SST 保留固定源码的 [Autotools 引导流程][S8]，单机可禁用 MPI；不将它直接作为普通 CMake 子目录构建。平台 CMake 优先使用 SST 安装后的 [SSTConfig.cmake 导出接口][S7]，结合 sst-config 核对实际 flags，构建 SST 可加载的 MODULE；使用其 Darwin 链接规则，不硬编码 Linux 模块后缀或链接参数。该导出接口仅声明 cxx_std_11，平台必须显式要求 C++17。SST、MQSim 库与平台元素库统一使用 arm64、Apple Clang、相同标准库及 C++ ABI，不混入 x86_64 构建产物。MQSim 由平台 CMake 包装库目标并保留原生 oracle，排除 main.cpp；具体兼容修正属于后续开发。目标环境的构建、原生基线和桥接验证通过前，不宣称该组合已兼容。
 
 预期构建与运行形态：
 
-    cmake -S . -B build -DSST_ROOT=/opt/sst-16.0.0 -DCMAKE_BUILD_TYPE=Release
+    cmake -S . -B build -DSST_ROOT="$PWD/build/deps/sst" -DCMAKE_BUILD_TYPE=Release
     cmake --build build -j2
     python3 tools/run.py --config configs/host.json --output results/host
     python3 tools/run.py --config configs/controller.json --output results/controller
@@ -425,7 +446,7 @@ AC-08 的固定 trace 是存储适配 oracle；AC-02 和端到端示例仍由真
 
 run.py 只校验配置、准备固定种子 smoke 数据和设置元素库路径，再调用 sst scripts/system.py；它不是算法性能模型。最小端到端命令应自动校验数据 hash，输出实际展开的 sst 命令。首次数据/图/真值准备与正式仿真墙钟分开计量。SST 安装前缀、元素库加载参数和注册方式在 M0.2 以所锁定版本实际输出为准，不编造已可使用的命令行集成选项。
 
-deps.lock.json 保存 URL、完整 commit、源码包 SHA256（如使用 archive）、补丁序列/hash 和工具链；构建时校验，不在配置阶段静默下载移动分支。平台有 Git 仓库后再按项目习惯选择 submodule 或已校验 archive，当前不自行初始化仓库。DiskANN 仅留核查记录；默认依赖只加入实际使用者。
+源码依赖已采用 Git submodule：.gitmodules 保存 URL/路径，主仓 gitlink 锁定完整 commit。新检出使用 `git submodule update --init --recursive` 获取主仓记录的版本，不能使用 --remote 自动跟随分支。未来 deps.lock.json 记录相同 URL/commit、上游基线、工具链和配置，并校验其与 gitlink 一致；该文件目前尚未实现。MQSim 后续改动提交到 abcyzj/MQSim fork，先保存到可访问的 fork 提交，再更新主仓指针；SST Core 固定且不修改。fork 提交是 MQSim 改动的权威来源，patches/mqsim 仅可选导出审阅材料，不重复应用同一补丁。DiskANN 仅留核查记录，不加入默认依赖。
 
 保留 SST、MQSim 和将来实际复用代码的许可证与版权文件；上游改动逐补丁解释目的、默认开关、基线影响和验证，不在未实现阶段宣称已能长期无冲突升级。
 
@@ -439,13 +460,13 @@ tiny SSD 几何可从 2 channel × 1 chip/channel × 2 die/chip × 1 plane/die �
 
 计算/控制 launch_ns、rate、slots、buffer_bytes、staging_bytes_per_ns、链路 lane bandwidth/count/packet 参数全部带单位与 source。第一套验证用参数允许人工设定并标为 configured_unvalidated；真实硬件比较另选有来源的配置。链路必须注明十进制 GB/s 与 B/ns 换算，避免 GiB/s 混用。不开工前伪填“校准吞吐”或“预计加速倍数”。
 
-M0.2 先测原生/桥接小 I/O 的墙钟与 peak RSS，再测单查询、32 查询和 max_inflight=1/2/4；依据实际 Linux 配额决定是否增大 N、d 和查询数。报告每个分位数的样本量，小样本 p99 不能当稳定尾延迟。大规模实验不作为 V0.1 交付前置条件。
+M0.2 先测原生/桥接小 I/O 的墙钟与 peak RSS，再测单查询、32 查询和 max_inflight=1/2/4；依据本机可用 CPU/内存决定是否增大 N、d 和查询数。报告每个分位数的样本量，小样本 p99 不能当稳定尾延迟。大规模实验不作为 V0.1 交付前置条件。
 
-## 13. 本轮完成与下一步门槛
+## 13. 已完成与下一步门槛
 
-本轮完成：PRD 全文阅读、SST/MQSim/DiskANN C++ 固定提交静态源码核查、架构/路径/接口/资源设计、任务依赖、风险实验与 AC 映射。仅新增本文。
+原规划完成：PRD 全文阅读、SST/MQSim/DiskANN C++ 固定提交静态源码核查、架构/路径/接口/资源设计、任务依赖、风险实验与 AC 映射。2026-10-27 已补充两个依赖 submodule 的路径、URL、固定 commit 与本机 macOS 工具链盘点；M0.2 仅部分完成。
 
-尚未完成、也未声称通过：Ubuntu 22.04 LTS 构建、MQSim 原生基线、事件桥 PoC、本地路径 PoC、任何 AC 仿真测试、资源参数校准和运行规模测量。进入编码后先做 M0.2/M0.3，并以 E1/E2 作为主体实现的准入条件。
+尚未完成、也未声称通过：本机 macOS 构建、SST 模块加载、MQSim 原生基线、事件桥 PoC、本地路径 PoC、任何 AC 仿真测试、资源参数校准和运行规模测量。后续先补齐 M0.2 工具链与原生基线，再推进 PoC，并以 E1/E2 作为主体实现的准入条件。
 
 ## 源码永久链接
 
@@ -458,6 +479,8 @@ M0.2 先测原生/桥接小 I/O 的墙钟与 peak RSS，再测单查询、32 查
 [S4]: https://github.com/sstsimulator/sst-core/blob/ffd71527bc26a1f2a4fb685fdeb2ca0799997d78/src/sst/core/activity.h#L63
 [S5]: https://github.com/sstsimulator/sst-core/blob/ffd71527bc26a1f2a4fb685fdeb2ca0799997d78/src/sst/core/baseComponent.h#L1096
 [S6]: https://github.com/sstsimulator/sst-core/blob/ffd71527bc26a1f2a4fb685fdeb2ca0799997d78/config/sst_check_python.m4#L48
+[S7]: https://github.com/sstsimulator/sst-core/blob/ffd71527bc26a1f2a4fb685fdeb2ca0799997d78/share/SSTConfig.cmake.in#L1
+[S8]: https://github.com/sstsimulator/sst-core/blob/ffd71527bc26a1f2a4fb685fdeb2ca0799997d78/autogen.sh#L1
 [Q1]: https://github.com/CMU-SAFARI/MQSim/blob/51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16/src/main.cpp#L260
 [Q2]: https://github.com/CMU-SAFARI/MQSim/blob/51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16/src/sim/Engine.cpp#L56
 [Q3]: https://github.com/CMU-SAFARI/MQSim/blob/51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16/src/sim/EventTree.cpp#L243
