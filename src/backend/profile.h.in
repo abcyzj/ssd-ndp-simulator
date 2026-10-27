@@ -1,0 +1,4 @@
+#pragma once
+namespace ndpsim {
+inline constexpr char lifecycle_xml[] = R"mqsim(@LIFECYCLE_XML@)mqsim";
+}

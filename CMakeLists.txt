@@ -1,0 +1,110 @@
+cmake_minimum_required(VERSION 3.22)
+
+# CMake 4 no longer selects a macOS SDK implicitly. Keep a plain configure
+# usable with Command Line Tools, while honoring explicit toolchain settings.
+if(CMAKE_HOST_APPLE AND NOT DEFINED CMAKE_OSX_SYSROOT AND NOT DEFINED ENV{SDKROOT})
+    execute_process(COMMAND xcrun --show-sdk-path OUTPUT_VARIABLE _ndpsim_sdk
+        OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+    set(CMAKE_OSX_SYSROOT "${_ndpsim_sdk}" CACHE PATH "macOS SDK")
+endif()
+project(SSD_NDP_Simulator VERSION 0.1 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
+endif()
+set(SST_ROOT "" CACHE PATH "Existing SST 16.0.0 prefix; empty prepares SST locally")
+if(SST_ROOT)
+    get_filename_component(NDPSIM_SST_PREFIX "${SST_ROOT}" ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
+    set(NDPSIM_SST_MODE external)
+else()
+    file(READ "${PROJECT_SOURCE_DIR}/deps.lock.json" _lock)
+    string(JSON _locked_python GET "${_lock}" tools python path)
+    if(NOT DEFINED Python3_EXECUTABLE AND EXISTS "${_locked_python}")
+        set(Python3_EXECUTABLE "${_locked_python}" CACHE FILEPATH "Python used by SST")
+    endif()
+    find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
+    set(NDPSIM_SST_BUILD_JOBS 2 CACHE STRING "Parallel make jobs for SST")
+    set(NDPSIM_PYTHON_CONFIG "" CACHE FILEPATH "Optional matching python-config")
+    set(NDPSIM_SST_PREFIX "${PROJECT_BINARY_DIR}/_deps/sst-install")
+    set(NDPSIM_SST_MODE bundled)
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
+    execute_process(COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/prepare_sst.py"
+        "--work-dir=${PROJECT_BINARY_DIR}/_deps/sst" "--prefix=${NDPSIM_SST_PREFIX}"
+        "--cc=${CMAKE_C_COMPILER}" "--cxx=${CMAKE_CXX_COMPILER}"
+        "--cflags=${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${_build_type}}"
+        "--cxxflags=${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${_build_type}}"
+        "--ldflags=${CMAKE_EXE_LINKER_FLAGS}" "--sdk=${CMAKE_OSX_SYSROOT}"
+        "--arch=${CMAKE_OSX_ARCHITECTURES}" "--deployment-target=${CMAKE_OSX_DEPLOYMENT_TARGET}"
+        "--python-config=${NDPSIM_PYTHON_CONFIG}" "--jobs=${NDPSIM_SST_BUILD_JOBS}"
+        COMMAND_ERROR_IS_FATAL ANY)
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+        tools/prepare_sst.py deps.lock.json)
+endif()
+set(SST_DIR "${NDPSIM_SST_PREFIX}/lib/cmake/SST")
+find_package(SST 16.0.0 EXACT REQUIRED CONFIG PATHS "${SST_DIR}" NO_DEFAULT_PATH)
+set(NDPSIM_SST_EXECUTABLE "${NDPSIM_SST_PREFIX}/bin/sst")
+set(NDPSIM_SST_INFO_EXECUTABLE "${NDPSIM_SST_PREFIX}/bin/sst-info")
+file(WRITE "${PROJECT_BINARY_DIR}/sst-paths.json"
+    "{\n  \"mode\": \"${NDPSIM_SST_MODE}\",\n  \"prefix\": \"${NDPSIM_SST_PREFIX}\",\n  \"sst\": \"${NDPSIM_SST_EXECUTABLE}\",\n  \"sst_info\": \"${NDPSIM_SST_INFO_EXECUTABLE}\"\n}\n")
+
+# Develop and compile the MQSim fork in place. The native oracle is built
+# separately from the unmodified commit recorded in deps.lock.json.
+set(MQSIM_SOURCE "${CMAKE_SOURCE_DIR}/third_party/MQSim")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS configs/native/ssdconfig.xml)
+file(GLOB_RECURSE MQSIM_SOURCES CONFIGURE_DEPENDS "${MQSIM_SOURCE}/src/*.cpp")
+list(REMOVE_ITEM MQSIM_SOURCES "${MQSIM_SOURCE}/src/main.cpp")
+add_library(mqsim_pic STATIC ${MQSIM_SOURCES})
+set_target_properties(mqsim_pic PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(mqsim_pic PUBLIC "${MQSIM_SOURCE}/src")
+target_compile_options(mqsim_pic PRIVATE -ffp-contract=off)
+
+# A fixed, bounded construction profile for lifecycle smoke only.
+file(READ "${CMAKE_SOURCE_DIR}/configs/native/ssdconfig.xml" LIFECYCLE_XML)
+configure_file(src/backend/profile.h.in generated/profile.h @ONLY)
+add_library(ndpsim_backend STATIC src/backend/lifecycle.cc)
+set_target_properties(ndpsim_backend PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(ndpsim_backend PUBLIC src PRIVATE "${CMAKE_BINARY_DIR}/generated")
+target_link_libraries(ndpsim_backend PUBLIC mqsim_pic)
+
+add_library(ndpsim MODULE src/sst/system.cc)
+target_link_libraries(ndpsim PRIVATE ndpsim_backend SST::SSTCore)
+if(APPLE)
+    # SST resolves its core symbols when loading the element, as in its helper.
+    target_link_options(ndpsim PRIVATE "-undefined" "dynamic_lookup")
+endif()
+target_compile_options(ndpsim PRIVATE -Wall -Wextra)
+
+option(NDPSIM_SANITIZE "Instrument backend lifecycle probes with AddressSanitizer" OFF)
+if(NDPSIM_SANITIZE)
+    foreach(target mqsim_pic ndpsim_backend)
+        target_compile_options(${target} PUBLIC -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(${target} PUBLIC -fsanitize=address)
+    endforeach()
+endif()
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(lifecycle_probe tests/lifecycle_probe.cc)
+    target_link_libraries(lifecycle_probe PRIVATE ndpsim_backend)
+    add_test(NAME backend_lifecycle COMMAND lifecycle_probe)
+    add_test(NAME backend_error COMMAND lifecycle_probe error)
+    add_test(NAME backend_early_teardown COMMAND lifecycle_probe early)
+    add_test(NAME backend_invalid_mqsim_config COMMAND lifecycle_probe invalid-mqsim)
+    if(NOT NDPSIM_SANITIZE)
+        add_test(NAME sst_element_load COMMAND "${NDPSIM_SST_INFO_EXECUTABLE}"
+            "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" ndpsim.System)
+        set_tests_properties(sst_element_load PROPERTIES PASS_REGULAR_EXPRESSION "Component 0: System" TIMEOUT 30)
+        add_test(NAME sst_lifecycle COMMAND "${NDPSIM_SST_EXECUTABLE}"
+            "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/m1.1/lifecycle.py")
+        set_tests_properties(sst_lifecycle PROPERTIES
+            PASS_REGULAR_EXPRESSION "finish SST=1 ns MQSim=0 ns; device destroyed" TIMEOUT 30)
+    endif()
+endif()
+
+add_custom_target(run_lifecycle
+    COMMAND "${NDPSIM_SST_EXECUTABLE}" "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>"
+        "${PROJECT_SOURCE_DIR}/configs/m1.1/lifecycle.py"
+    DEPENDS ndpsim USES_TERMINAL)

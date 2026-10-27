@@ -3,7 +3,9 @@
 日期：2026-10-23（Asia/Shanghai）  
 环境与依赖修订：2026-10-27，构建基线改为本机 macOS（Apple Silicon / arm64），两个依赖 submodule 已初始化；本机工具链见第 12 节。  
 依据：SSD_NDP_Simulator_V0.1_PRD.md，重点覆盖第 9、11 节及 FR-01～FR-10、AC-01～AC-11。  
-状态：设计依据保留；M0.1 静态归档及 M0.2 本机工具链、SST/原生 MQSim 构建与小读基线已完成。未修改依赖源码；平台集成、元素加载及 AC 尚未运行。运行证据见 [M0.2 记录](m0.2-native-baseline.md)。
+截至 M0.2 的历史状态：M0.1 静态归档及 M0.2 本机工具链、SST/原生 MQSim 构建与小读基线已完成，当时未修改依赖源码，平台集成、元素加载及 AC 尚未运行。运行证据见 [M0.2 记录](m0.2-native-baseline.md)；当前 M1.1 进展见下方补记。
+
+2026-10-27 M1.1 进展补记：已完成 PIC 库、`ndpsim.System` 加载及无 I/O 单设备生命周期验收；随后按用户要求将同样的改动直接落实到 `third_party/MQSim`，平台直接编译子模块，不再使用构建时 patch 栈。原生 oracle 保持不变，源码身份及维护方式见 [MQSim 源码维护约定](mqsim-source-management.md)。仅支持 `native-small` profile，事件桥、Host/I/O 路径及 AC 仍未验证；UBSan 随机数溢出、未做泄漏审计等限制见 [M1.1 记录](m1.1-library-lifecycle.md)。本文后续章节保留原设计依据，当前任务状态以 [任务清单](v0.1-tasks.md) 为准。 后续构建流程已按用户要求统一到根 CMake：通过单一 tools/prepare_sst.py 在配置阶段自动准备、构建并私有安装 SST，命中有效缓存则直接复用，可显式指定 SST_ROOT 复用安装，M0.2 脚本不再是前置步骤，实际入口见 [README](../README.md)。
 
 ## 1. 结论与范围
 
@@ -40,7 +42,7 @@ PRD 没有发现必须改变目标才能消除的直接冲突；以下边界需�
 | third_party/MQSim | https://github.com/abcyzj/MQSim.git | 51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16 | 已初始化；与原核查基线一致；后续改动提交到该 fork |
 | third_party/sst-core | https://github.com/sstsimulator/sst-core.git | ffd71527bc26a1f2a4fb685fdeb2ca0799997d78 | 已初始化；固定 v16.0.0_Final 对应 commit；不修改 SST Core |
 
-可用 `git submodule status --recursive`、各子模块的 `git rev-parse HEAD` 和 `git remote get-url origin` 复核；.gitmodules 保存路径/URL，主仓 gitlink 保存固定提交。当前两个子模块的已跟踪源码均无修改。初始化不表示编译、SST 模块加载、原生基线或 AC 已通过。
+可用 `git submodule status --recursive`、各子模块的 `git rev-parse HEAD` 和 `git remote get-url origin` 复核；.gitmodules 保存路径/URL，主仓 gitlink 保存固定提交。初始化盘点时两个子模块的已跟踪源码均无修改；M1.1 之后 MQSim 适配直接保存在该子模块工作区，HEAD 与未提交差异分别记录，SST Core 保持不变。初始化不表示编译、SST 模块加载、原生基线或 AC 已通过。
 
 | 项目 | 选定的核查基线 | 用途与决定 |
 | --- | --- | --- |
@@ -81,7 +83,7 @@ SST 配置脚本使用 Python 是框架接线方式，不表示新增 Python 算
 | 静态状态与退出 | Engine、SSD_Device、cache/host interface 等使用静态实例；错误宏含交互输入，main 也有 cin.get [Q1][Q2][Q4][Q13] | 每个实验进程只建一个设备；批量实验启动新进程；适配入口使用非交互错误报告，保留原生对照构建 |
 | 构建 | 上游 Makefile 使用 C++11、直接链接可执行程序 [Q14] | 平台 CMake 包装源码库，编为 PIC 并验证 C++17 兼容；不假定上游已经导出可链接的集成库 |
 
-计划形成下列小补丁组，分别评审：
+计划形成下列源码改动组，直接在 MQSim 子模块中实现并分别评审：
 
 1. **事件可步进**：src/sim/Engine.h/.cpp；必要时调整 EventTree.h/.cpp 的安全取出接口；不修改 FTL/TSU 策略。
 2. **外部普通 I/O**：新增 IO_Flow_Base 派生的外部 flow，以及 Host_System 的注入/构建路径，保留原有 NVMe/SQ/CQ 完成行为。该基类实际提供受保护的 Submit_io_request 和虚拟 NVMe_consume_io_request；Generate_next_request、Get_statistics 等仍需实现，不能假设 Host_System 已支持外部 flow。[Q17]
@@ -401,7 +403,6 @@ docs、AGENTS.md、.gitmodules、third_party/MQSim 和 third_party/sst-core 已�
     cmake/                       # SST 发现、编译标志与依赖检查
     third_party/MQSim/           # 已初始化：abcyzj/MQSim fork，主仓固定 commit
     third_party/sst-core/        # 已初始化：SST 上游固定 commit，不修改
-    patches/mqsim/               # 可选导出审阅材料；不重复应用 fork 已包含的改动
     include/ndpsim/              # 公开 handles、operation、layout、observer 契约
     src/sst/                    # System Component、事件、ELI 注册
     src/runtime/                # 依赖、任务状态、结果门控
@@ -444,11 +445,11 @@ docs、AGENTS.md、.gitmodules、third_party/MQSim 和 third_party/sst-core 已�
     python3 tools/run.py --config configs/controller.json --output results/controller
     ctest --test-dir build --output-on-failure -L acceptance
 
-run.py 只校验配置、准备固定种子 smoke 数据和设置元素库路径，再调用 sst scripts/system.py；它不是算法性能模型。最小端到端命令应自动校验数据 hash，输出实际展开的 sst 命令。首次数据/图/真值准备与正式仿真墙钟分开计量。SST 安装前缀、元素库加载参数和注册方式在 M0.2 以所锁定版本实际输出为准，不编造已可使用的命令行集成选项。
+run.py 只校验配置、准备固定种子 smoke 数据和设置元素库路径，再调用 sst scripts/system.py；它不是算法性能模型。最小端到端命令应自动校验数据 hash，输出实际展开的 sst 命令。首次数据/图/真值准备与正式仿真墙钟分开计量。上面的 run.py/端到端形态仍为规划；当前已存在的根 CMake 构建、CTest 和 run_lifecycle 入口见 [README](../README.md)。默认 SST 私有前缀为当前构建目录的 _deps/sst-install，不依赖 M0.2 的历史安装。
 
-源码依赖已采用 Git submodule：.gitmodules 保存 URL/路径，主仓 gitlink 锁定完整 commit。新检出使用 `git submodule update --init --recursive` 获取主仓记录的版本，不能使用 --remote 自动跟随分支。M0.2 已实现 [deps.lock.json](../deps.lock.json)，记录相同 URL/commit、空补丁哈希、工具链和配置，并由运行脚本校验其与 gitlink 一致。MQSim 后续改动提交到 abcyzj/MQSim fork，先保存到可访问的 fork 提交，再更新主仓指针；SST Core 固定且不修改。fork 提交是 MQSim 改动的权威来源，patches/mqsim 仅可选导出审阅材料，不重复应用同一补丁。DiskANN 仅留核查记录，不加入默认依赖。
+源码依赖已采用 Git submodule：.gitmodules 保存 URL/路径，主仓 gitlink 锁定完整 commit。新检出使用 `git submodule update --init --recursive` 获取主仓记录的版本，不能使用 --remote 自动跟随分支。M0.2 已实现 [deps.lock.json](../deps.lock.json)，记录相同 URL/commit、空补丁哈希、工具链和配置，并由运行脚本校验其与 gitlink 一致。MQSim 改动直接修改 third_party/MQSim 并直接编译该目录，不维护构建时 patch 栈或另一个集成源码副本。提交时先保存到 abcyzj/MQSim fork 的完整 commit，再更新主仓 gitlink；未提交状态记录 HEAD、相对原生基线的 diff 和文件哈希，不自动提交或推送。SST Core 固定且不修改；未修改原生 oracle 由锁定的原生 commit 独立导出构建，详见 [源码维护约定](mqsim-source-management.md)。DiskANN 仅留核查记录，不加入默认依赖。
 
-保留 SST、MQSim 和将来实际复用代码的许可证与版权文件；上游改动逐补丁解释目的、默认开关、基线影响和验证，不在未实现阶段宣称已能长期无冲突升级。
+保留 SST、MQSim 和将来实际复用代码的许可证与版权文件；每组依赖源码改动解释目的、默认开关、基线影响和验证，不在未实现阶段宣称已能长期无冲突升级。
 
 ### 最小规模与参数来源
 

@@ -2,6 +2,8 @@
 """Build and check the locked, unmodified macOS native M0.2 baselines.
 
 No downloads, submodule initialization, source patches, or element loading.
+MQSim development edits are allowed: the oracle always uses git archive of the
+locked native commit, never the MQSim working tree.
 Use a new --build-root for a clean rebuild; --verify-only reuses its binaries.
 """
 import argparse
@@ -129,17 +131,26 @@ def main():
             'print(sys.version); print(sys.prefix); print(sysconfig.get_config_var("LIBDIR"))'])
         manifest['python_library_sha256'] = sha(Path(prefix)/'lib/libpython3.13.dylib')
         manifest['dependencies'] = {}
+        manifest['source_checkouts'] = {}
         for name, dep in lock['dependencies'].items():
             source = ROOT / dep['path']
             head = run(name+'-head', ['/usr/bin/git', '-C', source, 'rev-parse', 'HEAD']).strip()
-            require(head == dep['commit'], f'{name}: commit differs from lock')
+            if name != 'MQSim':
+                require(head == dep['commit'], f'{name}: commit differs from lock')
             origin = run(name+'-origin', ['/usr/bin/git', '-C', source, 'remote', 'get-url', 'origin']).strip()
             require(origin == dep['url'], f'{name}: origin differs from lock')
             gitlink = run(name+'-gitlink', ['/usr/bin/git', 'ls-files', '--stage', dep['path']]).split()
             require(gitlink[:2] == ['160000', head], f'{name}: index gitlink differs from lock')
             diff = run(name+'-diff', ['/usr/bin/git', '-C', source, 'diff', '--binary', 'HEAD', '--'])
-            require(not diff, f'{name}: native baseline requires pristine tracked source')
-            require(hashlib.sha256(diff.encode()).hexdigest() == dep['patch_sha256'], 'Patch hash mismatch')
+            if name != 'MQSim':
+                require(not diff, f'{name}: requires pristine tracked source')
+            # The exported commit, not the development checkout, is the oracle.
+            run(name+'-native-base', ['/usr/bin/git', '-C', source, 'cat-file', '-e', dep['commit']+'^{commit}'])
+            require(not dep['patches'] and dep['patch_sha256'] == hashlib.sha256(b'').hexdigest(),
+                    'Native oracle must not apply patches')
+            manifest['source_checkouts'][name] = {'head_commit': head,
+                'working_tree_diff_sha256': hashlib.sha256(diff.encode()).hexdigest(),
+                'used_for_native_build': False, 'native_archive_commit': dep['commit']}
             manifest['dependencies'][name] = dict(dep)
 
         prefix_sst = build / 'install/sst'
