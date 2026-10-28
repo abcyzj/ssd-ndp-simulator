@@ -5,13 +5,14 @@ using namespace content;
 void validate(const Config& c){if(!c.count || c.entry>=c.count || !c.k || c.k>c.count || c.width<c.k || !c.batch || !c.budget || !c.chunk)throw std::invalid_argument("invalid graph search count/entry/k/L/B/E/chunk");}
 Bytes ids_bytes(const std::vector<uint32_t>& v){Bytes b;for(auto id:v)for(unsigned j=0;j<4;++j)b.push_back(uint8_t(id>>(8*j)));return b;}
 std::vector<uint32_t> ids(const Bytes& b){if(b.size()%4)throw std::invalid_argument("malformed IDs");std::vector<uint32_t> v;for(size_t i=0;i<b.size();i+=4){uint32_t x=0;for(unsigned j=0;j<4;++j)x|=uint32_t(b[i+j])<<(8*j);v.push_back(x);}return v;}
-GraphSearch::GraphSearch(runtime::Runtime& r,model::HostCpu& c,EventBridge::Clock n,uint64_t q,Config cfg,Bytes qb,Read read,Trace trace,Done done):rt_(r),cpu_(c),now_(std::move(n)),query_(q),config_(cfg),query_bytes_(std::move(qb)),read_(std::move(read)),trace_(std::move(trace)),done_(std::move(done)){validate(cfg);}
+GraphSearch::GraphSearch(runtime::Runtime& r,model::HostCpu& c,EventBridge::Clock n,uint64_t q,Config cfg,Bytes qb,Read read,Trace trace,Done done,Score score):rt_(r),cpu_(c),now_(std::move(n)),query_(q),config_(cfg),query_bytes_(std::move(qb)),read_(std::move(read)),score_(std::move(score)),trace_(std::move(trace)),done_(std::move(done)){validate(cfg);}
 void GraphSearch::await(std::vector<runtime::Handle> hs,std::function<void(std::vector<Bytes>)> f){rt_.when_all(hs,query_,[this,hs,f=std::move(f)](runtime::Outcome o){if(o.failure){for(auto h:hs)rt_.release(h);throw std::runtime_error(o.failure->detail);}std::vector<Bytes> values;for(auto h:hs){values.push_back(rt_.try_get(h));rt_.release(h);}f(std::move(values));});}
 void GraphSearch::start(){score({config_.entry});}
 void GraphSearch::score(std::vector<uint32_t> nodes){
     if(nodes.empty()){select();return;}
     std::vector<runtime::Handle> scores;
-    for(size_t i=0;i<nodes.size();i+=config_.chunk){
+    if(score_){for(auto id:nodes)scored_.insert(id);scores.push_back(score_(nodes));}
+    else for(size_t i=0;i<nodes.size();i+=config_.chunk){
         auto end=std::min(nodes.size(),i+config_.chunk);std::vector<uint32_t> chunk(nodes.begin()+i,nodes.begin()+end);
         std::vector<runtime::Handle> reads;for(auto id:chunk){scored_.insert(id);reads.push_back(read_(Kind::Vector,id));}
         auto h=cpu_.submit(query_,reads,model::Kind::Distance,[query=query_bytes_,chunk](const auto& v){return operators::squared_l2(query,v,chunk);});

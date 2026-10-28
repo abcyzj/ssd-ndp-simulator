@@ -19,6 +19,8 @@ public:
         content::Plan plan;
         std::vector<Request> requests;
     };
+    // Optional research observer; cannot influence the algorithm or storage charge.
+    std::function<void(const Completion&)> observe;
     using Done = std::function<void(Completion)>;
     LocalReads(SSD_Components::Host_Interface_NVMe& host, EventBridge& bridge, EventBridge::Clock now)
       : host_(host), bridge_(bridge), now_(std::move(now)) {}
@@ -107,7 +109,9 @@ public:
                 if(poisoned_) return; // A fatal experiment never emits a later success.
                 auto it=active_.find(id);auto op=std::move(it->second);active_.erase(it);
                 // Remove all adapter ownership before notifying the storage consumer.
-                op.done({id,op.context,op.association.plan(),std::move(op.requests)});
+                Completion completed{id,op.context,op.association.plan(),std::move(op.requests)};
+                if(observe)observe(completed);
+                op.done(std::move(completed));
             });
         }
     }

@@ -306,3 +306,10 @@ if(BUILD_TESTING)
     target_link_libraries(controller_resource_probe PRIVATE ndpsim_controller)
     add_test(NAME controller_resources COMMAND controller_resource_probe)
 endif()
+
+if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
+    add_test(NAME sst_graph_placements COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/run_m3_4.py"
+        --pair --config "${PROJECT_SOURCE_DIR}/configs/m3.4/branch.json" --build "${PROJECT_BINARY_DIR}"
+        --output "${PROJECT_BINARY_DIR}/m3.4-ctest")
+    set_tests_properties(sst_graph_placements PROPERTIES PASS_REGULAR_EXPRESSION "M3.4 paired PASS" TIMEOUT 120)
+endif()

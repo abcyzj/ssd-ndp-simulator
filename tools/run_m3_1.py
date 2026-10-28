@@ -11,12 +11,12 @@ from ann_data import generate, read_dataset, exact_truth, digest, write_json, in
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run(config, build, output, data=None):
+def run(config, build, output, data=None, *, paired=False):
     config, build, output = Path(config).resolve(), Path(build).resolve(), Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     c = json.loads(config.read_text())
-    if c['placement'] != 'host' or c['device_profile'] != 'native-small' or c['max_inflight'] != 1:
-        raise ValueError('Unsupported: M3.1 requires host/native-small/max_inflight=1')
+    if c['placement'] not in (('host', 'controller') if paired else ('host',)) or c['device_profile'] != 'native-small' or c['max_inflight'] != 1:
+        raise ValueError('Unsupported: requires supported placement/native-small/max_inflight=1')
     if not c['parameter_source']:
         raise ValueError('parameter_source is required')
     if data is None:
@@ -52,6 +52,14 @@ def run(config, build, output, data=None):
     params = {key: m[key] for key in ('count', 'dimensions', 'degree', 'queries')}
     params.update(s)
     params.update(h)
+    if paired:
+        required = {'capacity_bytes', 'staging_bytes_per_ns', 'controller_slots', 'launch_ns', 'flops_per_ns', 'scratch_bytes', 'vector_sector_bound'}
+        if set(c['controller']) != required:
+            raise ValueError('controller configuration keys differ from schema')
+        for key, val in c['controller'].items():
+            integer(val, key, 0 if key in ('launch_ns', 'scratch_bytes') else 1, 2**64-1)
+        params.update(c['controller'])
+        params['placement'] = c['placement']
     params.update(data=str(data), output=str(output / 'events.jsonl'))
     write_json(output / 'sst-params.json', params)
     write_json(output / 'config.json', c)
@@ -59,7 +67,7 @@ def run(config, build, output, data=None):
     ads = (4+4*m['degree']+511)//512*512
     write_json(output / 'layout.json', dict(sector_bytes=512, vector_base=0, vector_stride=vs,
                adjacency_base=m['count']*vs, adjacency_stride=ads,
-               end_lba=m['count']*(vs+ads)//512, query_residency='HostMemory', data_residency='SSDStorage'))
+               end_lba=m['count']*(vs+ads)//512, query_residency='HostMemory + DeviceBuffer until CloseAck' if c['placement']=='controller' else 'HostMemory', data_residency='SSDStorage'))
     shutil.copyfile(ROOT / 'configs/native/ssdconfig.xml', output / 'ssdconfig.xml')
     argv = [paths['sst'], '--add-lib-path='+str(build), str(ROOT / 'configs/m3.1/host.py')]
     env = dict(os.environ, NDPSIM_M31_PARAMS=str(output / 'sst-params.json'))
@@ -91,7 +99,7 @@ def run(config, build, output, data=None):
     base = json.loads((ROOT/'deps.lock.json').read_text())['dependencies']['MQSim']['commit']
     names = subprocess.check_output(['git','-C',str(mqsim),'ls-files','--cached','--others','--exclude-standard','-z']).decode().split('\0')
     source_files = [ROOT/'CMakeLists.txt', ROOT/'deps.lock.json', *sorted((ROOT/'src').rglob('*.cc')),
-                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/m3.1/host.py']
+                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/m3.1/host.py', ROOT/'tools/run_m3_4.py', ROOT/'tools/compare_m3_4.py']
     write_json(output / 'manifest.json', dict(data=str(data), dataset=m, config_sha256=digest(config),
         truth_sha256=digest(data/'truth.json'), code_commit=git('rev-parse', 'HEAD'),
         source_sha256={str(p.relative_to(ROOT)):digest(p) for p in source_files},
@@ -105,10 +113,10 @@ def run(config, build, output, data=None):
         artifacts_sha256={name:digest(output/name) for name in ('events.jsonl','config.json','layout.json','ssdconfig.xml','results.json','sst-params.json')},
         assumptions=['single SSD/native-small/SIMPLE/TURNED_OFF; CMT retained',
                      'deterministic page preload drained before measurement; no cross-query object cache',
-                     'sequential query admission; host control and distance share FIFO slots',
+                     'sequential query admission; host control; distance placement='+c['placement'],
                      'MQSim owns ordinary PCIe; no platform transfer fee',
                      'configured_unvalidated hardware costs; simplified graph, no DiskANN claim']))
-    print(f"M3.1 host queries={len(results)} Recall@{s['k']}={report['recall_at_k']:.8f} output={output}")
+    print(f"{('M3.4 '+c['placement']) if paired else 'M3.1 host'} queries={len(results)} Recall@{s['k']}={report['recall_at_k']:.8f} output={output}")
     return report
 
 

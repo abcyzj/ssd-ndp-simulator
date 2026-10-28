@@ -65,7 +65,7 @@ python3 tools/run_m3_1.py --config configs/m3.1/host.json --build build/m3.1 --o
 
 默认生成 2048×32 向量和 32 个查询，独立离线穷举真值后，在真实 SST/MQSim 普通 NVMe 路径执行确定性主机图搜索，输出 top-k、Recall@10、模拟延迟、逐批决策/访问轨迹及配置/源码哈希。数据输入可用 `--data` 指定。完整本任务验收：`python3 tools/verify_m3_1.py`。
 
-当前限定单 SSD、顺序查询、简化图示例，参数为 configured_unvalidated；该图搜索入口尚未接入盘控评分服务（待 M3.4）。数据格式、成本假设、运行证据与限制见 [M3.1 文档](docs/m3.1-host-graph.md)。
+当前限定单 SSD、顺序查询、简化图示例，参数为 configured_unvalidated；成对盘控接入见下方 M3.4 入口。数据格式、成本假设、运行证据与限制见 [M3.1 文档](docs/m3.1-host-graph.md)。
 
 
 ## M3.2a 设备本地存储服务
@@ -82,4 +82,15 @@ python3 tools/verify_m3_2a.py
 python3 tools/verify_m3_3.py
 ```
 
-通过共享 PCIe 和设备本地读取执行真实 L2，模型含 FIFO/slots、容量 credit、staging、确定性 chunk 和 query/输入/结果释放。验收覆盖单工作块容量竞争、超大块拒绝、六类安全失败回收、跨页和独立原生普通读回归。模型参数未校准；成对图搜索接入属于 M3.4。接口、公式、证据与限制见 [M3.3 文档](docs/m3.3-controller-buffer.md)。
+通过共享 PCIe 和设备本地读取执行真实 L2，模型含 FIFO/slots、容量 credit、staging、确定性 chunk 和 query/输入/结果释放。验收覆盖单工作块容量竞争、超大块拒绝、六类安全失败回收、跨页和独立原生普通读回归。模型参数未校准；成对图搜索接入已由 M3.4 完成。接口、公式、证据与限制见 [M3.3 文档](docs/m3.3-controller-buffer.md)。
+
+
+## M3.4 成对放置与逐批对照
+
+```sh
+cmake -S . -B build/m3.4
+cmake --build build/m3.4 -j4
+python3 tools/run_m3_4.py --pair --config configs/m3.4/host.json --build build/m3.4 --output results/m3.4-pair
+```
+
+两种放置共享同一份数据与独立真值，在真实 SST/MQSim 执行相同的主机控制搜索。自动核对逐批候选/扩展、top-k、距离容差及完整 PCIe/本地读取账本；结果见输出目录 comparison.json。也可分别使用 `configs/m3.4/host.json`、`configs/m3.4/controller.json`，配合 `--data` 复用同一输入。完整验收：`python3 tools/verify_m3_4.py`。实现、实际证据及顺序查询/未校准参数等限制见 [M3.4 文档](docs/m3.4-placements.md)。

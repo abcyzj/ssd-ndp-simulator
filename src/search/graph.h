@@ -11,14 +11,15 @@ struct Decision { uint64_t time; std::vector<operators::Score> candidates; std::
 class GraphSearch {
 public:
     using Read=std::function<runtime::Handle(content::Kind,uint32_t)>;
+    using Score=std::function<runtime::Handle(const std::vector<uint32_t>&)>;
     using Trace=std::function<void(const Decision&)>;
     using Done=std::function<void(std::vector<operators::Score>,uint32_t)>;
     GraphSearch(runtime::Runtime&,model::HostCpu&,EventBridge::Clock,uint64_t,
-                Config,content::Bytes,Read,Trace,Done);
+                Config,content::Bytes,Read,Trace,Done,Score={});
     void start();
 private:
     runtime::Runtime& rt_;model::HostCpu& cpu_;EventBridge::Clock now_;uint64_t query_;
-    Config config_;content::Bytes query_bytes_,all_;Read read_;Trace trace_;Done done_;
+    Config config_;content::Bytes query_bytes_,all_;Read read_;Score score_;Trace trace_;Done done_;
     std::set<uint32_t> scored_,expanded_;
     void score(std::vector<uint32_t>);
     void select();
