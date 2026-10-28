@@ -29,10 +29,11 @@ public:
     std::vector<IO_Flow_Parameter_Set*> partitions;
     std::unique_ptr<ndpsim::PreloadWindow> window;
     unsigned done=0, preload=0, target=1;
-    bool measuring=false, small_cmt=false;
+    bool measuring=false, small_cmt=false, single_read=false;
     unsigned baseline_read_misses=0;
     uint64_t origin=0;
-    OrdinaryFixture(bool miss=false,unsigned qd=1):target(qd),small_cmt(miss) {
+    OrdinaryFixture(bool miss=false,unsigned qd=1,bool single=false,uint64_t read_delay=0):target(qd),small_cmt(miss),single_read(single) {
+        if(read_delay>1000000000 || (single && qd!=1))throw std::invalid_argument("invalid isolated NAND experiment");
         partition.Channel_No=2; partition.Channel_IDs=channels.data();
         partition.Chip_No=1; partition.Chip_IDs=chips.data();
         partition.Die_No=2; partition.Die_IDs=dies.data();
@@ -45,6 +46,9 @@ public:
         std::vector<char> xml(text.begin(),text.end()); xml.push_back(0);
         rapidxml::xml_document<> doc; doc.parse<rapidxml::parse_validate_closing_tags>(xml.data());
         Execution_Parameter_Set config; config.XML_deserialize(doc.first_node("Execution_Parameter_Set"));
+        Flash_Parameter_Set::Page_Read_Latency_LSB+=read_delay;
+        Flash_Parameter_Set::Page_Read_Latency_CSB+=read_delay;
+        Flash_Parameter_Set::Page_Read_Latency_MSB+=read_delay;
         Simulator->Reset(); device=std::make_unique<SSD_Device>(&config.SSD_Device_Configuration,&partitions);
         link=std::make_unique<Host_Components::PCIe_Link>("link",nullptr,nullptr);
         sw=std::make_unique<Host_Components::PCIe_Switch>(link.get(),device->Host_interface);
@@ -111,7 +115,7 @@ public:
 #endif
                 std::printf("MAP %u %llu %llu\n",i,(unsigned long long)ppa,(unsigned long long)state);
             }
-            for(unsigned i=0;i<target;++i) window->read(7+(i%16)*16,10);
+            for(unsigned i=0;i<target;++i) window->read(single_read?0:7+(i%16)*16,single_read?1:10);
         }
     }
     void verify() {

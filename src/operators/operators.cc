@@ -1,6 +1,7 @@
 #include "operators/operators.h"
 #include <cmath>
 #include <cstring>
+#include <cstdio>
 #include <limits>
 #include <set>
 namespace ndpsim::operators {
@@ -22,10 +23,20 @@ std::vector<Score> scores(const content::Bytes& b) {
     std::vector<Score> out;for(size_t i=0;i<b.size();i+=12){auto u=get(b,i+4,8);double d;std::memcpy(&d,&u,8);if(!std::isfinite(d)||d<0)throw content::Error(Code::InvalidArgument,"invalid squared distance");out.push_back({uint32_t(get(b,i,4)),d});}return out;
 }
 Result squared_l2(const content::Bytes& query,const std::vector<content::Bytes>& vectors,const std::vector<uint32_t>& ids) {
+#ifdef NDPSIM_SLOW_FUNCTIONAL
+    static const bool announced=[]{std::fputs("NDPSIM_FUNCTIONAL_VARIANT repeated_l2=2048\n",stderr);return true;}();
+    (void)announced;
+#endif
     auto q=decode(query);if(vectors.size()!=ids.size())throw content::Error(Code::InvalidArgument,"vector/ID count mismatch");
     if(vectors.size()>UINT64_MAX/12 || q.size()>UINT64_MAX/4 || (vectors.size() && q.size()>UINT64_MAX/4/vectors.size()))throw content::Error(Code::Overflow,"L2 work overflow");
     Result r;std::set<uint32_t> unique;
-    for(size_t j=0;j<vectors.size();++j){if(!unique.insert(ids[j]).second)throw content::Error(Code::InvalidArgument,"duplicate vector ID");auto v=decode(vectors[j]);if(v.size()!=q.size())throw content::Error(Code::InvalidArgument,"L2 dimension mismatch");double sum=0;for(size_t i=0;i<q.size();++i){double delta=double(q[i])-double(v[i]);double square=delta*delta;sum=sum+square;}pack(r.bytes,{ids[j],sum});}
+    for(size_t j=0;j<vectors.size();++j){if(!unique.insert(ids[j]).second)throw content::Error(Code::InvalidArgument,"duplicate vector ID");auto v=decode(vectors[j]);if(v.size()!=q.size())throw content::Error(Code::InvalidArgument,"L2 dimension mismatch");double sum=0;for(size_t i=0;i<q.size();++i){double delta=double(q[i])-double(v[i]);double square=delta*delta;sum=sum+square;}
+#ifdef NDPSIM_SLOW_FUNCTIONAL
+        // Same dimension order and result; volatile prevents dead-code elimination.
+        // This is simulator implementation overhead, never target hardware work.
+        for(unsigned repeat=0;repeat<2048;++repeat){volatile double repeated=0;for(size_t i=0;i<q.size();++i){double delta=double(q[i])-double(v[i]);double square=delta*delta;repeated=repeated+square;}if(repeated!=sum)throw std::logic_error("equivalent L2 mismatch");}
+#endif
+        pack(r.bytes,{ids[j],sum});}
     r.work.elements=q.size()*vectors.size();r.work.flops=3*r.work.elements;
     if(4*r.work.elements>UINT64_MAX-query.size())throw content::Error(Code::Overflow,"L2 byte count overflow");
     r.work.read_bytes=query.size()+4*r.work.elements;r.work.write_bytes=r.work.output_bytes=r.bytes.size();return r;

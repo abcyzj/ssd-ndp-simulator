@@ -29,6 +29,7 @@ def union(intervals):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--quick', action='store_true', help='Small runtime matrix for CTest; no recursive build')
+    parser.add_argument('--matrix-only', action='store_true', help='Full matrix with an already built platform')
     parser.add_argument('--build', type=Path, default=ROOT/'build/m4.1')
     parser.add_argument('--output', type=Path, default=ROOT/'docs/evidence/m4.1')
     a = parser.parse_args(); out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
@@ -78,7 +79,7 @@ def main():
         stats.pop('wall_seconds');runs[name]=(result,stats)
         return result,stats
     try:
-        if not a.quick:
+        if not a.quick and not a.matrix_only:
             cmake=json.loads((ROOT/'deps.lock.json').read_text())['tools']['cmake']['path']
             command('configure',[cmake,'-S',ROOT,'-B',a.build]);command('build',[cmake,'--build',a.build,'-j4'])
             command('ctest',[Path(cmake).with_name('ctest'),'--test-dir',a.build,'--output-on-failure'])

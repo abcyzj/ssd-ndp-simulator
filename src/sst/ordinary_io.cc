@@ -9,9 +9,10 @@ class IOWake: public SST::Event {public: uint64_t generation; explicit IOWake(ui
 class OrdinaryIO: public SST::Component {
 public:
     SST_ELI_REGISTER_COMPONENT(OrdinaryIO,"ndpsim","OrdinaryIO",SST_ELI_ELEMENT_VERSION(0,1,0),"Ordinary NVMe validation",COMPONENT_CATEGORY_UNCATEGORIZED)
-    SST_ELI_DOCUMENT_PARAMS({"observe","Passive research observation","0"},{"miss","Small CMT","0"},{"qd","Concurrent submissions","1"})
+    SST_ELI_DOCUMENT_PARAMS({"observe","Passive research observation","0"},{"miss","Small CMT","0"},{"qd","Concurrent submissions","1"},
+        {"single_read","Isolated one-sector NAND experiment","0"},{"read_delay","Additional NAND read ns (acceptance only)","0"})
     OrdinaryIO(SST::ComponentId_t id,SST::Params& p):SST::Component(id) {
-        fixture=std::make_unique<OrdinaryFixture>(p.find<int>("miss",0),p.find<unsigned>("qd",1));
+        fixture=std::make_unique<OrdinaryFixture>(p.find<int>("miss",0),p.find<unsigned>("qd",1),p.find<int>("single_read",0),p.find<uint64_t>("read_delay",0));
         if(p.find<int>("observe",0)) {
             observation=std::make_unique<Observation>();
             fixture->flow->submitted=[this](uint64_t id,uint64_t lba,unsigned n){if(fixture->measuring) observation->request("request_submit",id,Simulator->Time(),lba,n);};

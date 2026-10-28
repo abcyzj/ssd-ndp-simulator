@@ -201,6 +201,10 @@ set_target_properties(ndpsim_operators PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(ndpsim_operators PUBLIC ndpsim_content)
 # Fixed dimension-order binary64 operations, including under Release/global fast-math flags.
 target_compile_options(ndpsim_operators PRIVATE -Wall -Wextra -fno-fast-math -ffp-contract=off)
+option(NDPSIM_SLOW_FUNCTIONAL "Acceptance-only equivalent L2 implementation with repeated arithmetic" OFF)
+if(NDPSIM_SLOW_FUNCTIONAL)
+    target_compile_definitions(ndpsim_operators PRIVATE NDPSIM_SLOW_FUNCTIONAL=1)
+endif()
 add_library(ndpsim_host STATIC src/model/host_cpu.cc)
 set_target_properties(ndpsim_host PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(ndpsim_host PUBLIC ndpsim_runtime ndpsim_operators)
@@ -318,4 +322,7 @@ if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
     add_test(NAME sst_graph_concurrency_output COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/verify_m4_1.py"
         --quick --build "${PROJECT_BINARY_DIR}" --output "${PROJECT_BINARY_DIR}/m4.1-ctest")
     set_tests_properties(sst_graph_concurrency_output PROPERTIES PASS_REGULAR_EXPRESSION "M4.1 PASS" TIMEOUT 120)
+    add_test(NAME acceptance_parameter_regression COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/verify_m4_2.py"
+        --quick --build "${PROJECT_BINARY_DIR}" --output "${PROJECT_BINARY_DIR}/m4.2-ctest")
+    set_tests_properties(acceptance_parameter_regression PROPERTIES PASS_REGULAR_EXPRESSION "M4.2 PASS" TIMEOUT 180)
 endif()
