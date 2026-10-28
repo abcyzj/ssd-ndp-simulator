@@ -8,7 +8,7 @@ const char* name(Code c) {
 #define CASE(x) case Code::x:return #x;
         CASE(NotReady) CASE(InvalidHandle) CASE(Released) CASE(WrongLocation) CASE(PermissionDenied)
         CASE(VersionMismatch) CASE(OutOfRange) CASE(Overflow) CASE(InvalidArgument) CASE(Unsupported)
-        CASE(DependencyFailed) CASE(BackendFailure)
+        CASE(DependencyFailed) CASE(BackendFailure) CASE(CapacityExceeded)
 #undef CASE
     }
     return "Unknown";

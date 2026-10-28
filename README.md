@@ -65,7 +65,7 @@ python3 tools/run_m3_1.py --config configs/m3.1/host.json --build build/m3.1 --o
 
 默认生成 2048×32 向量和 32 个查询，独立离线穷举真值后，在真实 SST/MQSim 普通 NVMe 路径执行确定性主机图搜索，输出 top-k、Recall@10、模拟延迟、逐批决策/访问轨迹及配置/源码哈希。数据输入可用 `--data` 指定。完整本任务验收：`python3 tools/verify_m3_1.py`。
 
-当前限定单 SSD、顺序查询、简化图示例，参数为 configured_unvalidated；盘控及其他后续能力尚未实现。数据格式、成本假设、运行证据与限制见 [M3.1 文档](docs/m3.1-host-graph.md)。
+当前限定单 SSD、顺序查询、简化图示例，参数为 configured_unvalidated；该图搜索入口尚未接入盘控评分服务（待 M3.4）。数据格式、成本假设、运行证据与限制见 [M3.1 文档](docs/m3.1-host-graph.md)。
 
 
 ## M3.2a 设备本地存储服务
@@ -74,4 +74,12 @@ python3 tools/run_m3_1.py --config configs/m3.1/host.json --build build/m3.1 --o
 python3 tools/verify_m3_2a.py
 ```
 
-覆盖真实 SST/MQSim 跨页与乱序汇总、稳定请求/事务关联、失败诊断、安全清理、零向量 D2H 和独立原生普通读回归。当前只完成存储服务；消息共享、缓冲 staging/credit 和盘控计算仍属后续任务。实现边界与证据见 [M3.2a 文档](docs/m3.2a-local-read.md)。
+覆盖真实 SST/MQSim 跨页与乱序汇总、稳定请求/事务关联、失败诊断、安全清理、零向量 D2H 和独立原生普通读回归。M3.2a 仅完成存储服务；消息共享及缓冲/盘控计算分别见后续已实现的 M3.2b/M3.3。实现边界与证据见 [M3.2a 文档](docs/m3.2a-local-read.md)。
+
+## M3.3 盘控评分、计算与缓冲
+
+```sh
+python3 tools/verify_m3_3.py
+```
+
+通过共享 PCIe 和设备本地读取执行真实 L2，模型含 FIFO/slots、容量 credit、staging、确定性 chunk 和 query/输入/结果释放。验收覆盖单工作块容量竞争、超大块拒绝、六类安全失败回收、跨页和独立原生普通读回归。模型参数未校准；成对图搜索接入属于 M3.4。接口、公式、证据与限制见 [M3.3 文档](docs/m3.3-controller-buffer.md)。

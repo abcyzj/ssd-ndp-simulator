@@ -9,7 +9,7 @@
 namespace ndpsim::content {
 using Bytes = std::vector<uint8_t>;
 enum class Code { NotReady, InvalidHandle, Released, WrongLocation, PermissionDenied,
-    VersionMismatch, OutOfRange, Overflow, InvalidArgument, Unsupported, DependencyFailed, BackendFailure };
+    VersionMismatch, OutOfRange, Overflow, InvalidArgument, Unsupported, DependencyFailed, BackendFailure, CapacityExceeded };
 const char* name(Code);
 struct Context { uint64_t query=0, task=0, time_ns=0; };
 struct Error : std::runtime_error {
