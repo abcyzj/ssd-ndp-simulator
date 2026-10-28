@@ -54,3 +54,15 @@ python3 tools/verify_m2_1.py
 ```
 
 根 CMake 构建、独立布局核对、真实 MQSim 普通跨页请求、所有权及 ASan 检查的日志保存在 `docs/evidence/m2.1/`。接口与未覆盖能力见 [M2.1 说明](docs/m2.1-content-layout.md)。
+
+## M3.1 主机图搜索
+
+```sh
+cmake -S . -B build/m3.1
+cmake --build build/m3.1 -j4
+python3 tools/run_m3_1.py --config configs/m3.1/host.json --build build/m3.1 --output results/m3.1-host
+```
+
+默认生成 2048×32 向量和 32 个查询，独立离线穷举真值后，在真实 SST/MQSim 普通 NVMe 路径执行确定性主机图搜索，输出 top-k、Recall@10、模拟延迟、逐批决策/访问轨迹及配置/源码哈希。数据输入可用 `--data` 指定。完整本任务验收：`python3 tools/verify_m3_1.py`。
+
+当前限定单 SSD、顺序查询、简化图示例，参数为 configured_unvalidated；盘控及其他后续能力尚未实现。数据格式、成本假设、运行证据与限制见 [M3.1 文档](docs/m3.1-host-graph.md)。
