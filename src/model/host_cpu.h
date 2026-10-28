@@ -11,7 +11,7 @@ struct HostConfig {
     std::string source="configured_unvalidated";
 };
 uint64_t service_ns(const operators::Work&,Kind,const HostConfig&);
-struct Service { uint64_t task, submitted_ns, start_ns, end_ns, service_ns; Kind kind; operators::Work work; };
+struct Service { uint64_t task, submitted_ns, start_ns, end_ns, service_ns; Kind kind; operators::Work work; uint64_t query=0, ready_ns=0; };
 // Trusted invoke adapter. Inputs must already be visible HostMemory runtime handles.
 // Owner and Runtime/bridge outlive all queued callbacks. No standalone clock or PCIe fee.
 class HostCpu {

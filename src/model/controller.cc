@@ -24,10 +24,12 @@ void BufferModel::reserve(uint64_t bytes,content::Context c,std::string lifetime
     if(!bytes || !done)throw Error(Code::InvalidArgument,"invalid reservation",c);
     if(bytes>capacity_)throw Error(Code::CapacityExceeded,"single block exceeds buffer",c);
     if(next_==UINT64_MAX)throw Error(Code::Overflow,"credit ID");
+    c.time_ns=now_();
     queue_.push_back({++next_,bytes,c,std::move(lifetime),std::move(done)});pump();
 }
 void BufferModel::pump(){while(!queue_.empty() && queue_.front().bytes<=capacity_-used_){
     auto r=std::move(queue_.front());queue_.pop_front();used_+=r.bytes;peak_=std::max(peak_,used_);
+    wait_ns_=checked_add(wait_ns_,now_()-r.context.time_ns);
     auto id=r.id;auto done=std::move(r.done);r.done={};
     records_.push_back({now_(),id,r.context.query,r.context.task,r.bytes,used_,true,r.lifetime});live_.emplace(id,std::move(r));
     bridge_.enqueue(now_(),EventBridge::ContinueSubmit,"credit granted",[done=std::move(done),id]{done(id);});

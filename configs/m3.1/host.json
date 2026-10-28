@@ -2,8 +2,31 @@
   "placement": "host",
   "device_profile": "native-small",
   "max_inflight": 1,
-  "generate": {"n": 2048, "d": 32, "degree": 16, "queries": 32, "seed": 42, "fixture": "smoke"},
-  "search": {"entry": 0, "k": 10, "width": 32, "batch": 1, "budget": 64, "chunk": 16},
-  "host": {"slots": 1, "distance_setup": 3, "distance_rate": 4, "control_setup": 1, "control_rate": 1, "check_units": 1, "comparison_units": 1},
-  "parameter_source": "configured_unvalidated"
+  "generate": {
+    "n": 2048,
+    "d": 32,
+    "degree": 16,
+    "queries": 32,
+    "seed": 42,
+    "fixture": "smoke"
+  },
+  "search": {
+    "entry": 0,
+    "k": 10,
+    "width": 32,
+    "batch": 1,
+    "budget": 64,
+    "chunk": 16
+  },
+  "host": {
+    "slots": 1,
+    "distance_setup": 3,
+    "distance_rate": 4,
+    "control_setup": 1,
+    "control_rate": 1,
+    "check_units": 1,
+    "comparison_units": 1
+  },
+  "parameter_source": "configured_unvalidated",
+  "event_log": true
 }

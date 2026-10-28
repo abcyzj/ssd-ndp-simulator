@@ -36,11 +36,12 @@ public:
     void release(uint64_t id,uint64_t bytes);
     uint64_t used() const{return used_;}
     uint64_t peak() const{return peak_;}
+    uint64_t wait_ns() const{return wait_ns_;}
     size_t waiting() const{return queue_.size();}
     const std::vector<CreditRecord>& records() const{return records_;}
 private:
     struct Request {uint64_t id,bytes;content::Context context;std::string lifetime;std::function<void(uint64_t)> done;};
-    EventBridge& bridge_;EventBridge::Clock now_;uint64_t capacity_,used_=0,peak_=0,next_=0;
+    EventBridge& bridge_;EventBridge::Clock now_;uint64_t capacity_,used_=0,peak_=0,next_=0,wait_ns_=0;
     std::deque<Request> queue_;std::map<uint64_t,Request> live_;std::vector<CreditRecord> records_;
     void pump();
 };

@@ -94,3 +94,15 @@ python3 tools/run_m3_4.py --pair --config configs/m3.4/host.json --build build/m
 ```
 
 两种放置共享同一份数据与独立真值，在真实 SST/MQSim 执行相同的主机控制搜索。自动核对逐批候选/扩展、top-k、距离容差及完整 PCIe/本地读取账本；结果见输出目录 comparison.json。也可分别使用 `configs/m3.4/host.json`、`configs/m3.4/controller.json`，配合 `--data` 复用同一输入。完整验收：`python3 tools/verify_m3_4.py`。实现、实际证据及顺序查询/未校准参数等限制见 [M3.4 文档](docs/m3.4-placements.md)。
+
+## M4.1 有限并发与 JSON/CSV 输出
+
+```sh
+cmake -S . -B build/m4.1
+cmake --build build/m4.1 -j4
+python3 tools/run_m4_1.py --config configs/m4.1/host.json --build build/m4.1 --output results/m4.1-host
+python3 tools/run_m4_1.py --config configs/m4.1/controller.json --build build/m4.1 --output results/m4.1-controller
+python3 tools/verify_m4_1.py
+```
+
+配置 `max_inflight` 可设为 1/2/4，盘控接纳同时保留工作块空间；`event_log` 默认 false，关闭日志仍输出完整结果、资源统计、能力声明和 manifest。JSON/CSV 含每查询接纳等待及端到端延迟、带样本数的分位数、吞吐、计算/流量/缓冲和 channel/die 区间并集。提交、回收与测量口径及未校准/观测内存限制见 [M4.1 文档](docs/m4.1-concurrency-output.md)。

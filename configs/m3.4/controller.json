@@ -36,5 +36,6 @@
     "flops_per_ns": 16,
     "scratch_bytes": 0,
     "vector_sector_bound": 512
-  }
+  },
+  "event_log": true
 }

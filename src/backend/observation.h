@@ -6,13 +6,23 @@
 #include <vector>
 #include <cstdio>
 #include <stdexcept>
+#include <functional>
+#include <string>
+#include <cstdarg>
 namespace ndpsim {
 class Observation {
     struct Interval {std::string kind; uint64_t start,end; unsigned channel,chip,die;};
     std::vector<Interval> intervals_;
     std::map<std::tuple<unsigned,unsigned,unsigned>,uint64_t> ready_;
     uint64_t sequence_=0;
+    void output(bool stat,const char* format,...) {
+        va_list args;va_start(args,format);va_list copy;va_copy(copy,args);auto n=std::vsnprintf(nullptr,0,format,copy);va_end(copy);
+        std::vector<char> text(n+1);std::vsnprintf(text.data(),text.size(),format,args);va_end(args);
+        if(emit){std::string v(text.data());auto start=v.find('{');v=v.substr(start);if(!v.empty() && v.back()=='\n')v.pop_back();emit(stat,v);}
+        else std::printf("%s",text.data());
+    }
 public:
+    std::function<void(bool,const std::string&)> emit;
     Observation() {
         if(MQSimObservation::sink) throw std::logic_error("observer already attached");
         MQSimObservation::sink=[this](const char* kind,uint64_t start,uint64_t end,unsigned c,unsigned h,unsigned d) {
@@ -33,7 +43,7 @@ public:
     }
     ~Observation(){MQSimObservation::sink={};}
     void request(const char* kind,uint64_t id,uint64_t time,uint64_t lba,unsigned sectors) {
-        std::printf("OBS {\"sequence\":%llu,\"event_kind\":\"%s\",\"time_ns\":%llu,\"device\":0,\"request_id\":%llu,\"lba\":%llu,\"bytes\":%u,\"byte_basis\":\"sector\",\"source\":\"external_flow\",\"query_id\":null,\"task_id\":null,\"null_reason\":\"storage fixture has no algorithm IDs\"}\n",++sequence_,kind,time,id,lba,sectors*512);
+        output(false,"OBS {\"sequence\":%llu,\"event_kind\":\"%s\",\"time_ns\":%llu,\"device\":0,\"request_id\":%llu,\"lba\":%llu,\"bytes\":%u,\"byte_basis\":\"sector\",\"source\":\"external_flow\",\"query_id\":null,\"task_id\":null,\"null_reason\":\"storage fixture has no algorithm IDs\"}\n",++sequence_,kind,time,id,lba,sectors*512);
     }
     void report(uint64_t begin,uint64_t end) {
         using Key=std::tuple<std::string,unsigned,int,int>;
@@ -41,7 +51,7 @@ public:
         for(const auto& i:intervals_) {
             auto a=std::max(begin,i.start),b=std::min(end,i.end);
             if(b<a || i.end<begin || i.start>end) continue;
-            std::printf("OBS {\"sequence\":%llu,\"event_kind\":\"interval\",\"kind\":\"%s\",\"time_ns\":%llu,\"start_ns\":%llu,\"end_ns\":%llu,\"device\":0,\"channel\":%u,\"chip\":%u,\"die\":%u,\"source\":\"MQSim\",\"request_id\":null,\"transaction_ids\":null,\"null_reason\":\"chip command hook has no request or transaction identity\"}\n",++sequence_,i.kind.c_str(),b,a,b,i.channel,i.chip,i.die);
+            output(false,"OBS {\"sequence\":%llu,\"event_kind\":\"interval\",\"kind\":\"%s\",\"time_ns\":%llu,\"start_ns\":%llu,\"end_ns\":%llu,\"device\":0,\"channel\":%u,\"chip\":%u,\"die\":%u,\"source\":\"MQSim\",\"request_id\":null,\"transaction_ids\":null,\"null_reason\":\"chip command hook has no request or transaction identity\"}\n",++sequence_,i.kind.c_str(),b,a,b,i.channel,i.chip,i.die);
             groups[{i.kind,i.channel,i.chip,i.die}].push_back({a,b});
             if(i.kind.find("bus")!=std::string::npos) groups[{"bus",i.channel,-1,-1}].push_back({a,b});
         }
@@ -51,7 +61,7 @@ public:
             for(auto x:v) {if(x.first>b) {total+=b-a;a=x.first;b=x.second;} else b=std::max(b,x.second);}
             total+=b-a;
             auto [kind,c,h,d]=g.first;
-            std::printf("STAT {\"kind\":\"%s\",\"channel\":%u,\"chip\":%d,\"die\":%d,\"union_ns\":%llu,\"window_start_ns\":%llu,\"window_end_ns\":%llu}\n",kind.c_str(),c,h,d,total,begin,end);
+            output(true,"STAT {\"kind\":\"%s\",\"channel\":%u,\"chip\":%d,\"die\":%d,\"union_ns\":%llu,\"window_start_ns\":%llu,\"window_end_ns\":%llu}\n",kind.c_str(),c,h,d,total,begin,end);
         }
     }
 };

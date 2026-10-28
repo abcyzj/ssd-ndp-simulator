@@ -313,3 +313,9 @@ if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
         --output "${PROJECT_BINARY_DIR}/m3.4-ctest")
     set_tests_properties(sst_graph_placements PROPERTIES PASS_REGULAR_EXPRESSION "M3.4 paired PASS" TIMEOUT 120)
 endif()
+
+if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
+    add_test(NAME sst_graph_concurrency_output COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/verify_m4_1.py"
+        --quick --build "${PROJECT_BINARY_DIR}" --output "${PROJECT_BINARY_DIR}/m4.1-ctest")
+    set_tests_properties(sst_graph_concurrency_output PROPERTIES PASS_REGULAR_EXPRESSION "M4.1 PASS" TIMEOUT 120)
+endif()

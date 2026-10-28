@@ -5,6 +5,8 @@ import json
 import os
 import shutil
 import subprocess
+import time
+from experiment_output import export
 from pathlib import Path
 from ann_data import generate, read_dataset, exact_truth, digest, write_json, integer
 
@@ -15,8 +17,15 @@ def run(config, build, output, data=None, *, paired=False):
     config, build, output = Path(config).resolve(), Path(build).resolve(), Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     c = json.loads(config.read_text())
-    if c['placement'] not in (('host', 'controller') if paired else ('host',)) or c['device_profile'] != 'native-small' or c['max_inflight'] != 1:
-        raise ValueError('Unsupported: requires supported placement/native-small/max_inflight=1')
+    if c['placement'] not in (('host', 'controller') if paired else ('host',)) or c['device_profile'] != 'native-small':
+        raise ValueError('Unsupported: requires supported placement/native-small')
+    integer(c['max_inflight'], 'max_inflight')
+    event_log = c.get('event_log', False)
+    if type(event_log) is not bool:
+        raise ValueError('event_log must be boolean')
+    # Remove stale artifacts when reusing an output directory.
+    for name in ('events.jsonl', 'results.json', 'statistics.json', 'manifest.json'):
+        (output/name).unlink(missing_ok=True)
     if not c['parameter_source']:
         raise ValueError('parameter_source is required')
     if data is None:
@@ -60,7 +69,8 @@ def run(config, build, output, data=None, *, paired=False):
             integer(val, key, 0 if key in ('launch_ns', 'scratch_bytes') else 1, 2**64-1)
         params.update(c['controller'])
         params['placement'] = c['placement']
-    params.update(data=str(data), output=str(output / 'events.jsonl'))
+    params.update(data=str(data), output=str(output / 'events.jsonl'), records=str(output/'records.jsonl'),
+                  event_log=int(event_log), max_inflight=c['max_inflight'])
     write_json(output / 'sst-params.json', params)
     write_json(output / 'config.json', c)
     vs = (4*m['dimensions']+511)//512*512
@@ -72,13 +82,20 @@ def run(config, build, output, data=None, *, paired=False):
     argv = [paths['sst'], '--add-lib-path='+str(build), str(ROOT / 'configs/m3.1/host.py')]
     env = dict(os.environ, NDPSIM_M31_PARAMS=str(output / 'sst-params.json'))
     print('SST command:', ' '.join(argv), flush=True)
+    wall_start = time.perf_counter()
     p = subprocess.run(argv, cwd=ROOT, env=env, capture_output=True, text=True, timeout=600)
     (output / 'sst.log').write_text(p.stdout + p.stderr)
     write_json(output / 'command.json', dict(argv=argv, exit_code=p.returncode, params=str(output / 'sst-params.json')))
     if p.returncode:
         raise RuntimeError(f'SST exited {p.returncode}; see {output / "sst.log"}')
-    events = [json.loads(line) for line in (output / 'events.jsonl').read_text().splitlines()]
-    results = [e for e in events if e['type'] == 'query_result']
+    wall_seconds = time.perf_counter()-wall_start
+    events = [json.loads(line) for line in (output / 'records.jsonl').read_text().splitlines()]
+    if event_log:
+        with (output/'events.jsonl').open('a') as stream:
+            for row in events:
+                if row['type'] != 'query_result': stream.write(json.dumps(row)+'\n')
+    (output/'records.jsonl').unlink()
+    results = sorted([e for e in events if e['type'] == 'query_result'], key=lambda r:r['query'])
     if len(results) != m['queries'] or len([e for e in events if e['type'] == 'summary']) != 1:
         raise ValueError('incomplete SST results')
     for i, result in enumerate(results):
@@ -92,6 +109,7 @@ def run(config, build, output, data=None, *, paired=False):
     report = dict(k=s['k'], recall_definition='mean |returned IDs intersect exact top-k IDs| / k; ties by ID',
                   recall_at_k=sum(r['recall_at_k'] for r in results)/len(results), queries=results,
                   summary=next(e for e in events if e['type'] == 'summary'))
+    export(output, results, events, wall_seconds)
     write_json(output / 'results.json', report)
     def git(*args):
         return subprocess.check_output(['git', *args], cwd=ROOT, text=True).strip()
@@ -99,7 +117,7 @@ def run(config, build, output, data=None, *, paired=False):
     base = json.loads((ROOT/'deps.lock.json').read_text())['dependencies']['MQSim']['commit']
     names = subprocess.check_output(['git','-C',str(mqsim),'ls-files','--cached','--others','--exclude-standard','-z']).decode().split('\0')
     source_files = [ROOT/'CMakeLists.txt', ROOT/'deps.lock.json', *sorted((ROOT/'src').rglob('*.cc')),
-                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/m3.1/host.py', ROOT/'tools/run_m3_4.py', ROOT/'tools/compare_m3_4.py']
+                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/m3.1/host.py', ROOT/'tools/run_m3_4.py', ROOT/'tools/compare_m3_4.py', ROOT/'tools/experiment_output.py']
     write_json(output / 'manifest.json', dict(data=str(data), dataset=m, config_sha256=digest(config),
         truth_sha256=digest(data/'truth.json'), code_commit=git('rev-parse', 'HEAD'),
         source_sha256={str(p.relative_to(ROOT)):digest(p) for p in source_files},
@@ -110,10 +128,10 @@ def run(config, build, output, data=None, *, paired=False):
         code_diff_sha256=hashlib.sha256(subprocess.check_output(['git', 'diff', 'HEAD'], cwd=ROOT)).hexdigest(),
         mqsim_commit=git('-C', 'third_party/MQSim', 'rev-parse', 'HEAD'),
         sst_commit=git('-C', 'third_party/sst-core', 'rev-parse', 'HEAD'), parameter_source=c['parameter_source'],
-        artifacts_sha256={name:digest(output/name) for name in ('events.jsonl','config.json','layout.json','ssdconfig.xml','results.json','sst-params.json')},
+        artifacts_sha256={name:digest(output/name) for name in ('config.json','layout.json','ssdconfig.xml','results.json','statistics.json','capabilities.json','sst-params.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []))},
         assumptions=['single SSD/native-small/SIMPLE/TURNED_OFF; CMT retained',
                      'deterministic page preload drained before measurement; no cross-query object cache',
-                     'sequential query admission; host control; distance placement='+c['placement'],
+                     'all queries offered at measurement origin, FIFO bounded admission; slots retire after CloseAck; host control; distance placement='+c['placement'],
                      'MQSim owns ordinary PCIe; no platform transfer fee',
                      'configured_unvalidated hardware costs; simplified graph, no DiskANN claim']))
     print(f"{('M3.4 '+c['placement']) if paired else 'M3.1 host'} queries={len(results)} Recall@{s['k']}={report['recall_at_k']:.8f} output={output}")
