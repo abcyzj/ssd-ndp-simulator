@@ -1,6 +1,6 @@
 # SSD NDP Simulator
 
-V0.1 的单 SSD / SST + MQSim 仿真平台。目前完成库化、生命周期骨架、M0.3a 事件桥及 M0.3b 本地读取 PoC，以及 [M0.4 最小契约冻结](docs/m0.4-minimal-contract.md)，并完成正式事件桥、普通 I/O/确定性初态、基础观测及 [M2.1 内容/布局/驻留](docs/m2.1-content-layout.md) 的限定验收；异步闭环运行时、ANNS 和完整性能验收尚未实现。任务状态见 [任务清单](docs/v0.1-tasks.md)。
+V0.1 的单 SSD / SST + MQSim 仿真平台。目前完成库化、生命周期骨架、M0.3a 事件桥及 M0.3b 本地读取 PoC，以及 [M0.4 最小契约冻结](docs/m0.4-minimal-contract.md)，并完成正式事件桥、普通 I/O/确定性初态、基础观测及 [M2.1 内容/布局/驻留](docs/m2.1-content-layout.md) 的限定验收；M2.2 异步运行时、M2.3 主机算子、M3.1 主机图搜索和 [M3.2a 正式本地存储服务](docs/m3.2a-local-read.md) 也已完成各自限定验收；完整两放置和性能验收仍待后续任务。任务状态见 [任务清单](docs/v0.1-tasks.md)。
 
 ## 构建与检查
 
@@ -17,7 +17,7 @@ cmake --build build --target run_lifecycle
 
 不需要先运行 `tools/macos_m0_2.py`。CMake 在配置阶段调用一个 [prepare_sst.py](tools/prepare_sst.py) 脚本，从锁定的 SST commit 准备源码，在仓库固定的 `.cache/sst/<配置键>/` 中执行 Autotools 引导、配置、编译和安装，然后导入 SST，再编译元素库。首次 `cmake -S . -B build` 会等待 SST 准备完成；后续配置命中有效缓存时直接复用，不执行 autogen、configure、make 或 install。不同平台构建目录在配置一致时共用同一份安装，删除或清理 `build` 不会删除 SST 缓存；缓存不写入系统目录；SST 子模块不被 autogen 修改。MQSim 直接从 `third_party/MQSim` 编译，保留其开发改动。
 
-默认结果为 `build/libndpsim.so`、`build/lifecycle_probe` 和 `.cache/sst/<配置键>/install/bin/sst`。`run_lifecycle` 会自动使用选定的 SST 安装和当前构建的元素库。正常输出应包含 `finish SST=1 ns MQSim=0 ns; device destroyed`；1 ns 仅为生命周期调度探针。CTest 共二十项，包含生命周期、事件桥、本地读取 PoC、普通 I/O、观测、内容/布局/句柄和真实后端内容关联检查。事件桥实现、复现和范围见 [M0.3a 记录](docs/m0.3a-event-bridge.md)。
+默认结果为 `build/libndpsim.so`、`build/lifecycle_probe` 和 `.cache/sst/<配置键>/install/bin/sst`。`run_lifecycle` 会自动使用选定的 SST 安装和当前构建的元素库。正常输出应包含 `finish SST=1 ns MQSim=0 ns; device destroyed`；1 ns 仅为生命周期调度探针。CTest 当前共 33 项，包含生命周期、事件桥、本地读取 PoC/正式服务、普通 I/O、观测、内容/布局/句柄、运行时、算子和主机图搜索检查。事件桥实现、复现和范围见 [M0.3a 记录](docs/m0.3a-event-bridge.md)。
 
 ## 可选构建设置
 
@@ -66,3 +66,12 @@ python3 tools/run_m3_1.py --config configs/m3.1/host.json --build build/m3.1 --o
 默认生成 2048×32 向量和 32 个查询，独立离线穷举真值后，在真实 SST/MQSim 普通 NVMe 路径执行确定性主机图搜索，输出 top-k、Recall@10、模拟延迟、逐批决策/访问轨迹及配置/源码哈希。数据输入可用 `--data` 指定。完整本任务验收：`python3 tools/verify_m3_1.py`。
 
 当前限定单 SSD、顺序查询、简化图示例，参数为 configured_unvalidated；盘控及其他后续能力尚未实现。数据格式、成本假设、运行证据与限制见 [M3.1 文档](docs/m3.1-host-graph.md)。
+
+
+## M3.2a 设备本地存储服务
+
+```sh
+python3 tools/verify_m3_2a.py
+```
+
+覆盖真实 SST/MQSim 跨页与乱序汇总、稳定请求/事务关联、失败诊断、安全清理、零向量 D2H 和独立原生普通读回归。当前只完成存储服务；消息共享、缓冲 staging/credit 和盘控计算仍属后续任务。实现边界与证据见 [M3.2a 文档](docs/m3.2a-local-read.md)。

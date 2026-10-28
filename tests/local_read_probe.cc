@@ -96,6 +96,11 @@ int main(int argc, char** argv) {
             auto token = host->Submit_local_read(0, 7, 2);
             auto* req = cache.request;
             auto id = req->ID;
+            auto submitted=host->Inspect_local_read(token);
+            check(submitted.lba==7 && submitted.sectors==2 && submitted.transactions.size()==2 &&
+                !submitted.transactions[0].completed && !submitted.transactions[1].completed &&
+                submitted.transactions[0].id && submitted.transactions[1].id>submitted.transactions[0].id,
+                "stable submitted transaction identity");
             check(req->Transaction_list.size() == 2, "cross-page split");
             auto* first = static_cast<NVM_Transaction_Flash_RD*>(req->Transaction_list.front());
             auto* second = static_cast<NVM_Transaction_Flash_RD*>(req->Transaction_list.back());
@@ -110,6 +115,9 @@ int main(int argc, char** argv) {
             phy.complete(reverse ? second : first);
             std::printf("E2 transaction token=%llu page=%d time=%u remaining=1 visible=0\n", token, reverse ? 1 : 0, now+10);
             check(req->Transaction_list.size() == 1 && host->Take_local_completions().empty(), "early publication");
+            auto partial=host->Inspect_local_read(token);
+            check(partial.transactions[reverse?1:0].completed && !partial.transactions[reverse?0:1].completed &&
+                partial.transactions[reverse?1:0].time==now+10,"out-of-order transaction record");
             Simulator->Synchronize_now(now + 30);
             phy.complete(reverse ? first : second);
             std::printf("E2 transaction token=%llu page=%d time=%u remaining=0 visible=0\n", token, reverse ? 0 : 1, now+30);
@@ -120,6 +128,11 @@ int main(int argc, char** argv) {
             auto completions = host->Take_local_completions();
             check(completions.size() == 1 && completions[0].token == token && completions[0].request_id == id
                   && completions[0].bytes == 1024 && completions[0].time == now+30, "completion snapshot");
+            const auto& tx=completions[0].transactions;
+            check(tx.size()==2 && tx[0].id==submitted.transactions[0].id && tx[1].id==submitted.transactions[1].id &&
+                tx[0].completed && tx[1].completed && tx[reverse?1:0].time==now+10 && tx[reverse?0:1].time==now+30,
+                "stable final transaction ledger");
+            rejects([&]{host->Inspect_local_read(token);});
             check(host->Pending_local_reads() == 0 && host->Take_local_completions().empty()
                   && !Simulator->Peek_next_time(), "duplicate notification or retained ownership");
             check(interface.queues() == original_queues, "local route changed SQ/CQ state");
