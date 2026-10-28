@@ -1,6 +1,6 @@
 # SSD NDP Simulator
 
-V0.1 的单 SSD / SST + MQSim 仿真平台。目前完成库化、生命周期骨架、M0.3a 事件桥及 M0.3b 本地读取 PoC，以及 [M0.4 最小契约冻结](docs/m0.4-minimal-contract.md)；正式 I/O 集成、ANNS 和性能验收尚未实现。任务状态见 [任务清单](docs/v0.1-tasks.md)。
+V0.1 的单 SSD / SST + MQSim 仿真平台。目前完成库化、生命周期骨架、M0.3a 事件桥及 M0.3b 本地读取 PoC，以及 [M0.4 最小契约冻结](docs/m0.4-minimal-contract.md)，并完成正式事件桥、普通 I/O/确定性初态、基础观测及 [M2.1 内容/布局/驻留](docs/m2.1-content-layout.md) 的限定验收；异步闭环运行时、ANNS 和完整性能验收尚未实现。任务状态见 [任务清单](docs/v0.1-tasks.md)。
 
 ## 构建与检查
 
@@ -17,7 +17,7 @@ cmake --build build --target run_lifecycle
 
 不需要先运行 `tools/macos_m0_2.py`。CMake 在配置阶段调用一个 [prepare_sst.py](tools/prepare_sst.py) 脚本，从锁定的 SST commit 准备源码，在仓库固定的 `.cache/sst/<配置键>/` 中执行 Autotools 引导、配置、编译和安装，然后导入 SST，再编译元素库。首次 `cmake -S . -B build` 会等待 SST 准备完成；后续配置命中有效缓存时直接复用，不执行 autogen、configure、make 或 install。不同平台构建目录在配置一致时共用同一份安装，删除或清理 `build` 不会删除 SST 缓存；缓存不写入系统目录；SST 子模块不被 autogen 修改。MQSim 直接从 `third_party/MQSim` 编译，保留其开发改动。
 
-默认结果为 `build/libndpsim.so`、`build/lifecycle_probe` 和 `.cache/sst/<配置键>/install/bin/sst`。`run_lifecycle` 会自动使用选定的 SST 安装和当前构建的元素库。正常输出应包含 `finish SST=1 ns MQSim=0 ns; device destroyed`；1 ns 仅为生命周期调度探针。CTest 共十三项，包含生命周期、事件步进、原生事件循环、本地读取、SST E1、元素加载与 SST 生命周期检查。事件桥实现、复现和范围见 [M0.3a 记录](docs/m0.3a-event-bridge.md)。
+默认结果为 `build/libndpsim.so`、`build/lifecycle_probe` 和 `.cache/sst/<配置键>/install/bin/sst`。`run_lifecycle` 会自动使用选定的 SST 安装和当前构建的元素库。正常输出应包含 `finish SST=1 ns MQSim=0 ns; device destroyed`；1 ns 仅为生命周期调度探针。CTest 共二十项，包含生命周期、事件桥、本地读取 PoC、普通 I/O、观测、内容/布局/句柄和真实后端内容关联检查。事件桥实现、复现和范围见 [M0.3a 记录](docs/m0.3a-event-bridge.md)。
 
 ## 可选构建设置
 
@@ -29,7 +29,7 @@ cmake --build build --target run_lifecycle
 | `-DNDPSIM_SST_BUILD_JOBS=2` | SST 内部 make 并发数，独立于外层 `cmake --build -j` |
 | `-DCMAKE_BUILD_TYPE=Debug` | 设置构建模式；默认 RelWithDebInfo |
 | `-DBUILD_TESTING=OFF` | 不构建测试探针或注册 CTest 测试 |
-| `-DNDPSIM_SANITIZE=ON` | 为后端添加 AddressSanitizer；运行无 I/O 后端探针，未包含泄漏审计 |
+| `-DNDPSIM_SANITIZE=ON` | 为后端及内容库添加 AddressSanitizer；可运行相应探针，不代表完整上游泄漏审计 |
 
 macOS 默认通过 `xcrun` 选择 SDK，也可显式设置 `CMAKE_OSX_SYSROOT`。本机存在锁定的 Python 路径时优先使用它；其他环境使用 CMake 查找到的 Python，须满足解释器、开发库和配置程序配套。SST 默认禁用 MPI、HDF5 和 ncurses；当前平台只支持单 rank/线程。
 
@@ -46,3 +46,11 @@ python3 tools/verify_m0_4.py --output results/m0.4-check
 ```
 
 输出目录须为新目录；可加 `--ctest-build build` 对已有构建运行回归。固定输入及后续实现边界见 [契约](docs/m0.4-minimal-contract.md)。
+
+M2.1 内容、布局与驻留验收：
+
+```sh
+python3 tools/verify_m2_1.py
+```
+
+根 CMake 构建、独立布局核对、真实 MQSim 普通跨页请求、所有权及 ASan 检查的日志保存在 `docs/evidence/m2.1/`。接口与未覆盖能力见 [M2.1 说明](docs/m2.1-content-layout.md)。

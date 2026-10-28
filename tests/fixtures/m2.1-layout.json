@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "namespace_sectors": 512,
+  "sector_bytes": 512,
+  "page_sectors": 8,
+  "objects": [
+    {"kind": 1, "id": 0, "version": 1, "bytes": 1040, "byte_offset": 3584, "pattern_mod": 251},
+    {"kind": 1, "id": 1, "version": 1, "bytes": 40, "byte_offset": 4624, "pattern_mod": 251},
+    {"kind": 2, "id": 0, "version": 1, "bytes": 12, "byte_offset": 16384, "pattern_mod": 251}
+  ],
+  "selections": [
+    {"kind": 1, "id": 0, "offset": 500, "length": 540},
+    {"kind": 1, "id": 1, "offset": 0, "length": 40},
+    {"kind": 2, "id": 0, "offset": 0, "length": 12},
+    {"kind": 1, "id": 0, "offset": 510, "length": 4}
+  ],
+  "manual": {
+    "useful_bytes_with_selection_multiplicity": 596,
+    "unique_logical_bytes": 592,
+    "sector_bytes": 2048,
+    "extents": [[7, 3], [32, 1]],
+    "pages": [[0, 512], [1, 1024], [4, 512]],
+    "default_layout": [3584, 512, 4608, 512, 11]
+  }
+}
