@@ -2,7 +2,26 @@
 
 V0.1 是单 SSD、主机控制的只读图 ANNS 仿真平台。SST 统一模拟时间，MQSim 模拟存储和共享 PCIe；真实平方 L2 结果决定后续访问，可将距离计算放在主机或盘控。M4.2 已完成全部 AC，M4.3 的复建证据与当前状态见 [任务清单](docs/v0.1-tasks.md)。示例是简化图搜索，参数均为 `configured_unvalidated`。
 
-## 一条命令构建并运行两种模式
+## 只运行实验
+
+已有构建产物时，使用独立实验入口：
+
+```sh
+python3 tools/run_experiment.py
+```
+
+默认复用 `build/delivery`，以相同数据运行 host/controller，输出在 `results/experiment/{host,controller}/`。该入口只准备实验输入、执行 SST/MQSim、导出结果和统计，不调用 CMake、CTest、验收脚本或两放置核对器。构建产物缺失时直接报错，不自动编译。
+
+```sh
+# 指定已有构建，单独运行盘控模式
+python3 tools/run_experiment.py --build build --mode controller --output results/controller-only
+# 使用自己的配置和已有数据，运行两种模式
+python3 tools/run_experiment.py --build build --config configs/m4.1/host.json --data results/controller-only/controller/data --output results/pair-2
+```
+
+`--mode pair|host|controller` 默认 `pair`，会覆盖配置中的 placement。输出目录必须不存在；重跑使用新的 `--output`。省略 `--data` 时按配置生成数据及计算 Recall 所需的离线精确真值；传入时复用已有数据和 `truth.json`。`--event-log` 只开启 JSONL 导出，不增加对照验证；也可在配置中设置 `event_log`。各模式保留配置、数据/源码/依赖哈希、top-k、Recall、模拟性能和 JSON/CSV 统计，口径见 [输出说明](docs/m4.1-concurrency-output.md)。保留运行所需的输入合法性和输出完整性检查。
+
+## 构建、测试与交付入口
 
 在仓库根目录、依赖和系统工具已准备好的条件下运行：
 

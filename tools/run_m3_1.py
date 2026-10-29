@@ -117,7 +117,7 @@ def run(config, build, output, data=None, *, paired=False):
     base = json.loads((ROOT/'deps.lock.json').read_text())['dependencies']['MQSim']['commit']
     names = subprocess.check_output(['git','-C',str(mqsim),'ls-files','--cached','--others','--exclude-standard','-z']).decode().split('\0')
     source_files = [ROOT/'CMakeLists.txt', ROOT/'deps.lock.json', *sorted((ROOT/'src').rglob('*.cc')),
-                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/m3.1/host.py', ROOT/'tools/run_m3_4.py', ROOT/'tools/compare_m3_4.py', ROOT/'tools/experiment_output.py']
+                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/m3.1/host.py', ROOT/'tools/run_m3_4.py', ROOT/'tools/compare_m3_4.py', ROOT/'tools/experiment_output.py', ROOT/'tools/run_experiment.py']
     write_json(output / 'manifest.json', dict(data=str(data), dataset=m, config_sha256=digest(config),
         truth_sha256=digest(data/'truth.json'), code_commit=git('rev-parse', 'HEAD'),
         source_sha256={str(p.relative_to(ROOT)):digest(p) for p in source_files},
