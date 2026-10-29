@@ -7,7 +7,9 @@
 #include <vector>
 
 namespace ndpsim {
-namespace { bool device_claimed = false; }
+namespace {
+bool device_claimed = false;
+}
 
 struct LifecycleBackend::Impl {
     // Partition arrays remain alive until after SSD teardown. MQSim copies these
@@ -25,10 +27,14 @@ struct LifecycleBackend::Impl {
     Impl() {
         // One inactive namespace defines address/resource partitioning. No host
         // flow, PCIe attachment, workload, or application request exists yet.
-        partition.Channel_No = channels.size(); partition.Channel_IDs = channels.data();
-        partition.Chip_No = chips.size(); partition.Chip_IDs = chips.data();
-        partition.Die_No = dies.size(); partition.Die_IDs = dies.data();
-        partition.Plane_No = planes.size(); partition.Plane_IDs = planes.data();
+        partition.Channel_No = channels.size();
+        partition.Channel_IDs = channels.data();
+        partition.Chip_No = chips.size();
+        partition.Chip_IDs = chips.data();
+        partition.Die_No = dies.size();
+        partition.Die_IDs = dies.data();
+        partition.Plane_No = planes.size();
+        partition.Plane_IDs = planes.data();
         partition.Priority_Class = IO_Flow_Priority_Class::HIGH;
         partition.Device_Level_Data_Caching_Mode = SSD_Components::Caching_Mode::TURNED_OFF;
         partitions.push_back(&partition);
@@ -52,26 +58,36 @@ struct LifecycleBackend::Impl {
 };
 
 LifecycleBackend::LifecycleBackend(unsigned device_count, const std::string& profile) {
-    if (device_count != 1) throw std::invalid_argument("Unsupported: device_count must be 1");
-    if (profile != "native-small") throw std::invalid_argument("Unsupported: profile must be native-small");
-    if (device_claimed) throw std::logic_error("Only one MQSim device lifetime per process is supported");
+    if (device_count != 1)
+        throw std::invalid_argument("Unsupported: device_count must be 1");
+    if (profile != "native-small")
+        throw std::invalid_argument("Unsupported: profile must be native-small");
+    if (device_claimed)
+        throw std::logic_error("Only one MQSim device lifetime per process is supported");
     device_claimed = true; // Intentionally never released: singleton state is not reusable.
     impl_ = std::make_unique<Impl>();
 }
 LifecycleBackend::~LifecycleBackend() = default;
 void LifecycleBackend::initialize() {
-    if (impl_->finished || impl_->initialized) throw std::logic_error("Invalid backend initialize transition");
+    if (impl_->finished || impl_->initialized)
+        throw std::logic_error("Invalid backend initialize transition");
     Simulator->Initialize_simulation();
-    if (Simulator->Time() != 0) throw std::logic_error("Initialization advanced MQSim time");
+    if (Simulator->Time() != 0)
+        throw std::logic_error("Initialization advanced MQSim time");
     impl_->initialized = true;
 }
 void LifecycleBackend::finish() {
-    if (impl_->finished) return;
-    if (!impl_->initialized) throw std::logic_error("Backend finish before initialization");
-    if (Simulator->Peek_next_time()) throw std::logic_error("Backend finish with pending events");
+    if (impl_->finished)
+        return;
+    if (!impl_->initialized)
+        throw std::logic_error("Backend finish before initialization");
+    if (Simulator->Peek_next_time())
+        throw std::logic_error("Backend finish with pending events");
     Simulator->Reset();
     impl_->device.reset();
     impl_->finished = true;
 }
-uint64_t LifecycleBackend::time_ns() const { return Simulator->Time(); }
+uint64_t LifecycleBackend::time_ns() const {
+    return Simulator->Time();
 }
+} // namespace ndpsim

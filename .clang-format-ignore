@@ -1,0 +1,9 @@
+# Exclude dependencies. The actual repository directory is third_party.
+third_party/**
+third-party/**
+
+# Exclude generated files and dependency build caches.
+build/**
+build-*/**
+cmake-build-*/**
+.cache/**
