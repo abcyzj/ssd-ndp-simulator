@@ -65,7 +65,7 @@ def main():
                     'SDKROOT', 'MACOSX_DEPLOYMENT_TARGET')},
                 'inputs_sha256': {str(p.relative_to(ROOT)): sha(p) for p in [
                     ROOT/'AGENTS.md', ROOT/'deps.lock.json', ROOT/'CMakeLists.txt',
-                    ROOT/'docs/prd.md', ROOT/'docs/archive/v0.1/implementation-plan.md', ROOT/'docs/archive/v0.1/v0.1-tasks.md',
+                    ROOT/'docs/prd-v0.1.md', ROOT/'docs/archive/v0.1/implementation-plan.md', ROOT/'docs/archive/v0.1/v0.1-tasks.md',
                     ROOT/'tools/archive/v0.1/macos_m0_2.py', Path(__file__),
                     ROOT/'tools/prepare_sst.py',
                     *sorted((ROOT/'src').rglob('*.cc')), *sorted((ROOT/'src').rglob('*.h')),

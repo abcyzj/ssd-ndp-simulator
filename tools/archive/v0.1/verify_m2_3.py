@@ -67,7 +67,7 @@ try:
     assert not run('mqsim-status', ['git','-C','third_party/MQSim','status','--porcelain'])
     status = 'passed'
 finally:
-    tracked = ['AGENTS.md','docs/prd.md','docs/archive/v0.1/implementation-plan.md','docs/archive/v0.1/v0.1-tasks.md',
+    tracked = ['AGENTS.md','docs/prd-v0.1.md','docs/archive/v0.1/implementation-plan.md','docs/archive/v0.1/v0.1-tasks.md',
                'docs/archive/v0.1/m2.3-operators-cost.md','docs/evidence/m2.3/README.md','deps.lock.json','CMakeLists.txt',
                'src/runtime/runtime.h','src/runtime/runtime.cc','src/model/host_cpu.h','src/model/host_cpu.cc',
                'src/operators/operators.h','src/operators/operators.cc','src/sst/host_validation.cc',

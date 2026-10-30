@@ -1,7 +1,7 @@
 # 仓库协作约定
 
 - 先读 README.md、docs/releases/v0.1.md；按任务从 docs/README.md 选择规范、接口与测试说明，不要求通读历史。
-  docs/prd.md 是 V0.1 需求基线；docs/archive/v0.1/ 仅供按需追溯，阶段指令和状态不继续生效。
+  docs/prd-v0.1.md 是 V0.1 需求基线；docs/archive/v0.1/ 仅供按需追溯，阶段指令和状态不继续生效。
 - V0.1 限于单 SSD、应用只读 ANNS、主机控制搜索、主机/盘控计算，使用 SST 和 MQSim。
   V0.2 范围尚未确定。改变范围或模型结论须说明影响；任务要求、现行文档、代码和测试冲突时明确差异并处理，不能用历史方案直接覆盖当前行为。
 - SST 主导模拟时间；MQSim 不得越过 SST now。等待用异步 continuation，不阻塞事件引擎。

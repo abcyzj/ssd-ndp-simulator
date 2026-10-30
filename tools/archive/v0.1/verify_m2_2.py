@@ -68,7 +68,7 @@ try:
     assert not run('sst-status', ['git', '-C', 'third_party/sst-core', 'status', '--porcelain'])
     status = 'passed'
 finally:
-    tracked = ['AGENTS.md', 'docs/prd.md', 'docs/archive/v0.1/implementation-plan.md', 'docs/archive/v0.1/v0.1-tasks.md',
+    tracked = ['AGENTS.md', 'docs/prd-v0.1.md', 'docs/archive/v0.1/implementation-plan.md', 'docs/archive/v0.1/v0.1-tasks.md',
                'docs/archive/v0.1/m0.4-minimal-contract.md', 'docs/archive/v0.1/m2.2-async-visibility.md', 'docs/evidence/m2.2/README.md',
                'src/runtime/runtime.h', 'src/runtime/runtime.cc', 'src/sst/runtime_validation.cc',
                'src/backend/event_bridge.h', 'src/content/content.h', 'tests/runtime_probe.cc',

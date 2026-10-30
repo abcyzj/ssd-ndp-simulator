@@ -41,7 +41,7 @@ def main():
         paths = [ROOT/'AGENTS.md', ROOT/'CMakeLists.txt', ROOT/'deps.lock.json', Path(__file__),
                  ROOT/'tools/archive/v0.1/verify_m1_1.py', ROOT/'tools/prepare_sst.py',
                  *sorted((ROOT/'src').rglob('*')), *sorted((ROOT/'tests').glob('*.cc')),
-                 *sorted((ROOT/'configs').rglob('*')), ROOT/'docs/prd.md',
+                 *sorted((ROOT/'configs').rglob('*')), ROOT/'docs/prd-v0.1.md',
                  ROOT/'docs/archive/v0.1/implementation-plan.md', ROOT/'docs/archive/v0.1/v0.1-tasks.md', ROOT/'docs/archive/v0.1/m0.3b-local-read.md']
         return {str(p.relative_to(ROOT)): sha(p) for p in paths if p.is_file()}
 

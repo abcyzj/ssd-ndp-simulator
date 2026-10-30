@@ -73,7 +73,7 @@ def main():
                     'CXXFLAGS', 'LDFLAGS', 'LIBTOOL', 'LIBTOOLIZE', 'M4', 'CONFIG_SITE', 'PYTHONNOUSERSITE',
                     'SDKROOT', 'MACOSX_DEPLOYMENT_TARGET')},
                 'input_sha256': {str(p.relative_to(ROOT)): sha(p) for p in [
-                    ROOT/'AGENTS.md', ROOT/'docs/prd.md', ROOT/'docs/archive/v0.1/implementation-plan.md',
+                    ROOT/'AGENTS.md', ROOT/'docs/prd-v0.1.md', ROOT/'docs/archive/v0.1/implementation-plan.md',
                     ROOT/'docs/archive/v0.1/v0.1-tasks.md', ROOT/'deps.lock.json', Path(__file__),
                     *sorted((ROOT/'configs/native').glob('*'))]}}
 

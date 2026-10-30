@@ -119,7 +119,7 @@ try:
     assert not command('mqsim-status',['git','-C','third_party/MQSim','status','--porcelain'])
     status='passed'
 finally:
-    files=[ROOT/'AGENTS.md',ROOT/'CMakeLists.txt',ROOT/'deps.lock.json',ROOT/'docs/prd.md',ROOT/'docs/archive/v0.1/implementation-plan.md',ROOT/'docs/archive/v0.1/v0.1-tasks.md',
+    files=[ROOT/'AGENTS.md',ROOT/'CMakeLists.txt',ROOT/'deps.lock.json',ROOT/'docs/prd-v0.1.md',ROOT/'docs/archive/v0.1/implementation-plan.md',ROOT/'docs/archive/v0.1/v0.1-tasks.md',
            ROOT/'docs/archive/v0.1/m3.4-placements.md',*sorted((ROOT/'src').rglob('*.cc')),*sorted((ROOT/'src').rglob('*.h')),
            ROOT/'tools/run_graph.py',ROOT/'tools/ann_data.py',ROOT/'tools/run_pair.py',ROOT/'tools/compare_placements.py',Path(__file__),*sorted((ROOT/'configs').rglob('*.json')), ROOT/'configs/sst/graph.py']
     write_json(OUT/'manifest.json',dict(status=locals().get('status','failed'),commands=commands,assertions=assertions,comparisons=comparisons,

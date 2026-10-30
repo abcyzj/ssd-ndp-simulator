@@ -42,7 +42,7 @@ def main():
                  ROOT/'tools/archive/v0.1/verify_m1_1.py', ROOT/'tools/prepare_sst.py',
                  *sorted((ROOT/'src').rglob('*')), *sorted((ROOT/'tests').glob('*.cc')),
                  *sorted((ROOT/'configs').rglob('*')),
-                 ROOT/'docs/prd.md', ROOT/'docs/archive/v0.1/implementation-plan.md', ROOT/'docs/archive/v0.1/v0.1-tasks.md',
+                 ROOT/'docs/prd-v0.1.md', ROOT/'docs/archive/v0.1/implementation-plan.md', ROOT/'docs/archive/v0.1/v0.1-tasks.md',
                  ROOT/'docs/archive/v0.1/m0.3a-event-bridge.md']
         return {str(p.relative_to(ROOT)): sha(p) for p in paths if p.is_file()}
 

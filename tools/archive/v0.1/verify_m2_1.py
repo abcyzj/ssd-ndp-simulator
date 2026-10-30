@@ -104,7 +104,7 @@ try:
     assert not run('sst-status', ['git', '-C', 'third_party/sst-core', 'status', '--porcelain'])
     status = 'passed'
 finally:
-    paths = ['AGENTS.md', 'README.md', 'docs/prd.md', 'docs/archive/v0.1/implementation-plan.md',
+    paths = ['AGENTS.md', 'README.md', 'docs/prd-v0.1.md', 'docs/archive/v0.1/implementation-plan.md',
              'docs/archive/v0.1/v0.1-tasks.md', 'docs/archive/v0.1/m2.1-content-layout.md', 'src/content/content.h', 'src/content/content.cc', 'src/content/sha256.cc',
              'tests/content_probe.cc', 'tests/content_backend_probe.cc', 'tests/ordinary_fixture.h',
              'tests/fixtures/m2.1-layout.json', 'src/backend/external_flow.h', 'CMakeLists.txt',

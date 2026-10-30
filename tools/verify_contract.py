@@ -207,12 +207,12 @@ def main():
                     else:
                         require(resolved.exists(), name+' broken link '+target)
         check('all touched documentation relative links resolve locally')
-        check('PRD FR-02/04/07/08 and planning basis remain present', all((ROOT/p).exists() for p in ('AGENTS.md', 'docs/prd.md', 'docs/archive/v0.1/implementation-plan.md')))
+        check('PRD FR-02/04/07/08 and planning basis remain present', all((ROOT/p).exists() for p in ('AGENTS.md', 'docs/prd-v0.1.md', 'docs/archive/v0.1/implementation-plan.md')))
         if args.ctest_build:
             run('ctest-regression', ['ctest', '--test-dir', args.ctest_build.resolve(), '--output-on-failure'])
             check('existing platform CTest regression passed (E1/E2 scope only)')
         report['inputs_sha256'] = {p: digest(ROOT/p) for p in docpaths + [
-            'AGENTS.md', 'docs/prd.md', 'deps.lock.json', 'tools/verify_contract.py',
+            'AGENTS.md', 'docs/prd-v0.1.md', 'deps.lock.json', 'tools/verify_contract.py',
             'tests/contracts_abi_probe.cc', 'tests/fixtures/m0.4-round.json']}
         report['status'] = 'passed'
         print(json.dumps(dict(status='passed', assertions=len(report['assertions']), ledger=report['ledger']), indent=2))
