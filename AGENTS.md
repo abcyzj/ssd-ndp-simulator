@@ -1,29 +1,21 @@
 # 仓库协作约定
 
-- 先读 docs/prd.md、docs/implementation-plan.md、docs/v0.1-tasks.md。
-  PRD 定义需求；实施规划保留设计依据；任务清单记录当前状态与证据。
-- V0.1 限于单 SSD、应用只读 ANNS、主机控制搜索、主机/盘控计算，
-  使用 SST 和 MQSim。完整 DiskANN、多 SSD、自主盘内搜索及其他计算位置不在范围内。
-- 常规实现选择采用任务清单默认值；改变范围或模型结论时先说明影响。
-- SST 主导模拟时间；MQSim 不得越过 SST now。算法等待不能阻塞事件引擎。
-- 真实结果驱动后续访问；结果在模拟服务及必要传输完成前不可见。
-  不以固定完整 trace、随机距离或墙钟耗时替代闭环与性能模型。
-- 区分逻辑内容、LBA 和驻留状态；每项资源和流量只有一个计费者。
-  近存向量读取不得先经完整主机回传路径。
-- MQSim 的适配与修复直接修改 third_party/MQSim 内的源码，平台直接编译
-  该目录；不维护构建时应用的 patch 栈，也不导出另一份源码再打补丁。
-- 依赖记录完整 commit；未提交的 MQSim 改动记录相对基线的 diff 哈希和
-  实际源码哈希。后续提交到 MQSim fork 后再更新主仓 gitlink，不能只提交
-  主仓而遗漏子模块改动；不自动提交、推送、升级或初始化 Git。
-- 未修改原生 oracle 独立从 deps.lock.json 锁定的原生 commit 导出和构建，
-  不从已修改的 MQSim 工作区构建；SST Core 保持不修改。依赖改动保持最小，
-  保留许可证与原生对照身份。
-- 平台构建以根 CMake 为入口：默认由 CMake 调用
-  tools/prepare_sst.py 准备和构建锁定的 SST，
-  不依赖先运行 M0.2 脚本或某个既有 build 目录中的安装。可显式传入
-  SST_ROOT 复用已有安装；默认共享缓存位于仓库 .cache/sst（可用
-  NDPSIM_SST_CACHE_DIR 覆盖），SST 的 autogen 只在缓存中的固定源码副本执行。
-- 按任务运行有意义的验收，记录输入、配置、命令、退出码、输出及断言。
-  区分静态核查、PoC 和验收通过；没有运行证据不得标记通过。
-- 构建与运行命令须以实际存在的入口为准。未校准参数、模型简化和
-  Unsupported 能力必须明示；不预设盘控更快或声称绝对性能已校准。
+- 先读 README.md、docs/releases/v0.1.md；按任务从 docs/README.md 选择规范、接口与测试说明，不要求通读历史。
+  docs/prd.md 是 V0.1 需求基线；docs/archive/v0.1/ 仅供按需追溯，阶段指令和状态不继续生效。
+- V0.1 限于单 SSD、应用只读 ANNS、主机控制搜索、主机/盘控计算，使用 SST 和 MQSim。
+  V0.2 范围尚未确定。改变范围或模型结论须说明影响；任务要求、现行文档、代码和测试冲突时明确差异并处理，不能用历史方案直接覆盖当前行为。
+- SST 主导模拟时间；MQSim 不得越过 SST now。等待用异步 continuation，不阻塞事件引擎。
+  真实结果驱动后续访问；服务及必要传输完成前结果不可见，不以固定完整 trace、随机距离或墙钟替代闭环和性能模型。
+- 区分逻辑内容、LBA 和驻留；每项资源/流量只有一个计费者。近存向量读取不得先经完整主机回传。
+  现行时间、消息与计费边界见 docs/contracts.md，限制见 docs/model-limitations.md。
+- MQSim 适配直接修改并编译 third_party/MQSim，不维护构建时 patch 栈或另一份集成源码。
+  原生 oracle 独立从 deps.lock.json 锁定原生 commit 导出；SST Core 不修改；依赖改动最小并保留许可证。
+- 依赖记录完整 commit；未提交 MQSim 改动记录相对原生基线 diff 哈希及实际源码哈希。
+  提交时先保存 MQSim fork commit 再更新主仓 gitlink，不能遗漏子模块实现；不自动提交、推送、升级或初始化 Git。
+- 构建以根 CMake 为入口，自动调用 tools/prepare_sst.py 在 .cache/sst 固定源码副本中准备 SST；
+  NDPSIM_SST_CACHE_DIR 可覆盖缓存，SST_ROOT 可复用安装。不要依赖先跑 M0.2 或旧 build 安装。
+- 常规验证：`cmake -S . -B build/delivery -DBUILD_TESTING=ON`、`cmake --build build/delivery -j2`、
+  `ctest --test-dir build/delivery --output-on-failure`。完整 AC 用锁定 Python 运行 `tools/verify_acceptance.py`，细节见 docs/testing.md。
+  持续测试位于 tests/、configs/regression/，工具入口见 tools/README.md；tools/archive/v0.1/ 仅供阶段复现，不因归档而移除有效回归或弱化断言。
+- 按变更运行有意义的验收，记录输入、配置、命令、退出码、输出及断言。区分静态核查、PoC、quick subset 与完整 AC；未执行不标通过。
+  参数未校准、模型简化及 Unsupported 必须明示，不预设盘控更快或声称绝对性能已校准。

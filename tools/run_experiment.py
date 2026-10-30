@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from ann_data import write_json
-from run_m3_1 import ROOT, run
+from run_graph import ROOT, run
 
 
 def main():
@@ -13,7 +13,7 @@ def main():
                         help='Existing build containing sst-paths.json and libndpsim.so')
     parser.add_argument('--output', type=Path, default=ROOT/'results/experiment',
                         help='New experiment output directory')
-    parser.add_argument('--config', type=Path, default=ROOT/'configs/m4.1/host.json')
+    parser.add_argument('--config', type=Path, default=ROOT/'configs/experiments/host.json')
     parser.add_argument('--mode', choices=('pair', 'host', 'controller'), default='pair',
                         help='Placement override; pair runs both with the same data, without comparison')
     parser.add_argument('--data', type=Path,

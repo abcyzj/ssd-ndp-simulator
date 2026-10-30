@@ -116,13 +116,13 @@ if(BUILD_TESTING)
     add_test(NAME backend_native_event_loop COMMAND event_bridge_probe native)
     if(NOT NDPSIM_SANITIZE)
         add_test(NAME sst_event_bridge COMMAND "${NDPSIM_SST_EXECUTABLE}"
-            "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/m0.3a/bridge.py")
+            "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/regression/bridge_poc.py")
         set_tests_properties(sst_event_bridge PROPERTIES PASS_REGULAR_EXPRESSION "E1 PASS events=8" TIMEOUT 30)
         add_test(NAME sst_element_load COMMAND "${NDPSIM_SST_INFO_EXECUTABLE}"
             "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" ndpsim.System)
         set_tests_properties(sst_element_load PROPERTIES PASS_REGULAR_EXPRESSION "Component 0: System" TIMEOUT 30)
         add_test(NAME sst_lifecycle COMMAND "${NDPSIM_SST_EXECUTABLE}"
-            "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/m1.1/lifecycle.py")
+            "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/regression/lifecycle.py")
         set_tests_properties(sst_lifecycle PROPERTIES
             PASS_REGULAR_EXPRESSION "finish SST=1 ns MQSim=0 ns; device destroyed" TIMEOUT 30)
     endif()
@@ -130,7 +130,7 @@ endif()
 
 add_custom_target(run_lifecycle
     COMMAND "${NDPSIM_SST_EXECUTABLE}" "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>"
-        "${PROJECT_SOURCE_DIR}/configs/m1.1/lifecycle.py"
+        "${PROJECT_SOURCE_DIR}/configs/regression/lifecycle.py"
     DEPENDS ndpsim USES_TERMINAL)
 
 if(BUILD_TESTING)
@@ -138,7 +138,7 @@ if(BUILD_TESTING)
     target_link_libraries(formal_bridge_probe PRIVATE ndpsim_backend)
     add_test(NAME formal_bridge_guards COMMAND formal_bridge_probe)
     if(NOT NDPSIM_SANITIZE)
-        add_test(NAME sst_formal_bridge COMMAND "${NDPSIM_SST_EXECUTABLE}" "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/m1.2/bridge.py")
+        add_test(NAME sst_formal_bridge COMMAND "${NDPSIM_SST_EXECUTABLE}" "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/regression/event_bridge.py")
         set_tests_properties(sst_formal_bridge PROPERTIES PASS_REGULAR_EXPRESSION "M1.2 PASS" TIMEOUT 30)
     endif()
 endif()
@@ -192,7 +192,7 @@ target_sources(ndpsim PRIVATE src/sst/runtime_validation.cc)
 target_link_libraries(ndpsim PRIVATE ndpsim_runtime)
 if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
     add_test(NAME sst_runtime_visibility COMMAND "${NDPSIM_SST_EXECUTABLE}"
-        "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/m2.2/runtime.py")
+        "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/regression/runtime.py")
     set_tests_properties(sst_runtime_visibility PROPERTIES PASS_REGULAR_EXPRESSION "M2.2 SST PASS" TIMEOUT 30)
 endif()
 
@@ -218,7 +218,7 @@ target_sources(ndpsim PRIVATE src/sst/host_validation.cc)
 target_link_libraries(ndpsim PRIVATE ndpsim_host)
 if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
     add_test(NAME sst_host_cost COMMAND "${NDPSIM_SST_EXECUTABLE}"
-        "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/m2.3/host.py")
+        "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>" "${PROJECT_SOURCE_DIR}/configs/regression/host_cost.py")
     set_tests_properties(sst_host_cost PROPERTIES PASS_REGULAR_EXPRESSION "M2.3 SST PASS" TIMEOUT 30)
 endif()
 
@@ -230,8 +230,8 @@ target_sources(ndpsim PRIVATE src/sst/graph_host.cc)
 target_link_libraries(ndpsim PRIVATE ndpsim_search)
 if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
     find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
-    add_test(NAME sst_host_graph COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/run_m3_1.py"
-        --config "${PROJECT_SOURCE_DIR}/configs/m3.1/branch.json" --build "${PROJECT_BINARY_DIR}"
+    add_test(NAME sst_host_graph COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/run_graph.py"
+        --config "${PROJECT_SOURCE_DIR}/configs/regression/host-branch.json" --build "${PROJECT_BINARY_DIR}"
         --output "${PROJECT_BINARY_DIR}/m3.1-ctest")
     set_tests_properties(sst_host_graph PROPERTIES PASS_REGULAR_EXPRESSION "Recall@2=" TIMEOUT 120)
 endif()
@@ -255,7 +255,7 @@ if(BUILD_TESTING)
     endforeach()
     if(NOT NDPSIM_SANITIZE)
         add_test(NAME sst_local_read COMMAND "${NDPSIM_SST_EXECUTABLE}" "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>"
-            "${PROJECT_SOURCE_DIR}/configs/m3.2a/local.py")
+            "${PROJECT_SOURCE_DIR}/configs/regression/local_read.py")
         set_tests_properties(sst_local_read PROPERTIES PASS_REGULAR_EXPRESSION "M3.2a PASS" TIMEOUT 60)
     endif()
 endif()
@@ -274,7 +274,7 @@ if(BUILD_TESTING)
     add_test(NAME shared_pcie_mixed COMMAND pcie_probe)
     if(NOT NDPSIM_SANITIZE)
         add_test(NAME sst_shared_pcie COMMAND "${NDPSIM_SST_EXECUTABLE}" "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>"
-            "${PROJECT_SOURCE_DIR}/configs/m3.2b/pcie.py")
+            "${PROJECT_SOURCE_DIR}/configs/regression/pcie.py")
         set_tests_properties(sst_shared_pcie PROPERTIES PASS_REGULAR_EXPRESSION "M3.2b PASS" TIMEOUT 60)
     endif()
 endif()
@@ -301,7 +301,7 @@ if(BUILD_TESTING)
     endforeach()
     if(NOT NDPSIM_SANITIZE)
         add_test(NAME sst_controller_capacity COMMAND "${NDPSIM_SST_EXECUTABLE}" "--add-lib-path=$<TARGET_FILE_DIR:ndpsim>"
-            "${PROJECT_SOURCE_DIR}/configs/m3.3/controller.py")
+            "${PROJECT_SOURCE_DIR}/configs/regression/controller.py")
         set_tests_properties(sst_controller_capacity PROPERTIES PASS_REGULAR_EXPRESSION "M3.3 PASS" TIMEOUT 60)
     endif()
 endif()
@@ -312,17 +312,17 @@ if(BUILD_TESTING)
 endif()
 
 if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
-    add_test(NAME sst_graph_placements COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/run_m3_4.py"
-        --pair --config "${PROJECT_SOURCE_DIR}/configs/m3.4/branch.json" --build "${PROJECT_BINARY_DIR}"
+    add_test(NAME sst_graph_placements COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/run_pair.py"
+        --pair --config "${PROJECT_SOURCE_DIR}/configs/regression/placements-branch.json" --build "${PROJECT_BINARY_DIR}"
         --output "${PROJECT_BINARY_DIR}/m3.4-ctest")
     set_tests_properties(sst_graph_placements PROPERTIES PASS_REGULAR_EXPRESSION "M3.4 paired PASS" TIMEOUT 120)
 endif()
 
 if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
-    add_test(NAME sst_graph_concurrency_output COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/verify_m4_1.py"
+    add_test(NAME sst_graph_concurrency_output COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/verify_concurrency.py"
         --quick --build "${PROJECT_BINARY_DIR}" --output "${PROJECT_BINARY_DIR}/m4.1-ctest")
     set_tests_properties(sst_graph_concurrency_output PROPERTIES PASS_REGULAR_EXPRESSION "M4.1 PASS" TIMEOUT 120)
-    add_test(NAME acceptance_parameter_regression COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/verify_m4_2.py"
+    add_test(NAME acceptance_parameter_regression COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/verify_acceptance.py"
         --quick --build "${PROJECT_BINARY_DIR}" --output "${PROJECT_BINARY_DIR}/m4.2-ctest")
     set_tests_properties(acceptance_parameter_regression PROPERTIES PASS_REGULAR_EXPRESSION "M4.2 PASS" TIMEOUT 180)
 endif()

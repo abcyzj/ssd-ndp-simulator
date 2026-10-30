@@ -8,9 +8,9 @@ MQSim 适配与修复直接在 `third_party/MQSim` 子模块中开发，平台 C
 
 [deps.lock.json](../deps.lock.json) 保留 M0.2 原生基线 `51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16`、空补丁及原生工具链身份，不用它冒充已修改 MQSim 工作区的完整身份。
 
-[原生构建工具](../tools/macos_m0_2.py) 始终以 `git archive <锁定原生 commit>` 导出独立源码来构建 oracle，不复制 MQSim 开发工作区，不应用适配改动。MQSim 工作区允许有修改，脚本记录其身份但不会将其用于原生构建；SST 工作区仍须干净。已有 oracle 源码和二进制保持不变，原生构建回执用于核对。
+[原生构建工具](../tools/archive/v0.1/macos_m0_2.py) 始终以 `git archive <锁定原生 commit>` 导出独立源码来构建 oracle，不复制 MQSim 开发工作区，不应用适配改动。MQSim 工作区允许有修改，脚本记录其身份但不会将其用于原生构建；SST 工作区仍须干净。已有 oracle 源码和二进制保持不变，原生构建回执用于核对。
 
-[M1.1 验证工具](../tools/verify_m1_1.py) 则直接构建 `third_party/MQSim`，记录 HEAD、相对原生基线的 diff 哈希及逐文件哈希，并断言构建/测试期间源码不变。它同时核对原生归档和旧回执、二进制身份，再运行原生小读对照。两个来源各自承担职责，不混用基线和开发源码的身份。
+[M1.1 验证工具](../tools/archive/v0.1/verify_m1_1.py) 则直接构建 `third_party/MQSim`，记录 HEAD、相对原生基线的 diff 哈希及逐文件哈希，并断言构建/测试期间源码不变。它同时核对原生归档和旧回执、二进制身份，再运行原生小读对照。两个来源各自承担职责，不混用基线和开发源码的身份。
 
 ## M1.1 组织迁移记录
 

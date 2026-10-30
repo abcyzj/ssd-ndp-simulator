@@ -1,6 +1,6 @@
 # SSD NDP Simulator
 
-V0.1 是单 SSD、主机控制的只读图 ANNS 仿真平台。SST 统一模拟时间，MQSim 模拟存储和共享 PCIe；真实平方 L2 结果决定后续访问，可将距离计算放在主机或盘控。M4.2 已完成全部 AC，M4.3 的复建证据与当前状态见 [任务清单](docs/v0.1-tasks.md)。示例是简化图搜索，参数均为 `configured_unvalidated`。
+V0.1 是单 SSD、主机控制的只读图 ANNS 仿真平台。SST 统一模拟时间，MQSim 模拟存储和共享 PCIe；真实平方 L2 结果决定后续访问，可将距离计算放在主机或盘控。V0.1 交付范围与本次验证见[版本交接](docs/releases/v0.1.md)，按需阅读[现行文档索引](docs/README.md)；阶段过程见[历史归档](docs/archive/v0.1/README.md)。示例是简化图搜索，参数均为 `configured_unvalidated`。
 
 ## 只运行实验
 
@@ -16,10 +16,10 @@ python3 tools/run_experiment.py
 # 指定已有构建，单独运行盘控模式
 python3 tools/run_experiment.py --build build --mode controller --output results/controller-only
 # 使用自己的配置和已有数据，运行两种模式
-python3 tools/run_experiment.py --build build --config configs/m4.1/host.json --data results/controller-only/controller/data --output results/pair-2
+python3 tools/run_experiment.py --build build --config configs/experiments/host.json --data results/controller-only/controller/data --output results/pair-2
 ```
 
-`--mode pair|host|controller` 默认 `pair`，会覆盖配置中的 placement。输出目录必须不存在；重跑使用新的 `--output`。省略 `--data` 时按配置生成数据及计算 Recall 所需的离线精确真值；传入时复用已有数据和 `truth.json`。`--event-log` 只开启 JSONL 导出，不增加对照验证；也可在配置中设置 `event_log`。各模式保留配置、数据/源码/依赖哈希、top-k、Recall、模拟性能和 JSON/CSV 统计，口径见 [输出说明](docs/m4.1-concurrency-output.md)。保留运行所需的输入合法性和输出完整性检查。
+`--mode pair|host|controller` 默认 `pair`，会覆盖配置中的 placement。输出目录必须不存在；重跑使用新的 `--output`。省略 `--data` 时按配置生成数据及计算 Recall 所需的离线精确真值；传入时复用已有数据和 `truth.json`。`--event-log` 只开启 JSONL 导出，不增加对照验证；也可在配置中设置 `event_log`。各模式保留配置、数据/源码/依赖哈希、top-k、Recall、模拟性能和 JSON/CSV 统计，口径见 [输出说明](docs/output.md)。保留运行所需的输入合法性和输出完整性检查。
 
 ## 构建、测试与交付入口
 
@@ -31,7 +31,7 @@ python3 tools/run.py
 
 默认通过根 CMake 配置并编译，运行 CTest，再以同一份固定 seed 数据分别执行 host/controller。输出在 `results/delivery/{host,controller}/`；控制台给出阶段命令，详细输出在对应 `.log`。已有构建可复用，输出目录必须不存在；重跑时用 `--output results/delivery-2`。单独模式用 `--mode host` 或 `--mode controller`，均经过同一构建入口。默认 JSONL 关闭；加 `--event-log` 会记录事件并对两放置逐批决策和流量账本进行独立核对。
 
-默认 N=2048、d=32、R=16、Q=32、seed=42、k=10、L=32、B=1、E=64、chunk=16、max_inflight=1；算法、数值和布局详见 [图示例](docs/m3.1-host-graph.md) 与 [两种放置](docs/m3.4-placements.md)。Recall 真值由离线穷举生成，默认实测 Recall@10=0.2875；不以 Recall=1 或盘控更快为门槛。
+默认 N=2048、d=32、R=16、Q=32、seed=42、k=10、L=32、B=1、E=64、chunk=16、max_inflight=1；算法、数值和布局详见 [图示例](docs/search.md) 与 [两种放置](docs/controller.md)。Recall 真值由离线穷举生成，默认实测 Recall@10=0.2875；不以 Recall=1 或盘控更快为门槛。
 
 ## 环境与干净复建
 
@@ -42,10 +42,10 @@ python3 tools/run.py
 以下一条命令要求平台、ASan/slow 构建目录、显式 SST 缓存及输出均不存在，会从固定源码重新构建 SST、平台并运行两种模式、全部 AC、独立原生 oracle 与 ASan 探针：
 
 ```sh
-/opt/homebrew/Caskroom/miniconda/base/bin/python3.13 tools/run.py --clean-build --build build/m4.3-clean --sst-cache .cache/m4.3-clean-sst --output docs/evidence/m4.3 --event-log --verify-ac
+/opt/homebrew/Caskroom/miniconda/base/bin/python3.13 tools/run.py --clean-build --build build/v0.1-clean --sst-cache .cache/v0.1-clean-sst --output results/v0.1-clean --event-log --verify-ac
 ```
 
-复跑须换一组目录名。`--clean-build` 只检查目录，不删除已有内容；干净构建不等于全新操作系统，仍依赖预装工具和现有锁定子模块。完整方法、交付清单、输出解释与 AC 索引见 [M4.3 交付说明](docs/m4.3-delivery.md)。
+复跑须换一组目录名。`--clean-build` 只检查目录，不删除已有内容；干净构建不等于全新操作系统，仍依赖预装工具和现有锁定子模块。完整方法、交付清单、输出解释与 AC 索引见 [复建交付说明](docs/delivery.md)。
 
 ## 构建入口与配置
 
@@ -55,8 +55,8 @@ python3 tools/run.py
 cmake -S . -B build
 cmake --build build -j2
 ctest --test-dir build --output-on-failure
-python3 tools/run_m4_1.py --config configs/m4.1/host.json --build build --output results/host
-python3 tools/run_m4_1.py --config configs/m4.1/controller.json --build build --output results/controller --data results/host/data
+python3 tools/run_config.py --config configs/experiments/host.json --build build --output results/host
+python3 tools/run_config.py --config configs/experiments/controller.json --build build --output results/controller --data results/host/data
 ```
 
 CMake 在配置阶段调用 [prepare_sst.py](tools/prepare_sst.py)，只在 `.cache/sst/<配置键>/` 的固定源码副本执行 autogen、configure、make、install，SST 子模块不修改。有效缓存命中跳过准备；不同平台构建共享同配置安装。删除 `build` 不删除 SST 缓存；相同配置通过文件锁串行准备。工具链/Python/SDK/编译参数改变使用不同配置键。首次构建需等待 SST 完成；不依赖 M0.2 的安装或旧 build。MQSim 直接编译子模块源码，不应用 patch 栈。
@@ -77,7 +77,7 @@ macOS 默认用 xcrun 选择 SDK。`build/sst-paths.json` 记录实际 SST 路�
 ## 扩展、验收与边界
 
 - [扩展指南](docs/extensions.md)：实际 C++ 接口、算法/算子接入、数据布局和观测变更。
-- [完整验收](docs/m4.2-acceptance-regression.md)：`/opt/homebrew/Caskroom/miniconda/base/bin/python3.13 tools/verify_m4_2.py`；全部 AC 的输入、断言及复现入口。`--quick` 仅为小矩阵。
-- [输出口径](docs/m4.1-concurrency-output.md)：并发 1/2/4、接纳、JSON/CSV、可选 JSONL、分位数及资源统计。
+- [完整验收](docs/testing.md)：`/opt/homebrew/Caskroom/miniconda/base/bin/python3.13 tools/verify_acceptance.py`；全部 AC 的输入、断言及复现入口。`--quick` 仅为小矩阵。
+- [输出口径](docs/output.md)：并发 1/2/4、接纳、JSON/CSV、可选 JSONL、分位数及资源统计。
 - [模型限制](docs/model-limitations.md)：未校准参数、缓存/初态、独立缓冲、失败恢复和 Unsupported 能力。
 - [MQSim 改动与维护](docs/mqsim-source-management.md)、[MIT 许可证](LICENSE)。平台代码和文档使用 MIT License，第三方依赖保留各自原有许可证。

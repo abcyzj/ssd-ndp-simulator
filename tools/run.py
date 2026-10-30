@@ -8,8 +8,8 @@ import shutil
 import subprocess
 import sys
 from ann_data import digest, write_json
-from run_m3_1 import ROOT
-from verify_m1_1 import mqsim_source_snapshot
+from run_graph import ROOT
+from source_snapshot import mqsim_source_snapshot
 
 
 def main():
@@ -17,7 +17,7 @@ def main():
     p.add_argument('--build', type=Path, default=ROOT/'build/delivery')
     p.add_argument('--output', type=Path, default=ROOT/'results/delivery')
     p.add_argument('--mode', choices=('pair', 'host', 'controller'), default='pair')
-    p.add_argument('--config', type=Path, default=ROOT/'configs/m4.1/host.json')
+    p.add_argument('--config', type=Path, default=ROOT/'configs/experiments/host.json')
     p.add_argument('--data', type=Path)
     p.add_argument('--sst-cache', type=Path, help='CMake SST cache; omitted uses its default')
     p.add_argument('--clean-build', action='store_true', help='Require absent build, ASan/slow builds, and any explicit SST cache')
@@ -81,7 +81,7 @@ def main():
             config['placement'] = mode
             path = out/(mode+'-config.json')
             write_json(path, config)
-            argv = [sys.executable, ROOT/'tools/run_m4_1.py', '--config', path,
+            argv = [sys.executable, ROOT/'tools/run_config.py', '--config', path,
                     '--build', build, '--output', out/mode]
             if data:
                 argv += ['--data', data]
@@ -94,11 +94,11 @@ def main():
                 raise RuntimeError('pair top-k differs')
             manifest['assertions'].append('Same input bytes; exact top-k IDs/distances match in both modes')
             if config['event_log']:
-                from compare_m3_4 import compare
+                from compare_placements import compare
                 write_json(out/'comparison.json', compare(out/'host', out/'controller'))
                 manifest['assertions'].append('Independent per-batch replay and complete path/byte ledger passed')
         if a.verify_ac:
-            command('acceptance', [sys.executable, ROOT/'tools/verify_m4_2.py', '--build', build, '--output', out/'ac'])
+            command('acceptance', [sys.executable, ROOT/'tools/verify_acceptance.py', '--build', build, '--output', out/'ac'])
             matrix = json.loads((out/'ac/ac-matrix.json').read_text())
             if matrix['status'] != 'passed' or matrix['scope'] != 'full M4.2' or set(matrix['checks']) != {f'AC-{i:02}' for i in range(1, 12)}:
                 raise RuntimeError('full AC matrix missing or incomplete')
@@ -136,8 +136,8 @@ def main():
                 if (cache/'logs').exists():
                     shutil.copytree(cache/'logs', target/'logs', dirs_exist_ok=True)
         inputs = [ROOT/'AGENTS.md', ROOT/'CMakeLists.txt', ROOT/'deps.lock.json', ROOT/'README.md',
-                  ROOT/'LICENSE', *sorted((ROOT/'docs').glob('*.md')),
-                  *sorted((ROOT/'src').rglob('*')), *sorted((ROOT/'tools').glob('*.py')),
+                  ROOT/'LICENSE', *sorted(p for p in (ROOT/'docs').rglob('*.md') if 'evidence' not in p.relative_to(ROOT/'docs').parts),
+                  *sorted((ROOT/'src').rglob('*')), *sorted((ROOT/'tools').rglob('*.py')),
                   *sorted((ROOT/'tests').rglob('*')), *sorted((ROOT/'configs').rglob('*'))]
         manifest['inputs_sha256'] = {str(x.relative_to(ROOT)): digest(x) for x in inputs if x.is_file() and '__pycache__' not in x.parts and x.name != '.DS_Store'}
         manifest['artifacts_sha256'] = {str(x.relative_to(out)): digest(x) for x in out.rglob('*') if x.is_file()}
