@@ -13,5 +13,6 @@
 | `verify_acceptance.py` | 完整 AC-01～11；`--quick` 仍供 CTest 调用（原 verify_m4_2.py） |
 | `verify_contract.py` | 独立 ABI、语义账本与负例核查（原 verify_m0_4.py） |
 | `source_snapshot.py` | 共享 MQSim 源码身份记录，原 verify_m1_1.py 中的函数原样提取 |
+| `verify_m0.py`、`m0/build_builder.py`、`m0/run_probes.py`、`m0/summarize.py` | V0.2 T0 的原始文件完整校验、当前源码身份、独立进程资源记录、锁定离线 Faiss 构建、建图/初始化探针及证据核对；不是正式数据转换或规模查询验收，见 [M0 说明](../docs/m0-closeout.md) |
 
 [阶段复现脚本](archive/v0.1/README.md)保留历史验证逻辑，可按需执行，不是默认开发任务。当前工具不导入归档脚本；测试源码仍在 tests/，CTest 名称、断言与执行范围保留。旧路径已迁移，不留重名副本；旧命令请按本页映射更新。run_graph.py / run_pair.py 的低层 CLI 默认 smoke 仍引用归档配置以保持原行为，CTest 使用显式 regression 配置；日常 run.py / run_experiment.py 默认使用 experiments 配置。

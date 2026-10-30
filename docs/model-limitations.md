@@ -12,4 +12,6 @@ FP32 输入、固定顺序 FP64 L2、同分按 ID；同工具链下路径应稳�
 
 观测支持设备/请求/channel/die，channel bus 与 die array 按活动区间并集统计；plane/latch、peak RSS 明确 Unsupported。观测和中间记录仍保留内存，关闭 JSONL 不代表常量内存；不承诺十亿级数据规模。真实墙钟仅衡量仿真效率。
 
+V0.2 的 [M0 探针](m0-closeout.md)单独记录原始数据验证、离线 Faiss 和 SST 预装载进程的墙钟及 wait4 峰值 RSS；这不改变正式实验输出中 peak RSS 的 Unsupported 状态。探针的 2/16 GiB 局部几何不等于正式运行器已支持大 profile，也未包含大规模内容存储、查询与观测的全部内存。16 GiB 本机不能直接采用 Deep 建图 32 GiB 预算；完整 Deep10M 建图仍有资源出口门槛。数据使用条件见内容锁，不将项目或 Faiss 的 MIT 许可证扩展到 benchmark 数据。
+
 可复建指本机 macOS / arm64，已有固定子模块和预装工具时，从新的平台构建目录及新的 SST 缓存重建、运行两放置与 AC。不是全新 OS 配置、可移植二进制或无外部工具的 hermetic 构建。证据目录默认不入 Git，新检出须重跑生成；MQSim fork commit 必须可取得。平台代码和文档使用 [MIT License](../LICENSE)，第三方依赖保留各自原有许可证。可复建验收不等于已经完成公开发布。

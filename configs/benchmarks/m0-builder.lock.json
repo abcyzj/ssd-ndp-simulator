@@ -1,0 +1,56 @@
+{
+  "schema": "ndpsim-m0-builder-lock-v1",
+  "faiss_commit": "e8234e563f1ecef5f036e83c3cfee366d3f1fbca",
+  "faiss_version": "1.12.0",
+  "archives": {
+    "faiss-e8234e563f1ecef5f036e83c3cfee366d3f1fbca.tar.gz": {
+      "sha256": "7a5f93934bbcbeba6497331bce6293ea9a8874deec73e24ea4f8a94bd1d47971",
+      "bytes": 1170400,
+      "url": "https://codeload.github.com/facebookresearch/faiss/tar.gz/e8234e563f1ecef5f036e83c3cfee366d3f1fbca"
+    },
+    "openmp-20.1.8.src.tar.xz": {
+      "sha256": "b21c04ee9cbe56e200c5d83823765a443ee6389bbc3f64154c96e94016e6cee9",
+      "bytes": 1093976,
+      "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.8/openmp-20.1.8.src.tar.xz"
+    },
+    "cmake-20.1.8.src.tar.xz": {
+      "sha256": "3319203cfd1172bbac50f06fa68e318af84dcb5d65353310c0586354069d6634",
+      "bytes": 8652,
+      "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.8/cmake-20.1.8.src.tar.xz"
+    }
+  },
+  "licenses": {
+    "faiss-e8234e563f1ecef5f036e83c3cfee366d3f1fbca/LICENSE": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+    "openmp-20.1.8.src/LICENSE.TXT": "fdad1758a9e1f9d5a81e18879b3406772115edc92c24bfa36b70c654f325e8e4"
+  },
+  "configuration": {
+    "FAISS_OPT_LEVEL": "generic",
+    "FAISS_ENABLE_GPU": false,
+    "FAISS_ENABLE_PYTHON": false,
+    "FAISS_ENABLE_C_API": false,
+    "BLAS_LAPACK": "Apple Accelerate",
+    "BUILD_TESTING": false
+  },
+  "system": {
+    "os_version": "26.5.1",
+    "os_build": "25F80",
+    "sdk_version": "26.5",
+    "sdk_build": "25F70",
+    "sdk_settings_sha256": "f8d005f09381389167f9e0aeaa169bc9e7dff162ef22ca2fd8e98df7ff1acafe",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin\n",
+    "compiler_sha256": "1220c0afafa12a6ae599d097ee7cf8b87c6b4d8e3fbb9783cee6b319a80683ba",
+    "cmake_sha256": "f843e63e8746ae729f53f992e77ce5e79d42dfa9b25d96c691ec6b2544a9954e"
+  },
+  "seed_policy": {
+    "nsg_default": 2307,
+    "nsg_init_graph_local": 4660,
+    "nndescent_internal_default": 2021,
+    "note": "IndexNSG.add creates internal NNDescent; its random_seed is not exposed. Preserve upstream defaults, no fictitious seed=42."
+  },
+  "runtime_dependencies": [
+    "\t@rpath/libomp.dylib (compatibility version 5.0.0, current version 5.0.0)",
+    "\t/System/Library/Frameworks/Accelerate.framework/Versions/A/Accelerate (compatibility version 1.0.0, current version 4.0.0)",
+    "\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2100.43.0)",
+    "\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1356.0.0)"
+  ]
+}

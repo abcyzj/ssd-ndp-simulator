@@ -1,0 +1,128 @@
+{
+  "schema": "ndpsim-benchmark-content-lock-v1",
+  "verified_on": "2026-10-30 Asia/Shanghai",
+  "validator_sha256": "525f9c7255d5f98212b36ff03d0e4be8414488425bc70a17a75b626862ae0067",
+  "metric": "squared_l2",
+  "canonical_base_id": "original file row number, zero-based; no reorder",
+  "normalized_artifacts": null,
+  "normalized_artifacts_reason": "T1 not started; M0 validates raw files only",
+  "datasets": {
+    "sift1m": {
+      "source_page": "http://corpus-texmex.irisa.fr/",
+      "source_page_sha256": "0fa52297e5f5b92820296f7b617368e4d31e75ebe667a199879f9e77fce7a7e3",
+      "download_url": "ftp://ftp.irisa.fr/local/texmex/corpus/sift.tar.gz",
+      "download_exit_code": 0,
+      "transport": "official FTP (no authenticated TLS); official HTTPS certificate name mismatch recorded",
+      "archive": {
+        "file": "sift.tar.gz",
+        "bytes": 168280445,
+        "sha256": "92f1270c5e3a0cb46b89983e72b0511e4df065c31a9fa0276d8c9b1fca5bc81a",
+        "official_md5": "b23d1b3b2ee8469d819b61ca900ef0ed",
+        "actual_md5": "b23d1b3b2ee8469d819b61ca900ef0ed",
+        "md5_source": "ftp://ftp.irisa.fr/local/texmex/corpus/MD5SUM",
+        "md5_table_sha256": "30a51dc5d0f8c8d58cecf50e0f5f302b3d0b4b41db0cd36cb0bd833c87576bd8"
+      },
+      "usage_conditions": {
+        "observed": "Public ANN research benchmark; official page asks citation of the introducing paper. No standalone dataset license grant found on the inspected source page.",
+        "source_code_license_does_not_apply_to_data": true,
+        "redistribution_permission": "not established; raw data not included in repository"
+      },
+      "preprocessing": "none by this project",
+      "files": {
+        "base": {
+          "format": "fvecs",
+          "count": 1000000,
+          "dimensions": 128,
+          "bytes": 516000000,
+          "sha256": "21f66e2975057b5728ba56de1c825bac4f4d89d596609ae985741c6242631816",
+          "dtype": "float32",
+          "byte_order": "little",
+          "validation": "complete file",
+          "id_bound": null
+        },
+        "query": {
+          "format": "fvecs",
+          "count": 10000,
+          "dimensions": 128,
+          "bytes": 5160000,
+          "sha256": "f7fc9be140accdfd64116c2fa2365ecdb69b8f084970c6b0532db5ff79ac8fdc",
+          "dtype": "float32",
+          "byte_order": "little",
+          "validation": "complete file",
+          "id_bound": null
+        },
+        "learn": {
+          "format": "fvecs",
+          "count": 100000,
+          "dimensions": 128,
+          "bytes": 51600000,
+          "sha256": "331bc82b6a0e89465776a3ba0c2113e0bd0cceaa014ec3ed639bc8b981af72ea",
+          "dtype": "float32",
+          "byte_order": "little",
+          "validation": "complete file",
+          "id_bound": null
+        },
+        "groundtruth": {
+          "format": "ivecs",
+          "count": 10000,
+          "dimensions": 100,
+          "bytes": 4040000,
+          "sha256": "2b71de0a8d5a83e6a84eec3e23fb8b611d8801dd9b3a6cd62f070ab65ea65f4f",
+          "dtype": "int32",
+          "byte_order": "little",
+          "validation": "complete file",
+          "id_bound": 1000000
+        }
+      },
+      "groundtruth_scope": "IDs only; K=100 on full 1M base, official row order; T2 must validate binding on import"
+    },
+    "deep10m": {
+      "source_page": "https://research.yandex.com/blog/benchmarks-for-billion-scale-similarity-search",
+      "source_page_sha256": "904e2f2866e55bd0d47d9e5105382b76c992eafbead7085e0f998e6d92df0ba7",
+      "urls": {
+        "base": "https://storage.yandexcloud.net/yandex-research/ann-datasets/DEEP/base.10M.fbin",
+        "query": "https://storage.yandexcloud.net/yandex-research/ann-datasets/DEEP/query.public.10K.fbin"
+      },
+      "download_exit_codes": {
+        "base": 0,
+        "query": 0
+      },
+      "usage_conditions": {
+        "observed": "Official public benchmark for similarity-search research; no separate dataset license grant found on the inspected announcement.",
+        "source_code_license_does_not_apply_to_data": true,
+        "redistribution_permission": "not established; raw data not included in repository"
+      },
+      "preprocessing": "upstream PCA to 96 dimensions and L2 normalized; no further project normalization",
+      "files": {
+        "base": {
+          "format": "fbin",
+          "count": 10000000,
+          "dimensions": 96,
+          "bytes": 3840000008,
+          "sha256": "290b341abc7ba570541e013fd20fd6d38c5873490ef395b512de5ed8dee18ce7",
+          "dtype": "float32",
+          "byte_order": "little",
+          "validation": "complete file",
+          "id_bound": null
+        },
+        "query": {
+          "format": "fbin",
+          "count": 10000,
+          "dimensions": 96,
+          "bytes": 3840008,
+          "sha256": "8438fc763f14e0f9741fda15b3e11215aef089ce17d1ad47d53b52a7c9fda5bb",
+          "dtype": "float32",
+          "byte_order": "little",
+          "validation": "complete file",
+          "id_bound": null
+        }
+      },
+      "learn": "not used by NSGFlat flow; 350M learning set not downloaded",
+      "groundtruth": null,
+      "groundtruth_policy": "recompute selected queries against this exact full 10M file; do not filter 1B groundtruth",
+      "base_identity": "official standalone 10M file; no inferred mapping to 1B row IDs"
+    }
+  },
+  "query_selection_file": "configs/benchmarks/v0.2-query-selection.json",
+  "query_selection_sha256": "3eb24545fa3aa8c603bee3595a65b6e261fc921fe7929a6557e4012cac24d624"
+}

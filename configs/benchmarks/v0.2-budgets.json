@@ -1,0 +1,112 @@
+{
+  "schema": "ndpsim-resource-budget-v1",
+  "physical_ram_bytes": 17179869184,
+  "process_fraction": 0.6,
+  "effective_process_cap_bytes": 10307921510,
+  "disk_reserve_bytes": 21474836480,
+  "units": "GiB=2^30; hours=3600 seconds",
+  "stage_limits": {
+    "import": {
+      "sift": [
+        1,
+        1800
+      ],
+      "deep": [
+        1,
+        7200
+      ]
+    },
+    "builder": {
+      "sift": [
+        8,
+        28800
+      ],
+      "deep": [
+        32,
+        172800
+      ]
+    },
+    "truth": {
+      "sift": [
+        2,
+        7200
+      ],
+      "deep": [
+        2,
+        43200
+      ]
+    },
+    "preload": {
+      "sift": [
+        4,
+        3600
+      ],
+      "deep": [
+        12,
+        28800
+      ]
+    },
+    "query_per_point": {
+      "sift": [
+        4,
+        7200
+      ],
+      "deep": [
+        12,
+        28800
+      ]
+    },
+    "postprocess": {
+      "sift": [
+        0.5,
+        600
+      ],
+      "deep": [
+        0.5,
+        1800
+      ]
+    }
+  },
+  "disk_peak_budget_gib": {
+    "sift": 15,
+    "deep": 60
+  },
+  "effective_limit_rule": "min(stage RSS limit, 60% physical RAM); Deep 32GiB/12GiB limits are not available on this host",
+  "quality_gate": {
+    "coverage": 1.0,
+    "entry_reachable": 1.0,
+    "builder_recall_at_10": 0.95,
+    "builder_search_L": 256,
+    "project_highest_budget_recall_at_10": 0.9
+  },
+  "search_matrix": {
+    "L_E": [
+      [
+        32,
+        64
+      ],
+      [
+        64,
+        128
+      ],
+      [
+        128,
+        256
+      ],
+      [
+        256,
+        512
+      ]
+    ],
+    "k": 10,
+    "B": 1,
+    "chunk": 16,
+    "max_inflight": 1,
+    "concurrency": [
+      2,
+      4
+    ]
+  },
+  "parameter_source": "configured_unvalidated; frozen resource constraints, not predicted performance",
+  "deep_full_builder": "resource gate remains open; no automatic scope reduction or 10M execution"
+}

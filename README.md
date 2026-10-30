@@ -2,6 +2,12 @@
 
 V0.1 是单 SSD、主机控制的只读图 ANNS 仿真平台。SST 统一模拟时间，MQSim 模拟存储和共享 PCIe；真实平方 L2 结果决定后续访问，可将距离计算放在主机或盘控。V0.1 交付范围与本次验证见[版本交接](docs/releases/v0.1.md)，按需阅读[现行文档索引](docs/README.md)；阶段过程见[历史归档](docs/archive/v0.1/README.md)。示例是简化图搜索，参数均为 `configured_unvalidated`。
 
+## V0.2 开发入口
+
+当前进入 V0.2 开发，需求依据为 [V0.2 PRD](docs/prd-v0.2.md)，执行顺序与阶段门槛见 [V0.2 实施计划](docs/v0.2-implementation-plan.md)。目标是先 SIFT1M、再 Deep10M 的真实 benchmark 接入，继承单 SSD、只读、主机控制搜索和 host/controller 对照边界。
+
+T0/M0 已完成原始数据身份锁、离线建图依赖锁与本机探针、资源预算及 SST 初始化测量，见 [M0 实证与限制](docs/m0-closeout.md)。下一任务是 T1/M1，本轮未启动。Deep10M 全量建图仍有本机资源出口门槛；当前正式运行方式及已验证查询能力仍为下述 V0.1 基线，尚未完成 V0.2 功能或规模验收。
+
 ## 只运行实验
 
 已有构建产物时，使用独立实验入口：
