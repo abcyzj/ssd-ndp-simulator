@@ -5,10 +5,12 @@
 #include "search/graph.h"
 #include "model/controller.h"
 #include "backend/observation.h"
+#include "observation/output.h"
 #include <sstream>
 #include <fstream>
 #include <iomanip>
 #include <cstring>
+#include <chrono>
 namespace ndpsim {
 namespace {
 content::Bytes load(const std::string& path, size_t expected) {
@@ -68,6 +70,7 @@ public:
                             {"vector_sector_bound", "vector sector coverage bytes", "512"},
                             {"max_inflight", "finite query admission limit", "1"},
                             {"event_log", "enable JSONL events", "0"},
+                            {"output_budget_bytes", "required+detail byte budget", "2147483648"},
                             {"records", "mandatory result records", ""},
                             {"data", "Validated dataset directory", ""},
                             {"vector_file", "Validated FP32 base file", ""},
@@ -178,6 +181,8 @@ public:
         handles_ = std::make_unique<content::Handles>(*store_);
         layout_ = std::make_unique<content::Layout>(*store_, ann_.end_lba, ann_, cfg_.count);
         device_ = std::make_unique<OrdinaryDevice>(preload, profile.name, resource_budget);
+        output_budget_.limit = p.find<uint64_t>("output_budget_bytes", uint64_t(2) << 30);
+        out_.exceptions(std::ios::badbit);
         records_.open(p.find<std::string>("records", ""));
         if (!records_)
             throw std::invalid_argument("cannot open graph records");
@@ -193,7 +198,7 @@ public:
                  << ",\"raw_sectors\":" << profile.raw_sectors
                  << ",\"page_sectors\":" << profile.page_sectors
                  << ",\"preload_sectors\":" << preload << "}\n";
-        observation_ = std::make_unique<Observation>();
+        observation_ = std::make_unique<Observation>(false);
         link_ = configureSelfLink(
             "wake", "1ns", new SST::Event::Handler<GraphHost, &GraphHost::wake>(this));
         auto now = [this] {
@@ -276,6 +281,47 @@ public:
             controller_ = std::make_unique<model::Controller>(
                 *rt_, *handles_, *layout_, *local_, *transport_, *bridge_, now, cc);
         }
+        rt_->statistics_only();
+        handles_->statistics_only();
+        cpu_->observations().sink = [this](const auto& s) {
+            records_ << "{\"type\":\"service\",\"task\":" << s.task << ",\"query\":" << s.query
+                     << ",\"ready_ns\":" << s.ready_ns << ",\"read_bytes\":" << s.work.read_bytes
+                     << ",\"write_bytes\":" << s.work.write_bytes << ",\"kind\":\""
+                     << (s.kind == model::Kind::Distance ? "distance" : "control")
+                     << "\",\"start_ns\":" << s.start_ns << ",\"submitted_ns\":" << s.submitted_ns
+                     << ",\"end_ns\":" << s.end_ns << ",\"flops\":" << s.work.flops
+                     << ",\"checks\":" << s.work.candidate_checks
+                     << ",\"comparisons\":" << s.work.comparisons << "}\n";
+        };
+        if (controller_) {
+            controller_->observations().sink = [this](const auto& r) {
+                records_ << "{\"type\":\"local_storage\",\"query\":" << r.query
+                         << ",\"task\":" << r.task << ",\"submitted_ns\":" << r.submitted
+                         << ",\"completed_ns\":" << r.completed
+                         << ",\"sector_bytes\":" << r.sector_bytes << ",\"requests\":" << r.requests
+                         << ",\"transactions\":" << r.transactions << "}\n";
+            };
+            transport_->observations().sink = [this](const auto& r) {
+                records_ << "{\"type\":\"message\",\"id\":" << r.id
+                         << ",\"kind\":" << unsigned(r.kind) << ",\"query\":" << r.query
+                         << ",\"task\":" << r.task << ",\"payload\":" << r.payload
+                         << ",\"useful\":" << r.useful << ",\"submitted_ns\":" << r.submitted
+                         << ",\"arrived_ns\":" << r.arrived << "}\n";
+            };
+            controller_->buffer().observations().sink = [this](const auto& r) {
+                records_ << "{\"type\":\"credit\",\"time_ns\":" << r.time << ",\"id\":" << r.id
+                         << ",\"query\":" << r.query << ",\"task\":" << r.task
+                         << ",\"bytes\":" << r.bytes << ",\"used\":" << r.used
+                         << ",\"reserve\":" << (r.reserve ? "true" : "false") << "}\n";
+            };
+            for (auto* resource : {&controller_->port(), &controller_->compute()})
+                resource->observations().sink = [this](const auto& r) {
+                    records_ << "{\"type\":\"controller_service\",\"stage\":\"" << r.stage
+                             << "\",\"query\":" << r.query << ",\"task\":" << r.task
+                             << ",\"submitted_ns\":" << r.submitted << ",\"start_ns\":" << r.start
+                             << ",\"end_ns\":" << r.end << ",\"bytes\":" << r.bytes << "}\n";
+                };
+        }
         registerAsPrimaryComponent();
         primaryComponentDoNotEndSim();
     }
@@ -284,6 +330,14 @@ public:
         bridge_->start();
     }
     void finish() override {
+        auto wall_end = std::chrono::steady_clock::now();
+        auto seconds = [](auto duration) {
+            return std::chrono::duration<double>(duration).count();
+        };
+        std::printf("NDPSIM_EFFICIENCY "
+                    "{\"initialization_wall_seconds\":%.9g,\"query_wall_seconds\":%.9g}\n",
+                    seconds(query_wall_start_ - wall_start_),
+                    seconds(wall_end - query_wall_start_));
         store_->verify_identity();
         if (completed_ != nq_ || active_ || !requests_.empty() || cpu_->busy() ||
             rt_->live_results() || handles_->live_records())
@@ -309,29 +363,6 @@ public:
                 controller_->sessions() || controller_->pending_protocol() || local_->pending() ||
                 transport_->pending())
                 throw std::logic_error("controller graph resources leaked");
-            for (auto& r : controller_->storage())
-                out_ << "{\"type\":\"local_storage\",\"query\":" << r.query
-                     << ",\"task\":" << r.task << ",\"submitted_ns\":" << r.submitted
-                     << ",\"completed_ns\":" << r.completed
-                     << ",\"sector_bytes\":" << r.sector_bytes << ",\"requests\":" << r.requests
-                     << ",\"transactions\":" << r.transactions << "}\n";
-            for (auto& r : transport_->records())
-                out_ << "{\"type\":\"message\",\"id\":" << r.id << ",\"kind\":" << unsigned(r.kind)
-                     << ",\"query\":" << r.query << ",\"task\":" << r.task
-                     << ",\"payload\":" << r.payload << ",\"useful\":" << r.useful
-                     << ",\"submitted_ns\":" << r.submitted << ",\"arrived_ns\":" << r.arrived
-                     << "}\n";
-            for (auto& r : controller_->buffer().records())
-                out_ << "{\"type\":\"credit\",\"time_ns\":" << r.time << ",\"id\":" << r.id
-                     << ",\"query\":" << r.query << ",\"task\":" << r.task
-                     << ",\"bytes\":" << r.bytes << ",\"used\":" << r.used
-                     << ",\"reserve\":" << (r.reserve ? "true" : "false") << "}\n";
-            for (auto* resource : {&controller_->port(), &controller_->compute()})
-                for (auto& r : resource->records())
-                    out_ << "{\"type\":\"controller_service\",\"stage\":\"" << r.stage
-                         << "\",\"query\":" << r.query << ",\"task\":" << r.task
-                         << ",\"submitted_ns\":" << r.submitted << ",\"start_ns\":" << r.start
-                         << ",\"end_ns\":" << r.end << ",\"bytes\":" << r.bytes << "}\n";
         }
         for (auto& [q, v] : read_totals_)
             out_ << "{\"type\":\"ordinary_storage\",\"query\":" << q << ",\"requests\":" << v[0]
@@ -342,21 +373,30 @@ public:
                  << ",\"wire_bytes\":" << v[2] << ",\"service_ns\":" << v[3] << "}\n";
         out_ << "{\"type\":\"path_summary\",\"ordinary_dma_bytes\":" << dma_
              << ",\"controller\":" << (controller_mode_ ? "true" : "false") << "}\n";
+        records_ << "{\"type\":\"lifecycle\",\"runtime_tasks\":" << rt_->task_records()
+                 << ",\"runtime_peak_tasks\":" << rt_->peak_tasks()
+                 << ",\"waiters\":" << rt_->wait_records()
+                 << ",\"leases\":" << handles_->lease_records()
+                 << ",\"transitions\":" << rt_->transitions().size()
+                 << ",\"releases\":" << handles_->releases().size()
+                 << ",\"host_history\":" << cpu_->services().size()
+                 << ",\"protocol_tasks\":" << (controller_ ? controller_->protocol_tasks() : 0)
+                 << ",\"protocol_ranges\":" << (controller_ ? controller_->protocol_ranges() : 0)
+                 << ",\"transport_history\":" << (transport_ ? transport_->records().size() : 0)
+                 << ",\"resource_history\":"
+                 << (controller_
+                         ? controller_->storage().size() + controller_->buffer().records().size() +
+                               controller_->port().records().size() +
+                               controller_->compute().records().size()
+                         : 0)
+                 << "}\n";
         out_ << "{\"type\":\"summary\",\"queries\":" << completed_ << ",\"origin_ns\":" << origin_
              << ",\"end_ns\":" << last_result_ << ",\"drain_end_ns\":" << getCurrentSimTimeNano()
              << ",\"peak_inflight\":" << peak_active_ << ",\"admission_limit\":" << limit()
              << ",\"live_results\":0,\"live_content\":0,\"useful_bytes\":" << useful_
              << ",\"sector_bytes\":" << sectors_ * 512
-             << ",\"services\":" << cpu_->services().size() << "}\n";
-        for (const auto& s : cpu_->services())
-            out_ << "{\"type\":\"service\",\"task\":" << s.task << ",\"query\":" << s.query
-                 << ",\"ready_ns\":" << s.ready_ns << ",\"read_bytes\":" << s.work.read_bytes
-                 << ",\"write_bytes\":" << s.work.write_bytes << ",\"kind\":\""
-                 << (s.kind == model::Kind::Distance ? "distance" : "control")
-                 << "\",\"start_ns\":" << s.start_ns << ",\"submitted_ns\":" << s.submitted_ns
-                 << ",\"end_ns\":" << s.end_ns << ",\"flops\":" << s.work.flops
-                 << ",\"checks\":" << s.work.candidate_checks
-                 << ",\"comparisons\":" << s.work.comparisons << "}\n";
+             << ",\"services\":" << cpu_->observations().count << "}\n";
+
         out_.flush();
         if (log_.is_open()) {
             log_.flush();
@@ -438,11 +478,23 @@ private:
             start_query(++submitted_);
     }
     void retired(uint64_t q) {
+        if (auto it = read_totals_.find(q); it != read_totals_.end()) {
+            auto& v = it->second;
+            records_ << "{\"type\":\"ordinary_storage\",\"query\":" << q << ",\"requests\":" << v[0]
+                     << ",\"useful_bytes\":" << v[1] << ",\"sector_bytes\":" << v[2] << "}\n";
+            read_totals_.erase(it);
+        }
+        decision_digest_.erase(q);
         --active_;
         ++completed_;
         bridge_->enqueue(
             getCurrentSimTimeNano(), EventBridge::ContinueSubmit, "admit query", [this, q] {
                 sessions_.erase(q);
+                records_ << "{\"type\":\"lifecycle_sample\",\"completed\":" << completed_
+                         << ",\"runtime_tasks\":" << rt_->task_records()
+                         << ",\"waiters\":" << rt_->wait_records()
+                         << ",\"leases\":" << handles_->lease_records()
+                         << ",\"sessions\":" << sessions_.size() << "}\n";
                 next();
             });
     }
@@ -452,6 +504,7 @@ private:
         auto begin = queries_.begin() + (q - 1) * uint64_t(d_) * 4;
         content::Bytes qb(begin, begin + uint64_t(d_) * 4);
         auto start = getCurrentSimTimeNano();
+        decision_digest_[q] = 14695981039346656037ULL;
         search::GraphSearch::Score scorer;
         if (controller_) {
             // Decode the validated FP32 query without giving the search state machine content access.
@@ -508,6 +561,15 @@ private:
                     out_ << d.expand[i];
                 }
                 out_ << "]}\n";
+                std::ostringstream decision;
+                score_json(decision, d.candidates);
+                for (auto id : d.expand)
+                    decision << ':' << id;
+                auto& digest = decision_digest_.at(q);
+                for (unsigned char byte : decision.str()) {
+                    digest ^= byte;
+                    digest *= 1099511628211ULL;
+                }
             },
             [this, q, start](auto scores, auto expanded) {
                 last_result_ = getCurrentSimTimeNano();
@@ -517,6 +579,7 @@ private:
                     << ",\"admission_wait_ns\":" << start - origin_
                     << ",\"offered_latency_ns\":" << last_result_ - origin_
                     << ",\"latency_ns\":" << last_result_ - start << ",\"expanded\":" << expanded
+                    << ",\"decision_digest_fnv1a64\":" << decision_digest_.at(q)
                     << ",\"insufficient\":" << (scores.size() < cfg_.k ? "true" : "false")
                     << ",\"top_k\":";
                 score_json(row, scores);
@@ -548,6 +611,8 @@ private:
                 device_->window->advance(!Simulator->Peek_next_time(), getCurrentSimTimeNano())) {
                 measuring_ = true;
                 origin_ = device_->window->origin();
+                observation_->reset_window();
+                query_wall_start_ = std::chrono::steady_clock::now();
                 next();
             }
             rt_->require_progress();
@@ -558,9 +623,12 @@ private:
             getSimulationOutput().fatal(CALL_INFO, 1, "%s\n", ex.what());
         }
     }
+    std::chrono::steady_clock::time_point wall_start_ = std::chrono::steady_clock::now(),
+                                          query_wall_start_;
     bool controller_mode_ = false;
     uint64_t capacity_ = 0, last_result_ = 0, active_ = 0, peak_active_ = 0;
     uint32_t submitted_ = 0, max_inflight_ = 1;
+    std::map<uint64_t, uint64_t> decision_digest_;
     std::map<uint64_t, std::array<uint64_t, 3>> read_totals_;
     std::map<unsigned, std::array<uint64_t, 4>> link_totals_;
     std::unique_ptr<Observation> observation_;
@@ -580,7 +648,8 @@ private:
         }
     } null_;
     std::ostream out_{&null_};
-    std::ofstream records_, log_;
+    OutputBudget output_budget_;
+    BudgetFile records_{output_budget_}, log_{output_budget_};
     content::Bytes queries_;
     content::AnnLayout ann_;
     std::unique_ptr<content::ContentStore> store_;

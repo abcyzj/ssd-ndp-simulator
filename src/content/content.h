@@ -1,4 +1,5 @@
 #pragma once
+#include "observation/history.h"
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -157,6 +158,7 @@ public:
 
 private:
     uint64_t id_ = 0, lease_ = 0;
+    std::shared_ptr<bool> active_ = std::make_shared<bool>(true);
     Handle(uint64_t id, uint64_t lease) : id_(id), lease_(lease) {
     }
     friend class Handles;
@@ -196,6 +198,14 @@ public:
         return records_.size();
     }
 
+public:
+    void statistics_only() {
+        releases_.enabled = false;
+    }
+    size_t lease_records() const {
+        return leases_.size();
+    }
+
 private:
     struct Record {
         HandleInfo info;
@@ -204,12 +214,12 @@ private:
     };
     struct Lease {
         uint64_t id;
-        bool internal, active = true;
+        bool internal;
     };
     const ContentStore& store_;
     std::map<uint64_t, Record> records_;
-    std::map<uint64_t, Lease> leases_; // Tombstones diagnose repeated release without ID reuse.
-    std::vector<Release> releases_;
+    std::map<uint64_t, Lease> leases_; // Only active leases; copied tokens share a released bit.
+    History<Release> releases_;
     Record& checked(Handle);
     const Record& checked(Handle) const;
     Handle acquire(Handle, bool internal);

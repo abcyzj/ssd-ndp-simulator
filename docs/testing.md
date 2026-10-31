@@ -65,3 +65,7 @@ CTest `simulation_input_schema` 覆盖相对路径、入口匹配、K≥k、未�
 CTest 新增 `device_profiles`、`mapped_content`、三个 profile 的实际 namespace/资源预检与 namespace 越界测试；当前常规配置共 64 项（以实际发现为准）。原有 V0.1 用例全部保留。`tools/verify_t4.py` 实际交叉运行 memory/mmap × host/controller，覆盖 d128/d96 的并发4、d260 跨页的接纳降额2，以及 T2 真实 SIFT 10k/32 query。比较完整事件、结果及除墙钟外的全部模拟统计，独立核对每批决策、请求完成因果、流量和 credit。参数和证据见 [T4 内容/profile](t4-content-profiles.md) 与 [收口](t4-closeout.md)。
 
 涉及后端，本轮另跑完整 `verify_acceptance.py` 的锁定原生 QD1/QD32/小 CMT 对照及 ASan 矩阵，映射内容探针另外在 ASan 构建下运行。以上不替代 T5 历史事件增长测试或 T6/T7 完整 base 的初始化/查询矩阵。
+
+## V0.2 T5 观测与生命周期
+
+新增 CTest `observation_lifecycle`（10,000 次任务/lease 回收、非复用 ID、失败在途 completion 保留、20,000 条乱序/重叠/跨窗口/零长度区间外排序独立核对）和 `streaming_output`（1,000→30,000 条资源记录，导出字段/CSV 和 Python 堆增长）。常规配置共 66 项，以实际发现为准；既有回归及断言保留。`tools/verify_t5.py` 运行固定 N256/d128/R8/E8/并发4、Q32/128/512 两放置三次重复、统计/详细等价、终态及退休容器计数、RSS 阈值和明确预算失败；可选真实 T2 SIFT 10k/32 query 完整逐批/账本对照。实际证据与未执行范围见 [T5 收口](t5-closeout.md)。

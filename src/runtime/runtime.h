@@ -1,4 +1,5 @@
 #pragma once
+#include "observation/history.h"
 #include "backend/event_bridge.h"
 #include "content/content.h"
 #include <memory>
@@ -72,6 +73,9 @@ public:
     void service_done(uint64_t task);
     void return_done(uint64_t task);
     void fail(uint64_t task, Code, std::string detail);
+    // Trusted adapter only: local I/O, compute/staging and error return have all
+    // drained. No future service/return completion will be delivered for task.
+    void fail_after_drain(uint64_t task, Code, std::string detail);
     void require_progress() const;
     std::string diagnostic() const;
     size_t live_results() const;
@@ -81,13 +85,28 @@ public:
         return transitions_;
     }
 
+public:
+    void statistics_only() {
+        transitions_.enabled = false;
+    }
+    size_t peak_tasks() const {
+        return peak_tasks_;
+    }
+    size_t task_records() const {
+        return tasks_.size();
+    }
+    size_t wait_records() const {
+        return waits_.size();
+    }
+
 private:
     struct Task {
         Operation op;
         std::shared_ptr<Record> result;
         State state = State::Submitted;
         uint64_t wait = 0;
-        bool return_arrived = false;
+        bool return_arrived = false, service_pending = false, return_pending = false;
+        size_t callbacks = 0;
     };
     struct Wait {
         uint64_t id;
@@ -99,15 +118,17 @@ private:
     std::map<uint64_t, Task> tasks_;
     std::map<uint64_t, Wait> waits_;
     uint64_t next_wait_ = 1;
-    std::vector<Transition> transitions_;
+    size_t peak_tasks_ = 0;
+    History<Transition> transitions_;
     std::shared_ptr<Record> checked(Handle) const;
     Task& task(uint64_t);
     void transition(Task&, State);
+    void defer(uint64_t, EventBridge::Phase, std::string, std::function<void()>);
     uint64_t wait(std::vector<Handle>, uint64_t, std::function<void(Outcome)>);
     void scan();
     void publish(uint64_t);
     void failed(uint64_t, Failure);
-    void collect(const std::shared_ptr<Record>&);
+    void collect(std::shared_ptr<Record>);
     void boundary(uint64_t, State, State);
 };
 class View {

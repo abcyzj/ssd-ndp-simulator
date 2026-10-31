@@ -265,7 +265,7 @@ void Controller::fail_open(const std::shared_ptr<Session>& s,
     send(m, [this, s, task, code, detail](auto) {
         buffer_.release(s->credit, query_bytes_);
         s->bytes.clear();
-        runtime_.fail(task, code, detail);
+        runtime_.fail_after_drain(task, code, detail);
         runtime_.release(s->opened);
         for (auto h : s->batches)
             runtime_.release(h);
@@ -303,7 +303,7 @@ void Controller::fail_chunk(const std::shared_ptr<Session>& s,
         buffer_.release(c->credit, c->output);
         c->output = 0;
         c->result.clear();
-        runtime_.fail(c->task, c->code, c->detail);
+        runtime_.fail_after_drain(c->task, c->code, c->detail);
         --s->outstanding;
         close_ready(s);
     });

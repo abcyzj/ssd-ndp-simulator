@@ -32,3 +32,7 @@
 ## V0.2 T4
 
 `device_profiles.py` 从 `configs/profiles/devices.json` 与原 native XML 生成正式 profile，根 CMake 自动调用，不需手动准备。`verify_t4.py --prepared <T2产物目录> --build build/delivery --output <新目录>` 验证实际容量/越界、mmap 与 memory、真实小 SIFT 两放置、跨页及 credit；接口和限制见 [T4](../docs/t4-content-profiles.md)。它不开始 T5 或全规模运行。
+
+## T5 观测与生命周期
+
+`verify_t5.py --build build/delivery --output results/v0.2-t5/new-evidence` 运行固定小 base 的 Q=32/128/512、两放置各三次重复、detail/statistics 等价与输出预算拒绝；可加 `--prepared results/v0.2-t2/real-final` 做真实小图两放置独立逐批对照。不是完整规模或交付验收。接口见 [T5](../docs/t5-observation-lifecycle.md)。

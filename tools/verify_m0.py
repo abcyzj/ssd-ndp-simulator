@@ -94,7 +94,7 @@ def inspect(path, fmt, count, dimensions, id_bound=None):
                 byte_order='little', validation='complete file', id_bound=id_bound)
 
 
-def measure(argv, output, timeout, rss_limit=None, env=None):
+def measure(argv, output, timeout, rss_limit=None, env=None, poll_seconds=0.1):
     """wait4 reports this child peak RSS (not cumulative RUSAGE_CHILDREN).
 
     Timeout kills its process group. RSS budget is checked after completion;
@@ -126,13 +126,13 @@ def measure(argv, output, timeout, rss_limit=None, env=None):
                 os.killpg(pid, signal.SIGKILL)
                 _, status, usage = os.wait4(pid, 0)
                 break
-            time.sleep(0.1)
+            time.sleep(poll_seconds)
     rss = usage.ru_maxrss * (1 if platform.system() == 'Darwin' else 1024)
     code = os.waitstatus_to_exitcode(status)
     result = dict(argv=argv, cwd=str(Path.cwd()), exit_code=code,
                   wall_seconds=time.monotonic() - start, peak_rss_bytes=rss,
                   rss_method='wait4 child ru_maxrss; Darwin bytes / Linux KiB converted to bytes',
-                  timeout_seconds=timeout, timed_out=timed_out, rss_limit_bytes=rss_limit,
+                  timeout_seconds=timeout, poll_seconds=poll_seconds, timed_out=timed_out, rss_limit_bytes=rss_limit,
                   rss_budget_pass=rss_limit is None or rss <= rss_limit,
                   environment_overrides=env or {}, log_sha256=sha(output.with_suffix('.log')))
     result['passed'] = code == 0 and not timed_out and result['rss_budget_pass']

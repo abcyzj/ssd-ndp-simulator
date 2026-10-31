@@ -9,6 +9,7 @@
 | 需求范围与验收标准 | [V0.1 PRD](prd-v0.1.md)（V0.1 基线，非 V0.2 任务） |
 | V0.2 需求与验收目标 | [V0.2 产品需求](prd-v0.2.md)（当前开发需求，非已实现能力） |
 | V0.2 开发顺序、阶段门槛与当前起点 | [V0.2 实施计划](v0.2-implementation-plan.md)（第 0 节开工，第 6 节 T0～T8） |
+| T5 统计/详细模式、回收、流式输出和资源证据 | [接口与限制](t5-observation-lifecycle.md)、[实际验证](t5-closeout.md) |
 | T4 mmap/内存后端、公式布局与受控大 profile | [接口与限制](t4-content-profiles.md)、[实际验证](t4-closeout.md) |
 | T3 真实小数据两放置闭环 | [接入接口与验证](t3-closed-loop.md)、[实际验证](t3-closeout.md) |
 | T2 离线图、精确/官方真值及质量指标 | [图与真值](index-truth-v2.md)、[实际验证](t2-closeout.md) |

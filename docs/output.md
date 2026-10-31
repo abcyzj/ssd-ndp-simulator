@@ -18,9 +18,9 @@
 
 `results.json` 保存按 query ID 排序的 top-k、距离、Recall、时延和结束状态；真值仍由独立离线穷举生成。`statistics.json` 保存延迟/接纳等待分位数及样本数、吞吐、SST 子进程墙钟、普通/本地请求数和字节、H2D/D2H payload/wire、消息、主机/盘控工作量与服务/等待、credit 生命周期和缓冲峰值。主机明确分开依赖等待 `ready-submit` 与 CPU FIFO 等待 `start-ready`，盘控服务报告 `start-submitted`。
 
-`queries.csv`、`top-k.csv`、`statistics.csv` 与各资源同名 CSV 提供平面数据。配置、SST 参数、布局、MQSim XML、命令和 `manifest.json` 保存输入/真值、代码、依赖身份及产物哈希，MQSim 同时保留原生基线、diff 与实际源码哈希。墙钟独立于模拟硬件时间；便携式子进程 peak RSS 未收集，明确为 Unsupported。
+`queries.csv`、`top-k.csv`、`statistics.csv` 与各资源同名 CSV 提供平面数据。配置、SST 参数、布局、MQSim XML、命令和 `manifest.json` 保存输入/真值、代码、依赖身份及产物哈希，MQSim 同时保留原生基线、diff 与实际源码哈希。墙钟独立于模拟硬件时间；T5 的 `sst-measurement.json` 收集 wait4 子进程 peak RSS，进程范围和分阶段限制见 [T5 观测](t5-observation-lifecycle.md)。
 
-必需结果通过临时 `records.jsonl` 通道交给 Python，转换为 JSON/CSV 后删除；统计不从可选事件日志重建。`event_log=false` 时不创建 `events.jsonl`，观测与统计仍工作。开启时普通读取、决策、结果可见与 PCIe 事件直接写文件，服务、credit、消息和 SSD 区间在报告阶段导出；输出不保证按时间排序。所有 query/read/task 关联使用真实 ID；内部共享 NAND command hook 不持有请求/事务参与集合，保留 null 与原因，不能伪造 query 归因。
+必需结果通过临时 `records.jsonl` 通道交给 Python，逐行读取并以磁盘分组导出 JSON/CSV 后删除；统计不从可选事件日志重建。T5 的回收、决策摘要、预算和测量字段见 [T5 观测](t5-observation-lifecycle.md)。`event_log=false` 时不创建 `events.jsonl`，观测与统计仍工作。开启时普通读取、决策、结果可见与 PCIe 事件直接写文件，服务、credit、消息在产生时导出，SSD 区间在报告阶段由临时文件外排序导出；输出不保证按时间排序。所有 query/read/task 关联使用真实 ID；内部共享 NAND command hook 不持有请求/事务参与集合，保留 null 与原因，不能伪造 query 归因。
 
 channel/die 观测复用 M1.4 的被动 MQSim hook，测量窗口裁剪后的半开区间按实体取并集；bus 仅含总线传输，不含 array。每个实体利用率为其 union/window，不相加成设备利用率。`capabilities.json` 明确 device/request/channel/die 支持定义，plane/latch、共享 DRAM 和内部命令参与集合等 Unsupported。算法不获得全局内部状态。
 

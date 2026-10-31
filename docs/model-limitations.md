@@ -10,9 +10,9 @@
 
 FP32 输入、固定顺序 FP64 L2、同分按 ID；同工具链下路径应稳定，跨工具链数值容差为 abs 1e-9 + rel 1e-7，不承诺跨平台比特一致。Recall 来自独立穷举真值；默认 32 查询的分位数仅为小样本摘要，不是稳定尾延迟结论。盘控更快不属于验收门槛。
 
-观测支持设备/请求/channel/die，channel bus 与 die array 按活动区间并集统计；plane/latch、peak RSS 明确 Unsupported。观测和中间记录仍保留内存，关闭 JSONL 不代表常量内存；不承诺十亿级数据规模。真实墙钟仅衡量仿真效率。
+观测支持设备/请求/channel/die，channel bus 与 die array 按活动区间并集统计；plane/latch 仍 Unsupported。T5 的生产事件记录流式导出、区间落盘外排序、终态任务和 lease 回收；Python 保留 O(Qk) 结果及 O(Q) 分位数输入，SST query 内容仍 O(Qd)，临时磁盘随事件量增长。不承诺整个进程常量内存或十亿级数据规模。真实墙钟仅衡量仿真效率。
 
-V0.2 的 [M0 探针](m0-closeout.md)单独记录原始数据验证、离线 Faiss 和 SST 预装载进程的墙钟及 wait4 峰值 RSS；这不改变正式实验输出中 peak RSS 的 Unsupported 状态。T4 已接入受控 2/16 GiB profile、实际 namespace 检查及 mmap/公式布局，见 [T4](t4-content-profiles.md)；M0 探针和 T4 小布局验证均未覆盖大规模查询与观测的全部内存。16 GiB 本机不能直接采用 Deep 建图 32 GiB 预算；完整 Deep10M 建图仍有资源出口门槛。数据使用条件见内容锁，不将项目或 Faiss 的 MIT 许可证扩展到 benchmark 数据。
+V0.2 的 [M0 探针](m0-closeout.md)单独记录原始数据验证、离线 Faiss 和 SST 预装载进程的墙钟及 wait4 峰值 RSS；T5 已将 wait4 子进程峰值接入正式实验测量产物；分阶段与非文件私有 RSS 仍 Unsupported，不能用整个 SST 峰值替代它们。T4 已接入受控 2/16 GiB profile、实际 namespace 检查及 mmap/公式布局，见 [T4](t4-content-profiles.md)；M0 探针和 T4 小布局验证均未覆盖大规模查询与观测的全部内存。16 GiB 本机不能直接采用 Deep 建图 32 GiB 预算；完整 Deep10M 建图仍有资源出口门槛。数据使用条件见内容锁，不将项目或 Faiss 的 MIT 许可证扩展到 benchmark 数据。
 
 可复建指本机 macOS / arm64，已有固定子模块和预装工具时，从新的平台构建目录及新的 SST 缓存重建、运行两放置与 AC。不是全新 OS 配置、可移植二进制或无外部工具的 hermetic 构建。证据目录默认不入 Git，新检出须重跑生成；MQSim fork commit 必须可取得。平台代码和文档使用 [MIT License](../LICENSE)，第三方依赖保留各自原有许可证。可复建验收不等于已经完成公开发布。
 
@@ -20,4 +20,4 @@ V0.2 的 [M0 探针](m0-closeout.md)单独记录原始数据验证、离线 Fais
 
 已提供 T1 数据上的锁定 Faiss NSG 导出、图检查、独立流式 FP64 精确真值及 M0 锁定完整 SIFT 官方 ID-only 导入，见 [图与真值](index-truth-v2.md)。原生建图器诊断不代表项目搜索质量；v2 已接入 SST 两放置小规模闭环（[T3](t3-closed-loop.md)），全规模尚未验证。官方有限 K 的严格并列边界标记 unresolved。纯 Python 精确真值、随机文件 BFS、完成后 RSS 检查和磁盘快照均未通过全规模资源验收；完整 Deep10M 建图仍被本机资源门槛阻塞。不改变任何硬件校准或性能结论。
 
-T4 文件映射只减少功能内容与布局私有副本，不消除宿主页缓存驻留；query 文件仍全量读取。静态 metadata 预算是代理估算，memory 后端内容、搜索和历史事件内存不在其界内。输入运行期间必须不可变，开始/结束身份检查不构成并发写入或截断安全协议。T5 的历史回收、T6/T7 的完整目标布局预装载和矩阵仍未完成。
+T4 文件映射只减少功能内容与布局私有副本，不消除宿主页缓存驻留；query 文件仍全量读取。静态 metadata 预算是代理估算，memory 后端内容、搜索和历史事件内存不在其界内。输入运行期间必须不可变，开始/结束身份检查不构成并发写入或截断安全协议。T5 历史回收及验证见 [观测生命周期](t5-observation-lifecycle.md)；T6/T7 的完整目标布局联合预装载和矩阵仍未完成。

@@ -113,6 +113,9 @@ public:
         if (unfinished && !reserved_)
             fail("empty queues with unfinished=" + std::to_string(unfinished) + " " + detail);
     }
+    bool dispatching() const {
+        return running_;
+    }
     bool idle() const {
         return !reserved_;
     }

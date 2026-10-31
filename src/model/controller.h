@@ -1,4 +1,5 @@
 #pragma once
+#include "observation/history.h"
 #include "backend/local_read.h"
 #include "runtime/runtime.h"
 #include "operators/operators.h"
@@ -30,6 +31,11 @@ public:
         return queue_.size() + busy_;
     }
 
+public:
+    History<ResourceRecord>& observations() {
+        return records_;
+    }
+
 private:
     struct Job {
         content::Context context;
@@ -41,7 +47,7 @@ private:
     EventBridge::Clock now_;
     uint64_t slots_, busy_ = 0;
     std::deque<Job> queue_;
-    std::vector<ResourceRecord> records_;
+    History<ResourceRecord> records_;
     void pump();
 };
 struct CreditRecord {
@@ -71,6 +77,11 @@ public:
         return records_;
     }
 
+public:
+    History<CreditRecord>& observations() {
+        return records_;
+    }
+
 private:
     struct Request {
         uint64_t id, bytes;
@@ -83,7 +94,7 @@ private:
     uint64_t capacity_, used_ = 0, peak_ = 0, next_ = 0, wait_ns_ = 0;
     std::deque<Request> queue_;
     std::map<uint64_t, Request> live_;
-    std::vector<CreditRecord> records_;
+    History<CreditRecord> records_;
     void pump();
 };
 struct ControllerConfig {
@@ -140,12 +151,32 @@ public:
     const FifoResource& compute() const {
         return compute_;
     }
+    size_t protocol_ranges() const {
+        return conversation_.tombstone_ranges();
+    }
+    size_t protocol_tasks() const {
+        return conversation_.task_records();
+    }
     std::string diagnostic() const;
     size_t sessions() const {
         return sessions_.size();
     }
     size_t pending_protocol() const {
         return conversation_.pending();
+    }
+
+public:
+    History<StorageRecord>& observations() {
+        return storage_;
+    }
+    BufferModel& buffer() {
+        return buffer_;
+    }
+    FifoResource& port() {
+        return port_;
+    }
+    FifoResource& compute() {
+        return compute_;
     }
 
 private:
@@ -182,7 +213,7 @@ private:
                                                                         next_token_ = 0;
     std::map<uint64_t, std::shared_ptr<Session>> sessions_;
     std::deque<std::function<void()>> admissions_;
-    std::vector<StorageRecord> storage_;
+    History<StorageRecord> storage_;
     void admit();
     void fail_open(const std::shared_ptr<Session>&, uint64_t, const std::exception&);
     void close_ready(const std::shared_ptr<Session>&);

@@ -1,4 +1,5 @@
 #pragma once
+#include "observation/history.h"
 #include "transport/messages.h"
 #include "backend/event_bridge.h"
 #include "host/PCIe_Link.h"
@@ -48,16 +49,17 @@ public:
             throw std::overflow_error("platform message ID overflow");
         auto id = ++next_;
         packet->Platform_id = id;
-        records_.push_back({id,
-                            message.query,
-                            message.task,
-                            bytes.size(),
-                            useful_bytes(message),
-                            now_(),
-                            0,
-                            message.kind,
-                            direction(message.kind),
-                            false});
+        inflight_.emplace(id,
+                          Record{id,
+                                 message.query,
+                                 message.task,
+                                 bytes.size(),
+                                 useful_bytes(message),
+                                 now_(),
+                                 0,
+                                 message.kind,
+                                 direction(message.kind),
+                                 false});
         packet->Platform_arrived = [this,
                                     alive = alive_,
                                     id,
@@ -65,7 +67,7 @@ public:
                                     receive = std::move(receive)]() mutable {
             if (!*alive)
                 return;
-            auto decoded = decode(bytes, records_.at(id - 1).direction);
+            auto decoded = decode(bytes, inflight_.at(id).direction);
             auto arrived = Simulator->Time();
             bridge_.enqueue(arrived,
                             EventBridge::ResourceCompleteRelease,
@@ -78,12 +80,14 @@ public:
                              receive = std::move(receive)]() mutable {
                                 if (!*alive)
                                     return;
-                                auto& record = records_.at(id - 1);
+                                auto& record = inflight_.at(id);
                                 if (record.complete)
                                     throw std::logic_error("duplicate PCIe completion");
                                 record.arrived = arrived;
                                 record.complete = true;
+                                records_.push_back(record);
                                 receive(id, std::move(decoded));
+                                inflight_.erase(id);
                             });
         };
         link_.Deliver(owned.get());
@@ -91,18 +95,24 @@ public:
         return id;
     }
     const Record& record(uint64_t id) const {
-        if (!id || id > records_.size())
-            throw std::invalid_argument("invalid message ID");
-        return records_.at(id - 1);
+        auto it = inflight_.find(id);
+        if (it != inflight_.end())
+            return it->second;
+        for (const auto& r : records_)
+            if (r.id == id)
+                return r;
+        throw std::invalid_argument("invalid or reclaimed message ID");
     }
     const std::vector<Record>& records() const {
         return records_;
     }
     size_t pending() const {
-        size_t n = 0;
-        for (auto& r : records_)
-            n += !r.complete;
-        return n;
+        return inflight_.size();
+    }
+
+public:
+    History<Record>& observations() {
+        return records_;
     }
 
 private:
@@ -111,6 +121,7 @@ private:
     std::function<uint64_t()> now_;
     std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
     uint64_t next_ = 0;
-    std::vector<Record> records_;
+    History<Record> records_;
+    std::map<uint64_t, Record> inflight_;
 };
 } // namespace ndpsim::transport

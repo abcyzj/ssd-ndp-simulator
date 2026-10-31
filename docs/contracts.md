@@ -134,3 +134,7 @@ Open 失败返回 Error(token=0)；Score 失败返回 Error 而非部分 ScoreRe
 
 因此 fixture 的 payload 总量 host=1728、controller=1096 B；wire 总量 host=2344、controller=1544 B。这里只证明契约账本一致，不能据此声称延迟更低。存储与链路不重复相加字节，缓冲访问另记资源字节：本例无额外 scratch 访问，controller query write=128、input staging write=1024、compute input+query read=1152、result write=24、result read-out=24 B，共2352 B；查询128+input1024+result24+命令scratch72=1248 B credit 峰值（序列执行、无其他块），所有 credit 最终归零。结果缓冲只存 packed records，不把传输头又当结果数值复制。
 
+
+## V0.2 T5 受信回收边界
+
+生产观测不保留已完成任务/lease/消息历史；结果 owner/pin、依赖与发布 continuation、服务/返回 completion 全部解除后才删除 Runtime 任务。Controller 只在已有安全失败边界排空本地读取、staging/compute 及 Error 返回后调用 `fail_after_drain`；不能将该入口用于任意在途取消。详情见 [T5 观测与生命周期](t5-observation-lifecycle.md)。不改变 SST/MQSim 时间、可见性或唯一计费者。

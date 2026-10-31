@@ -16,9 +16,11 @@ const char* name(Code c) {
         return #x;
         CASE(NotReady)
         CASE(InvalidHandle)
-        CASE(Released) CASE(WrongLocation) CASE(PermissionDenied) CASE(VersionMismatch)
-            CASE(OutOfRange) CASE(Overflow) CASE(InvalidArgument) CASE(Unsupported)
-                CASE(DependencyFailed) CASE(BackendFailure) CASE(CapacityExceeded)
+        CASE(Released)
+        CASE(WrongLocation)
+        CASE(PermissionDenied) CASE(VersionMismatch) CASE(OutOfRange) CASE(Overflow)
+            CASE(InvalidArgument) CASE(Unsupported) CASE(DependencyFailed) CASE(BackendFailure)
+                CASE(CapacityExceeded)
 #undef CASE
     }
     return "Unknown";
@@ -336,11 +338,11 @@ AnnLayout ann_layout(const ContentStore& store,
     return out;
 }
 const Handles::Record& Handles::checked(Handle h) const {
+    if (h.active_ && !*h.active_)
+        throw Error(Code::Released, "ownership token released", {}, h.id_);
     auto it = leases_.find(h.lease_);
     if (!h.id_ || it == leases_.end() || it->second.id != h.id_)
         throw Error(Code::InvalidHandle, "unknown ownership token", {}, h.id_);
-    if (!it->second.active)
-        throw Error(Code::Released, "ownership token released", {}, h.id_);
     return records_.at(h.id_);
 }
 Handles::Record& Handles::checked(Handle h) {
@@ -402,10 +404,11 @@ Handle Handles::pin(Handle h) {
 void Handles::release(Handle h) {
     auto& rec = checked(h);
     auto& lease = leases_.at(h.lease_);
-    lease.active = false;
+    *h.active_ = false;
     --(lease.internal ? rec.info.in_flight : rec.info.owners);
     bool reclaimed = !rec.info.owners && !rec.info.in_flight;
     releases_.push_back({h.id_, h.lease_, rec.info.owners, rec.info.in_flight, reclaimed});
+    leases_.erase(h.lease_);
     if (reclaimed)
         records_.erase(h.id_);
 }

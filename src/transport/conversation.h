@@ -1,4 +1,5 @@
 #pragma once
+#include "observation/ids.h"
 #include "transport/messages.h"
 #include <map>
 #include <set>
@@ -15,7 +16,7 @@ class Conversation {
     };
     std::map<uint64_t, Session> sessions_;
     std::map<std::pair<uint64_t, uint64_t>, Message> pending_;
-    std::set<uint64_t> tokens_;
+    CompletedIds tokens_, retired_;
     std::set<std::pair<uint64_t, uint64_t>> tasks_;
     static void check(bool ok, const char* why) {
         if (!ok)
@@ -28,7 +29,8 @@ public:
         if (direction(m.kind) == Direction::H2D) {
             check(!tasks_.count(key), "reused command task");
             if (m.kind == Kind::QueryOpen) {
-                check(!sessions_.count(m.query), "query already open");
+                check(!sessions_.count(m.query) && !retired_.contains(m.query),
+                      "query already open/retired");
                 sessions_.emplace(m.query, Session{0, m.version, m.dimension, false, {}});
             } else {
                 auto s = sessions_.find(m.query);
@@ -55,12 +57,13 @@ public:
         check(s != sessions_.end(), "missing reply session");
         if (m.kind == Kind::Error) {
             check(m.token == request.token, "error token mismatch");
-            if (request.kind == Kind::QueryOpen)
+            if (request.kind == Kind::QueryOpen) {
+                retired_.insert(m.query);
                 sessions_.erase(s);
-            else if (request.kind == Kind::QueryClose)
+            } else if (request.kind == Kind::QueryClose)
                 s->second.closing = false;
         } else if (request.kind == Kind::QueryOpen) {
-            check(m.kind == Kind::QueryOpenAck && m.token && !tokens_.count(m.token),
+            check(m.kind == Kind::QueryOpenAck && m.token && !tokens_.contains(m.token),
                   "invalid OpenAck token/kind");
             s->second.token = m.token;
             tokens_.insert(m.token);
@@ -72,9 +75,21 @@ public:
                 check(m.scores[i].id == request.ids[i], "result ID order mismatch");
         } else {
             check(m.kind == Kind::QueryCloseAck && m.token == request.token, "invalid CloseAck");
+            retired_.insert(m.query);
             sessions_.erase(s);
         }
+        if (!sessions_.count(m.query)) {
+            auto first = tasks_.lower_bound({m.query, 0});
+            auto last = tasks_.upper_bound({m.query, UINT64_MAX});
+            tasks_.erase(first, last);
+        }
         pending_.erase(p);
+    }
+    size_t tombstone_ranges() const {
+        return tokens_.size() + retired_.size();
+    }
+    size_t task_records() const {
+        return tasks_.size();
     }
     size_t pending() const {
         return pending_.size();

@@ -1,4 +1,5 @@
 #pragma once
+#include "observation/history.h"
 #include "operators/operators.h"
 #include "runtime/runtime.h"
 namespace ndpsim::model {
@@ -33,6 +34,11 @@ public:
         return busy_;
     }
 
+public:
+    History<Service>& observations() {
+        return services_;
+    }
+
 private:
     struct Job {
         uint64_t task, submitted;
@@ -45,7 +51,7 @@ private:
     HostConfig config_;
     std::deque<Job> queue_;
     uint64_t busy_ = 0;
-    std::vector<Service> services_;
+    History<Service> services_;
     void pump();
 };
 } // namespace ndpsim::model

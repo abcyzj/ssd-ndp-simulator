@@ -1,4 +1,6 @@
 #pragma once
+#include "observation/intervals.h"
+#include <cstring>
 #include "sim/Observation.h"
 #include <algorithm>
 #include <map>
@@ -12,13 +14,32 @@
 namespace ndpsim {
 class Observation {
     struct Interval {
-        std::string kind;
+        char kind[64];
         uint64_t start, end;
         unsigned channel, chip, die;
     };
-    std::vector<Interval> intervals_;
+    struct Span {
+        uint64_t first, second;
+        bool operator<(const Span& rhs) const {
+            return std::tie(first, second) < std::tie(rhs.first, rhs.second);
+        }
+    };
+    DiskRecords<Interval> intervals_;
+    void interval(const char* kind, uint64_t a, uint64_t b, unsigned c, unsigned h, unsigned d) {
+        Interval i{};
+        if (std::strlen(kind) >= sizeof(i.kind))
+            throw std::invalid_argument("observation kind too long");
+        std::strcpy(i.kind, kind);
+        i.start = a;
+        i.end = b;
+        i.channel = c;
+        i.chip = h;
+        i.die = d;
+        intervals_.push_back(i);
+    }
     std::map<std::tuple<unsigned, unsigned, unsigned>, uint64_t> ready_;
     uint64_t sequence_ = 0;
+    bool recording_ = true;
     void output(bool stat, const char* format, ...) {
         va_list args;
         va_start(args, format);
@@ -42,7 +63,7 @@ class Observation {
 
 public:
     std::function<void(bool, const std::string&)> emit;
-    Observation() {
+    explicit Observation(bool recording = true) : recording_(recording) {
         if (MQSimObservation::sink)
             throw std::logic_error("observer already attached");
         MQSimObservation::sink = [this](const char* kind,
@@ -53,6 +74,8 @@ public:
                                         unsigned d) {
             if (end < start)
                 throw std::logic_error("negative observation interval");
+            if (!recording_)
+                return;
             auto key = std::make_tuple(c, h, d);
             if (std::string(kind) == "array")
                 ready_[key] = end;
@@ -62,11 +85,11 @@ public:
                     // Subsequent data-out of a multi-plane command waits after the previous transfer.
                     if (start < it->second)
                         throw std::logic_error("data out before array ready");
-                    intervals_.push_back({"wait_data_out", it->second, start, c, h, d});
+                    interval("wait_data_out", it->second, start, c, h, d);
                     it->second = end;
                 }
             }
-            intervals_.push_back({kind, start, end, c, h, d});
+            interval(kind, start, end, c, h, d);
         };
     }
     ~Observation() {
@@ -86,13 +109,20 @@ public:
                lba,
                sectors * 512);
     }
+    void reset_window() {
+        recording_ = true;
+        intervals_.clear();
+        ready_.clear();
+    }
     void report(uint64_t begin, uint64_t end) {
+        if (end < begin)
+            throw std::invalid_argument("negative observation window");
         using Key = std::tuple<std::string, unsigned, int, int>;
-        std::map<Key, std::vector<std::pair<uint64_t, uint64_t>>> groups;
-        for (const auto& i : intervals_) {
+        std::map<Key, DiskRecords<Span>> groups;
+        intervals_.each([&](const auto& i) {
             auto a = std::max(begin, i.start), b = std::min(end, i.end);
             if (b < a || i.end < begin || i.start > end)
-                continue;
+                return;
             output(
                 false,
                 "OBS "
@@ -101,7 +131,7 @@ public:
                 "%u,\"source\":\"MQSim\",\"request_id\":null,\"transaction_ids\":null,\"null_"
                 "reason\":\"chip command hook has no request or transaction identity\"}\n",
                 ++sequence_,
-                i.kind.c_str(),
+                i.kind,
                 b,
                 a,
                 b,
@@ -109,21 +139,20 @@ public:
                 i.chip,
                 i.die);
             groups[{i.kind, i.channel, i.chip, i.die}].push_back({a, b});
-            if (i.kind.find("bus") != std::string::npos)
+            if (std::string(i.kind).find("bus") != std::string::npos)
                 groups[{"bus", i.channel, -1, -1}].push_back({a, b});
-        }
+        });
         for (auto& g : groups) {
             auto& v = g.second;
-            std::sort(v.begin(), v.end());
             uint64_t total = 0, a = 0, b = 0;
-            for (auto x : v) {
+            v.sorted([&](auto x) {
                 if (x.first > b) {
                     total += b - a;
                     a = x.first;
                     b = x.second;
                 } else
                     b = std::max(b, x.second);
-            }
+            });
             total += b - a;
             auto [kind, c, h, d] = g.first;
             output(true,
