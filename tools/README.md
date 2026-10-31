@@ -41,3 +41,7 @@
 ## T6 完整 SIFT1M
 
 `verify_t6.py`提供完整base准备、锁定图/官方真值、预注册26次闭环矩阵、预算、重复/并发/detail与质量匹配报告。`--prepare-only`与`--prepared`分离准备/仿真；`--reuse-runs`逐项验证成功独立放置后重新汇总，不能按目录存在跳过检查。配置为`configs/experiments/v0.2/sift1m.json`；接口见 [SIFT1M](../docs/t6-sift1m.md)，实际证据与限制见 [T6收口](../docs/t6-closeout.md)。止于T6，不自动启动T7。
+
+`scan_compute_ratio.py`复用T6准备产物和已有构建，固定Host rate=4，在主配置128/256、评价128条、并发1下扫描盘控rate=1/2/4/8/16。只改变算术rate，保留加载/缓冲计费差异；结果与复跑命令见[算力敏感性实验](../docs/t6-compute-ratio.md)。
+
+可用`--control-rate 4 --controller-rates 4`运行控制rate=4、两放置距离rate均为4的补充情景；默认仍为控制rate=1和五档盘控rate。所有rate须为正整数，扫描点不得重复，输出目录须不存在。

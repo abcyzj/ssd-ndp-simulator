@@ -4,9 +4,9 @@ V0.1 是单 SSD、主机控制的只读图 ANNS 仿真平台。SST 统一模拟�
 
 ## V0.2 开发入口
 
-当前进入 V0.2 开发，需求依据为 [V0.2 PRD](docs/prd-v0.2.md)，执行顺序与阶段门槛见 [V0.2 实施计划](docs/v0.2-implementation-plan.md)。目标是先 SIFT1M、再 Deep10M 的真实 benchmark 接入，继承单 SSD、只读、主机控制搜索和 host/controller 对照边界。
+当前进入 V0.2 开发，需求依据为 [V0.2 PRD](docs/prd-v0.2.md)，执行顺序与阶段门槛见 [V0.2 实施计划](docs/v0.2-implementation-plan.md)。目标是基于 SIFT1M 的真实 benchmark 接入与交付，Deep10M 已移出 V0.2 范围，继承单 SSD、只读、主机控制搜索和 host/controller 对照边界。
 
-T0/M0 已完成原始数据身份锁、离线建图依赖锁与本机探针、资源预算及 SST 初始化测量，见 [M0 实证与限制](docs/m0-closeout.md)。T1/M1 数据与 schema 已完成，见 [T1 收口](docs/t1-closeout.md)；T2/M1 图与真值已完成，见 [T2 收口](docs/t2-closeout.md)；T3/M1 真实小数据两放置闭环已完成，见 [T3 收口](docs/t3-closeout.md)，T4/M2 内容与 profile 已完成，见 [T4 收口](docs/t4-closeout.md)；T5/M2 观测与生命周期已完成，见 [T5 收口](docs/t5-closeout.md)；T6/M2 完整 SIFT1M 已完成，见 [T6 收口](docs/t6-closeout.md)；本轮止于 T6。已支持默认 mmap/公式布局与受控 2/16 GiB profile，接口见 [内容与设备](docs/t4-content-profiles.md)；已支持事件流式输出、终态回收与有界内存区间外排序，见 [T5 接口](docs/t5-observation-lifecycle.md)；SIFT1M 完整 base 加固定查询子集的26次矩阵已通过，Deep10M 矩阵尚未完成。Deep10M 全量建图仍有本机资源出口门槛；V0.2 小规模接入方式见 [闭环接口](docs/t3-closed-loop.md)；下述 V0.1 用法继续有效，尚未完成含 Deep10M 的 V0.2 全部规模与交付验收。
+T0/M0 已完成原始数据身份锁、离线建图依赖锁与本机探针、资源预算及 SST 初始化测量，见 [M0 实证与限制](docs/m0-closeout.md)。T1/M1 数据与 schema 已完成，见 [T1 收口](docs/t1-closeout.md)；T2/M1 图与真值已完成，见 [T2 收口](docs/t2-closeout.md)；T3/M1 真实小数据两放置闭环已完成，见 [T3 收口](docs/t3-closeout.md)，T4/M2 内容与 profile 已完成，见 [T4 收口](docs/t4-closeout.md)；T5/M2 观测与生命周期已完成，见 [T5 收口](docs/t5-closeout.md)；T6/M2 完整 SIFT1M 已完成，见 [T6 收口](docs/t6-closeout.md)；下一阶段为 T8/M4 交付，原 T7/M3 Deep10M 已取消。已支持默认 mmap/公式布局与受控 2/16 GiB profile，接口见 [内容与设备](docs/t4-content-profiles.md)；已支持事件流式输出、终态回收与有界内存区间外排序，见 [T5 接口](docs/t5-observation-lifecycle.md)；SIFT1M 完整 base 加固定查询子集的26次矩阵已通过，Deep10M 适配与矩阵不再作为交付要求；V0.2 小规模接入方式见 [闭环接口](docs/t3-closed-loop.md)；下述 V0.1 用法继续有效，尚未完成 V0.2 的交付复现、完整回归及适用验收汇总。
 
 ## 只运行实验
 
