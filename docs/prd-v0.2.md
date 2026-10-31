@@ -3,7 +3,7 @@
 版本：0.2  
 日期：2026-10-31（Asia/Shanghai）
 用途：V0.2 当前开发需求与验收目标，配合 [实施计划](v0.2-implementation-plan.md) 推进开发。
-状态：已进入开发；T0/M0 前置实证已完成，见 [M0 记录](m0-closeout.md)，T1～T3/M1 小规模闭环已完成，见 [T3 收口](t3-closeout.md)；T4/M2 内容与 profile 已完成，见 [T4 收口](t4-closeout.md)，T5/M2 观测与生命周期已完成，见 [T5 收口](t5-closeout.md)，T6/M2 完整 SIFT1M 已完成，见 [T6 收口](t6-closeout.md)，M3/Deep10M 已取消，M4/SIFT1M 交付尚未验收。实施计划中的默认方案作为实施起点，建议默认和待核实项仍须经相应阶段验证，不能当成已经具备的能力。
+状态：已进入开发；T0/M0 前置实证已完成，见 [M0 记录](m0-closeout.md)，T1～T3/M1 小规模闭环已完成，见 [T3 收口](t3-closeout.md)；T4/M2 内容与 profile 已完成，见 [T4 收口](t4-closeout.md)，T5/M2 观测与生命周期已完成，见 [T5 收口](t5-closeout.md)，T6/M2 完整 SIFT1M 已完成，见 [T6 收口](t6-closeout.md)，M3/Deep10M 已取消，M4/SIFT1M 交付已验收，见 [V0.2 交付](releases/v0.2.md)。实施计划中的默认方案作为实施起点，建议默认和待核实项仍须经相应阶段验证，不能当成已经具备的能力。
 
 V0.1 需求保留在 [prd-v0.1.md](prd-v0.1.md)，现行行为与交付证据见[版本交接](releases/v0.1.md)、[文档索引](README.md)。本文描述增量目标，不覆盖 V0.1 历史验收，也不将历史阶段指令重新启用。
 

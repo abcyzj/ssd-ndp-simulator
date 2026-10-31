@@ -2,11 +2,13 @@
 
 V0.1 是单 SSD、主机控制的只读图 ANNS 仿真平台。SST 统一模拟时间，MQSim 模拟存储和共享 PCIe；真实平方 L2 结果决定后续访问，可将距离计算放在主机或盘控。V0.1 交付范围与本次验证见[版本交接](docs/releases/v0.1.md)，按需阅读[现行文档索引](docs/README.md)；阶段过程见[历史归档](docs/archive/v0.1/README.md)。示例是简化图搜索，参数均为 `configured_unvalidated`。
 
-## V0.2 开发入口
+## V0.2 交付入口
 
 当前进入 V0.2 开发，需求依据为 [V0.2 PRD](docs/prd-v0.2.md)，执行顺序与阶段门槛见 [V0.2 实施计划](docs/v0.2-implementation-plan.md)。目标是基于 SIFT1M 的真实 benchmark 接入与交付，Deep10M 已移出 V0.2 范围，继承单 SSD、只读、主机控制搜索和 host/controller 对照边界。
 
-T0/M0 已完成原始数据身份锁、离线建图依赖锁与本机探针、资源预算及 SST 初始化测量，见 [M0 实证与限制](docs/m0-closeout.md)。T1/M1 数据与 schema 已完成，见 [T1 收口](docs/t1-closeout.md)；T2/M1 图与真值已完成，见 [T2 收口](docs/t2-closeout.md)；T3/M1 真实小数据两放置闭环已完成，见 [T3 收口](docs/t3-closeout.md)，T4/M2 内容与 profile 已完成，见 [T4 收口](docs/t4-closeout.md)；T5/M2 观测与生命周期已完成，见 [T5 收口](docs/t5-closeout.md)；T6/M2 完整 SIFT1M 已完成，见 [T6 收口](docs/t6-closeout.md)；下一阶段为 T8/M4 交付，原 T7/M3 Deep10M 已取消。已支持默认 mmap/公式布局与受控 2/16 GiB profile，接口见 [内容与设备](docs/t4-content-profiles.md)；已支持事件流式输出、终态回收与有界内存区间外排序，见 [T5 接口](docs/t5-observation-lifecycle.md)；SIFT1M 完整 base 加固定查询子集的26次矩阵已通过，Deep10M 适配与矩阵不再作为交付要求；V0.2 小规模接入方式见 [闭环接口](docs/t3-closed-loop.md)；下述 V0.1 用法继续有效，尚未完成 V0.2 的交付复现、完整回归及适用验收汇总。
+T0～T6 与 T8/M4 已完成；完整 SIFT1M 的固定查询矩阵、交付轮完整回归和新运行复现已验收，见 [V0.2 交付记录](docs/releases/v0.2.md)。交付入口为 `tools/verify_v02.py --all`，完整命令、前置准备与复用规则见 [交付说明](docs/delivery.md)。本轮 CTest 67/67、完整 V0.1 AC-01～11、独立锁定原生 oracle、17项 ASan、T3/T4/T5 复验、26次 SIFT 运行严格复用后的473条断言及两放置新复现通过；AC-02-10=N/A，Deep10M已取消。参数仍为 `configured_unvalidated`，不承诺绝对硬件性能已校准。
+
+数据/图/真值准备与各阶段证据可从 [文档索引](docs/README.md) 追溯。支持默认 mmap/公式布局、受控2/16GiB profile、事件流式输出与终态回收；SIFT交付使用2GiB profile和完整1M base、固定32/128查询子集，不是全10k查询测试。原始数据、准备、结果与构建为本机忽略产物，新检出须按说明取得锁定输入并重建。下述V0.1用法继续有效。
 
 ## 只运行实验
 

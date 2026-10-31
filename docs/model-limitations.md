@@ -1,4 +1,4 @@
-# V0.1 模型与交付限制
+# V0.2 模型与交付限制（继承 V0.1 边界）
 
 已验收能力是单 SSD、应用只读、主机控制的简化图 ANNS，距离放置于主机或盘控。不是完整 DiskANN/AISAQ、SSD 自主搜索、多 SSD、多主机、可写索引或其他计算位置。每次实验新进程，单 SST rank/线程；不承诺同进程多次 Reset、多设备静态状态隔离或其他操作系统/架构的通过结果。
 
@@ -12,14 +12,16 @@ FP32 输入、固定顺序 FP64 L2、同分按 ID；同工具链下路径应稳�
 
 观测支持设备/请求/channel/die，channel bus 与 die array 按活动区间并集统计；plane/latch 仍 Unsupported。T5 的生产事件记录流式导出、区间落盘外排序、终态任务和 lease 回收；Python 保留 O(Qk) 结果及 O(Q) 分位数输入，SST query 内容仍 O(Qd)，临时磁盘随事件量增长。不承诺整个进程常量内存或十亿级数据规模。真实墙钟仅衡量仿真效率。
 
-V0.2 的 [M0 探针](m0-closeout.md)单独记录原始数据验证、离线 Faiss 和 SST 预装载进程的墙钟及 wait4 峰值 RSS；T5 已将 wait4 子进程峰值接入正式实验测量产物；分阶段与非文件私有 RSS 仍 Unsupported，不能用整个 SST 峰值替代它们。T4 已接入受控 2/16 GiB profile、实际 namespace 检查及 mmap/公式布局，见 [T4](t4-content-profiles.md)；M0 探针和 T4 小布局验证均未覆盖大规模查询与观测的全部内存。16 GiB 本机不能直接采用 Deep 建图 32 GiB 预算；完整 Deep10M 建图仍有资源出口门槛。数据使用条件见内容锁，不将项目或 Faiss 的 MIT 许可证扩展到 benchmark 数据。
+V0.2 的 [M0 探针](m0-closeout.md)单独记录原始数据验证、离线 Faiss 和 SST 预装载进程的墙钟及 wait4 峰值 RSS；T5 已将 wait4 子进程峰值接入正式实验测量产物；分阶段与非文件私有 RSS 仍 Unsupported，不能用整个 SST 峰值替代它们。T4 已接入受控 2/16 GiB profile、实际 namespace 检查及 mmap/公式布局，见 [T4](t4-content-profiles.md)；M0 探针和 T4 小布局验证均未覆盖大规模查询与观测的全部内存。Deep10M 已退出 V0.2 范围；16GiB profile及历史Deep探针不代表完整Deep数据集支持。数据使用条件见内容锁，不将项目或 Faiss 的 MIT 许可证扩展到 benchmark 数据。
 
 可复建指本机 macOS / arm64，已有固定子模块和预装工具时，从新的平台构建目录及新的 SST 缓存重建、运行两放置与 AC。不是全新 OS 配置、可移植二进制或无外部工具的 hermetic 构建。证据目录默认不入 Git，新检出须重跑生成；MQSim fork commit 必须可取得。平台代码和文档使用 [MIT License](../LICENSE)，第三方依赖保留各自原有许可证。可复建验收不等于已经完成公开发布。
 
 ## V0.2 T2 离线准备增量
 
-已提供 T1 数据上的锁定 Faiss NSG 导出、图检查、独立流式 FP64 精确真值及 M0 锁定完整 SIFT 官方 ID-only 导入，见 [图与真值](index-truth-v2.md)。原生建图器诊断不代表项目搜索质量；v2 已接入 SST 两放置小规模闭环（[T3](t3-closed-loop.md)），完整SIFT1M固定查询矩阵已验证，见 [T6](t6-closeout.md)，Deep10M尚未验证。官方有限 K 的严格并列边界标记 unresolved。纯 Python 精确真值、随机文件 BFS、完成后 RSS 检查和磁盘快照均未通过全规模资源验收；完整 Deep10M 建图仍被本机资源门槛阻塞。不改变任何硬件校准或性能结论。
+已提供 T1 数据上的锁定 Faiss NSG 导出、图检查、独立流式 FP64 精确真值及 M0 锁定完整 SIFT 官方 ID-only 导入，见 [图与真值](index-truth-v2.md)。原生建图器诊断不代表项目搜索质量；v2 已接入 SST 两放置小规模闭环（[T3](t3-closed-loop.md)），完整SIFT1M固定查询矩阵已验证，见 [T6](t6-closeout.md)，Deep10M已取消。官方有限 K 的严格并列边界标记 unresolved。纯 Python 精确真值、随机文件 BFS、完成后 RSS 检查和磁盘快照均未通过全规模资源验收；Deep10M不作为本版交付要求。不改变任何硬件校准或性能结论。
 
-T4 文件映射只减少功能内容与布局私有副本，不消除宿主页缓存驻留；query 文件仍全量读取。静态 metadata 预算是代理估算，memory 后端内容、搜索和历史事件内存不在其界内。输入运行期间必须不可变，开始/结束身份检查不构成并发写入或截断安全协议。T5 历史回收及验证见 [观测生命周期](t5-observation-lifecycle.md)；T6完整SIFT1M目标布局与矩阵已完成（[证据](t6-closeout.md)），T7 Deep10M尚未完成。
+T4 文件映射只减少功能内容与布局私有副本，不消除宿主页缓存驻留；query 文件仍全量读取。静态 metadata 预算是代理估算，memory 后端内容、搜索和历史事件内存不在其界内。输入运行期间必须不可变，开始/结束身份检查不构成并发写入或截断安全协议。T5 历史回收及验证见 [观测生命周期](t5-observation-lifecycle.md)；T6完整SIFT1M目标布局与矩阵已完成（[证据](t6-closeout.md)），T7 Deep10M已取消。
 
 T6严格区分调参和独立评价；0.95目标在调参集选择32/64，但独立评价0.9484375未达标，不能重新挑选评价点后称独立质量匹配。全部四点实测结果保留。离线详细核对已减少全日志/链路历史副本，但仍只对固定8条证明512MiB预算，不承诺任意详细日志常量内存。
+
+T8/M4交付轮完整回归、严格矩阵复用和两放置新运行复现已通过，实际命令/结果/首轮失败与资源口径见 [V0.2交付记录](releases/v0.2.md)。这不扩大硬件校准、完整查询覆盖或内存监控的声明。

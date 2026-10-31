@@ -155,7 +155,10 @@ def main():
             for mode in ('host','controller'):
                 c=copy.deepcopy(base);c['placement']=mode
                 # Larger functional input makes the implementation-speed difference observable.
-                c['generate'].update(fixture='smoke',n=64,d=32,degree=5,queries=4);c['search'].update(k=3,width=8,budget=6)
+                # Keep repeated arithmetic well above process-startup noise.
+                # The former 64x32/Q4 fixture took only ~50ms, allowing the
+                # slower functional variant to appear faster by a few ms.
+                c['generate'].update(fixture='smoke',n=256,d=128,degree=8,queries=8);c['search'].update(k=10,width=16,budget=16)
                 graph('fast-'+mode,c)
                 graph('slow-'+mode,c,target=slow,data=out/('fast-'+mode)/'data')
                 assert 'NDPSIM_FUNCTIONAL_VARIANT repeated_l2=2048' in (out/('slow-'+mode)/'sst.log').read_text()

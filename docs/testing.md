@@ -33,7 +33,7 @@
 
 ## 测试与产物分类
 
-- `tests/` 的 probe、scenario 和 fixtures 均保留；根 CMake/CTest 是常规回归入口，当前非 ASan 配置注册 52 项。测试数量以实际发现为准。
+- `tests/` 的 probe、scenario 和 fixtures 均保留；根 CMake/CTest 是常规回归入口，T8交付轮非 ASan 配置实际注册并通过67项。测试数量以实际发现为准。
 - `tools/verify_acceptance.py`、`verify_concurrency.py` 和 `compare_placements.py` 持续维护；CMake/CTest 已同步调用路径。`verify_contract.py` 是独立契约/ABI 账本核查，不在 CTest 中。
 - `configs/regression/` 保留所有持续回归探针/分支夹具；`configs/experiments/` 为当前默认实验，`configs/sst/graph.py` 是实际组件接线；`configs/native/` 保持不变。
 - 历史阶段入口归入 [tools/archive/v0.1](../tools/archive/v0.1/README.md)，三个旧 smoke 配置归入 [configs/archive/v0.1](../configs/archive/v0.1/README.md)。保留复现能力，不默认执行全部历史阶段。完整 AC 自行导出原生 oracle；历史 macOS 原生工具仍可按需运行。
@@ -74,3 +74,10 @@ CTest 新增 `device_profiles`、`mapped_content`、三个 profile 的实际 nam
 ## V0.2 T6 SIFT1M
 
 CTest `sift1m_matrix`运行六项测试：冻结26点/查询分割与参数拒绝、百万行按需读取、完整统计比较仅排除墙钟、成功产物复用的配置/输入/模型/元素/输出篡改拒绝、3万行流式事件堆界及重复/缺阶段/错误wire/已完成ID复用拒绝。当前常规配置67项，原断言保留。`tools/verify_t6.py`独立执行完整SIFT1M准备、26次矩阵和T6 AC-02-07/09/11；它不启动Deep10M或交付任务。最终记录为67/67 CTest、完整V0.1 AC-01～11、原生oracle和17项ASan；实际命令、初轮预算拒绝与严格复用恢复见 [T6收口](t6-closeout.md)。
+
+
+## V0.2 / T8 完整交付
+
+`tools/verify_v02.py --all` 是完整交付总入口，锁定Python、参数、前置准备、复用与新运行策略见 [交付说明](delivery.md)。它执行根配置/构建、完整V0.1 AC（含67项CTest、原生oracle和17项ASan）、T3/T4/T5复验、SIFT26次矩阵重新验证及主配置两放置新运行复现；新增 `tests/test_v02_delivery.py` 三类失败关闭回归由总入口执行。没有 `--stage` 或 quick 交付通过模式；单阶段用各自已有入口。
+
+成功总入口与失败恢复实证见 [V0.2交付记录](releases/v0.2.md)。V0.2顶层AC-02-10=N/A，V0.1 AC-10仍完整执行。慢功能验收夹具现用N256/d128/R8/Q8、k10/L16/E16，减少约50ms小输入的启动噪声；仍要求两放置慢化且全部事件/结果/模拟统计一致，没有删除或降低原断言。

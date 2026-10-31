@@ -45,3 +45,8 @@
 `scan_compute_ratio.py`复用T6准备产物和已有构建，固定Host rate=4，在主配置128/256、评价128条、并发1下扫描盘控rate=1/2/4/8/16。只改变算术rate，保留加载/缓冲计费差异；结果与复跑命令见[算力敏感性实验](../docs/t6-compute-ratio.md)。
 
 可用`--control-rate 4 --controller-rates 4`运行控制rate=4、两放置距离rate均为4的补充情景；默认仍为控制rate=1和五档盘控rate。所有rate须为正整数，扫描点不得重复，输出目录须不存在。
+
+
+## T8 / M4 交付
+
+`verify_v02.py --all` 统一当前根构建/完整V0.1回归、T3/T4/T5复验、SIFT1M矩阵、主配置两放置新复现和适用AC/manifest。要求锁定Python、`--prepared`完整T6准备、`--small-prepared`T2真实小图/精确真值、`--source-dir`原始SIFT；可选`--reuse-runs`逐项严格核验26次成功运行，否则重跑矩阵。输出须新目录；缺项或失败非零退出且不生成成功结论。完整命令与证据见 [交付说明](../docs/delivery.md)、[V0.2交付记录](../docs/releases/v0.2.md)。不支持规划中未实现的`--stage`模式，不启动后续任务。
