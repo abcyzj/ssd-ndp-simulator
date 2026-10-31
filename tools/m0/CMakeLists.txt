@@ -17,3 +17,7 @@ add_subdirectory("${NDPSIM_FAISS_SOURCE}" faiss EXCLUDE_FROM_ALL)
 add_executable(m0_faiss_probe faiss_probe.cc)
 target_link_libraries(m0_faiss_probe PRIVATE faiss OpenMP::OpenMP_CXX)
 target_compile_options(m0_faiss_probe PRIVATE -ffp-contract=off)
+# Production preparation adapter shares the same locked offline dependency build.
+add_executable(ndpsim_index_builder ../offline/index_builder.cc)
+target_link_libraries(ndpsim_index_builder PRIVATE faiss OpenMP::OpenMP_CXX)
+target_compile_options(ndpsim_index_builder PRIVATE -ffp-contract=off)

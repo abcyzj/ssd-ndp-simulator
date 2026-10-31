@@ -51,3 +51,7 @@ SDKROOT="$(xcrun --show-sdk-path)" /opt/homebrew/Caskroom/miniconda/base/bin/pyt
 ```
 
 独立契约脚本直接调用 Clang；在本机显式提供 SDKROOT，避免找不到 C++ 标准头。根 CMake 已自动选择 SDK。输出路径须选择未使用目录。环境要求见[README](../README.md)；ASan 是独立探针，不是完整 SST 泄漏审计。
+
+## T2 图与真值回归
+
+CTest 的 `benchmark_artifact_schema` 运行 `tests/test_benchmark_artifacts.py`，覆盖独立完整排序小 oracle 与分块堆 top-K 的数值/同分交叉核对、K≥k、ID/距离/身份错误、全图边界/可达性及重复边/自环保留、两种质量指标和不足 k。真实数据构建与官方 ID-only 的实际验证使用 `tools/verify_t2.py`，见 [T2 收口](t2-closeout.md)；它不是完整 V0.2 AC 或 T3 模拟贯通。

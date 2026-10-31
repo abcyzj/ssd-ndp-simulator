@@ -49,7 +49,7 @@ def main():
          '-DOpenMP_C_LIB_NAMES=omp', '-DOpenMP_CXX_LIB_NAMES=omp',
          '-DOpenMP_omp_LIBRARY='+str(prefix/'lib/libomp.dylib'),
          '-DOpenMP_C_INCLUDE_DIR='+str(prefix/'include'), '-DOpenMP_CXX_INCLUDE_DIR='+str(prefix/'include')],
-        ['cmake', '--build', str(faiss_build), '--target', 'm0_faiss_probe', '-j2'],
+        ['cmake', '--build', str(faiss_build), '--target', 'm0_faiss_probe', 'ndpsim_index_builder', '-j2'],
     ]
     runs = []
     for i, argv in enumerate(argv_list):
@@ -61,6 +61,13 @@ def main():
             return 1
     write(a.output/'artifacts.json', {str(f): sha(f) for f in
                                     (faiss_build/'m0_faiss_probe', prefix/'lib/libomp.dylib')})
+    write(a.output/'index-builder-receipt.json', dict(
+        executable=str(faiss_build/'ndpsim_index_builder'),
+        executable_sha256=sha(faiss_build/'ndpsim_index_builder'),
+        adapter_sha256=sha(ROOT/'tools/offline/index_builder.cc'),
+        lock_sha256=sha(ROOT/'configs/benchmarks/m0-builder.lock.json'),
+        build_manifest_sha256=sha(a.output/'manifest.json'),
+        openmp_sha256=sha(prefix/'lib/libomp.dylib')))
     print(faiss_build/'m0_faiss_probe')
     return 0
 

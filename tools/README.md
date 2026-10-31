@@ -20,3 +20,7 @@
 ## V0.2 数据准备（T1）
 
 `benchmark_data.py import spec.json --output <新目录>` 与 `check <目录>`：四种 benchmark 格式转 dataset-v2，使用与限制见 [数据说明](../docs/data-v2.md)。图/真值绑定和模拟接线仍待 T2/T3。
+
+## T2 离线图与真值
+
+`benchmark_artifacts.py` 提供 build/check-index/exact/official/check-truth；`verify_t2.py` 实跑锁定 SIFT 10k 重排子集建图、32 条诊断 query 精确真值及完整 base 官方 ID-only 导入。`m0/build_builder.py` 现同时构建正式离线适配器并输出 receipt；不链接正式 SST。接口、复跑与限制见 [图与真值](../docs/index-truth-v2.md)，实际证据见 [T2 收口](../docs/t2-closeout.md)。
