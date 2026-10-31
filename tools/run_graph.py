@@ -3,12 +3,11 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import time
 from experiment_output import export
 from pathlib import Path
-from ann_data import generate, read_dataset, exact_truth, digest, write_json, integer
+from ann_data import generate, validate_dataset, exact_truth, digest, write_json, integer
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,9 +18,14 @@ def run(config, build, output, data=None, *, paired=False):
     c = json.loads(config.read_text())
     for key in ('index', 'truth'):
         if key in c: c[key] = str((config.parent/c[key]).resolve())
-    if c['placement'] not in (('host', 'controller') if paired else ('host',)) or c['device_profile'] != 'native-small':
-        raise ValueError('Unsupported: requires supported placement/native-small')
+    if c['placement'] not in (('host', 'controller') if paired else ('host',)):
+        raise ValueError('Unsupported: requires supported placement')
     integer(c['max_inflight'], 'max_inflight')
+    from device_profiles import profile, preflight
+    selected = profile(c['device_profile'])
+    backend = c.get('content_backend', 'mmap')
+    if backend not in ('memory', 'mmap'): raise ValueError('Unsupported content backend')
+    timeout = integer(c.get('simulation_timeout_seconds', 600), 'simulation_timeout_seconds')
     event_log = c.get('event_log', False)
     if type(event_log) is not bool:
         raise ValueError('event_log must be boolean')
@@ -48,7 +52,7 @@ def run(config, build, output, data=None, *, paired=False):
         from simulation_input import load_v2
         m, input_paths, identity = load_v2(data, c, config.parent)
     else:
-        m, _, _ = read_dataset(data)
+        m = validate_dataset(data)
     s, h = c['search'], c['host']
     required_search = {'entry', 'k', 'width', 'batch', 'budget', 'chunk'}
     required_host = {'slots', 'distance_setup', 'distance_rate', 'control_setup', 'control_rate', 'check_units', 'comparison_units'}
@@ -73,6 +77,9 @@ def run(config, build, output, data=None, *, paired=False):
                 integer(v['id'], 'truth ID', 0, m['count']-1)
                 if not isinstance(v['distance'], (float, int)) or not 0 <= v['distance'] < float('inf'):
                     raise ValueError('invalid truth distance')
+    resource_check = preflight(c['device_profile'], m['count'], m['dimensions'], m['degree'],
+        resource_budget_bytes=c.get('resource_budget_bytes', 4*1024**3))
+    write_json(output/'preflight.json', resource_check)
     paths = json.loads((build / 'sst-paths.json').read_text())
     params = {key: m[key] for key in ('count', 'dimensions', 'degree', 'queries')}
     params.update(input_paths)
@@ -86,7 +93,8 @@ def run(config, build, output, data=None, *, paired=False):
             integer(val, key, 0 if key in ('launch_ns', 'scratch_bytes') else 1, 2**64-1)
         params.update(c['controller'])
         params['placement'] = c['placement']
-    params.update(data=str(data), output=str(output / 'events.jsonl'), records=str(output/'records.jsonl'),
+    params.update(content_backend=backend, device_profile=c['device_profile'],
+                  resource_budget_bytes=resource_check['resource_budget_bytes'], data=str(data), output=str(output / 'events.jsonl'), records=str(output/'records.jsonl'),
                   event_log=int(event_log), max_inflight=c['max_inflight'])
     write_json(output / 'sst-params.json', params)
     write_json(output / 'config.json', c)
@@ -95,12 +103,12 @@ def run(config, build, output, data=None, *, paired=False):
     write_json(output / 'layout.json', dict(sector_bytes=512, vector_base=0, vector_stride=vs,
                adjacency_base=m['count']*vs, adjacency_stride=ads,
                end_lba=m['count']*(vs+ads)//512, query_residency='HostMemory + DeviceBuffer until CloseAck' if c['placement']=='controller' else 'HostMemory', data_residency='SSDStorage'))
-    shutil.copyfile(ROOT / 'configs/native/ssdconfig.xml', output / 'ssdconfig.xml')
+    (output/'ssdconfig.xml').write_text(selected['xml'])
     argv = [paths['sst'], '--add-lib-path='+str(build), str(ROOT / 'configs/sst/graph.py')]
     env = dict(os.environ, NDPSIM_M31_PARAMS=str(output / 'sst-params.json'))
     print('SST command:', ' '.join(argv), flush=True)
     wall_start = time.perf_counter()
-    p = subprocess.run(argv, cwd=ROOT, env=env, capture_output=True, text=True, timeout=600)
+    p = subprocess.run(argv, cwd=ROOT, env=env, capture_output=True, text=True, timeout=timeout)
     (output / 'sst.log').write_text(p.stdout + p.stderr)
     write_json(output / 'command.json', dict(argv=argv, exit_code=p.returncode, params=str(output / 'sst-params.json')))
     if p.returncode:
@@ -112,6 +120,14 @@ def run(config, build, output, data=None, *, paired=False):
             for row in events:
                 if row['type'] != 'query_result': stream.write(json.dumps(row)+'\n')
     (output/'records.jsonl').unlink()
+    actual = [e for e in events if e['type'] == 'device_profile']
+    if len(actual) != 1 or actual[0]['name'] != selected['name'] or actual[0]['xml_sha256'] != selected['xml_sha256'] or actual[0]['raw_sectors']*512 != selected['raw_bytes'] or actual[0]['page_sectors'] != selected['page_sectors'] or actual[0]['preload_sectors'] != resource_check['preload_sectors'] or actual[0]['namespace_sectors'] < resource_check['preload_sectors']:
+        raise ValueError('compiled device profile/actual namespace mismatch')
+    resource_check['actual'] = actual[0]
+    write_json(output/'preflight.json', resource_check)
+    if identity is None:
+        for name, expected in m['sha256'].items():
+            if digest(data/name) != expected: raise ValueError('input changed during simulation')
     results = sorted([e for e in events if e['type'] == 'query_result'], key=lambda r:r['query'])
     if len(results) != m['queries'] or len([e for e in events if e['type'] == 'summary']) != 1:
         raise ValueError('incomplete SST results')
@@ -154,9 +170,9 @@ def run(config, build, output, data=None, *, paired=False):
     base = json.loads((ROOT/'deps.lock.json').read_text())['dependencies']['MQSim']['commit']
     names = subprocess.check_output(['git','-C',str(mqsim),'ls-files','--cached','--others','--exclude-standard','-z']).decode().split('\0')
     source_files = [ROOT/'CMakeLists.txt', ROOT/'deps.lock.json', *sorted((ROOT/'src').rglob('*.cc')),
-                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/sst/graph.py', ROOT/'tools/run_pair.py', ROOT/'tools/compare_placements.py', ROOT/'tools/experiment_output.py', ROOT/'tools/run_experiment.py', ROOT/'tools/simulation_input.py', ROOT/'tools/benchmark_data.py', ROOT/'tools/benchmark_artifacts.py']
+                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/sst/graph.py', ROOT/'tools/run_pair.py', ROOT/'tools/compare_placements.py', ROOT/'tools/experiment_output.py', ROOT/'tools/run_experiment.py', ROOT/'tools/simulation_input.py', ROOT/'tools/benchmark_data.py', ROOT/'tools/benchmark_artifacts.py', ROOT/'tools/device_profiles.py', ROOT/'configs/profiles/devices.json', ROOT/'configs/native/ssdconfig.xml']
     write_json(output / 'manifest.json', dict(data=str(data), dataset=m, config_sha256=digest(config),
-        input_identity=identity, truth_sha256=digest(Path(identity['directories']['truth'])/'truth.json' if identity else data/'truth.json'), code_commit=git('rev-parse', 'HEAD'),
+        input_identity=identity, device_preflight=resource_check, content_backend=backend, truth_sha256=digest(Path(identity['directories']['truth'])/'truth.json' if identity else data/'truth.json'), code_commit=git('rev-parse', 'HEAD'),
         source_sha256={str(p.relative_to(ROOT)):digest(p) for p in source_files},
         element_sha256=digest(build/'libndpsim.so'),
         mqsim_native_base=base,
@@ -165,8 +181,8 @@ def run(config, build, output, data=None, *, paired=False):
         code_diff_sha256=hashlib.sha256(subprocess.check_output(['git', 'diff', 'HEAD'], cwd=ROOT)).hexdigest(),
         mqsim_commit=git('-C', 'third_party/MQSim', 'rev-parse', 'HEAD'),
         sst_commit=git('-C', 'third_party/sst-core', 'rev-parse', 'HEAD'), parameter_source=c['parameter_source'],
-        artifacts_sha256={name:digest(output/name) for name in ('config.json','layout.json','ssdconfig.xml','results.json','statistics.json','capabilities.json','sst-params.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []))},
-        assumptions=['single SSD/native-small/SIMPLE/TURNED_OFF; CMT retained',
+        artifacts_sha256={name:digest(output/name) for name in ('config.json','layout.json','preflight.json','ssdconfig.xml','results.json','statistics.json','capabilities.json','sst-params.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []))},
+        assumptions=['single SSD/'+c['device_profile']+'/SIMPLE/TURNED_OFF; CMT retained',
                      'deterministic page preload drained before measurement; no cross-query object cache',
                      'all queries offered at measurement origin, FIFO bounded admission; slots retire after CloseAck; host control; distance placement='+c['placement'],
                      'MQSim owns ordinary PCIe; no platform transfer fee',

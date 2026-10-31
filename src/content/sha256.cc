@@ -19,16 +19,22 @@ constexpr uint32_t k[] = {
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 } // namespace
 std::string sha256(const Bytes& bytes) {
-    if (bytes.size() > std::numeric_limits<uint64_t>::max() / 8 ||
-        bytes.size() > bytes.max_size() - 72)
+    return sha256(bytes.data(), bytes.size());
+}
+std::string sha256(const uint8_t* bytes, size_t size) {
+    if (size > (UINT64_MAX - 72) / 8)
         throw Error(Code::Overflow, "SHA256 input length");
-    Bytes data = bytes;
-    auto bits = uint64_t(data.size()) * 8;
-    data.push_back(0x80);
-    while (data.size() % 64 != 56)
-        data.push_back(0);
-    for (int i = 7; i >= 0; --i)
-        data.push_back(uint8_t(bits >> (i * 8)));
+    auto bits = uint64_t(size) * 8;
+    auto padded = (size + 72) / 64 * 64;
+    auto byte = [&](size_t i) -> uint8_t {
+        if (i < size)
+            return bytes[i];
+        if (i == size)
+            return 0x80;
+        if (i < padded - 8)
+            return 0;
+        return uint8_t(bits >> ((padded - 1 - i) * 8));
+    };
     std::array<uint32_t, 8> h{0x6a09e667,
                               0xbb67ae85,
                               0x3c6ef372,
@@ -37,12 +43,12 @@ std::string sha256(const Bytes& bytes) {
                               0x9b05688c,
                               0x1f83d9ab,
                               0x5be0cd19};
-    for (size_t offset = 0; offset < data.size(); offset += 64) {
+    for (size_t offset = 0; offset < padded; offset += 64) {
         uint32_t w[64];
         for (unsigned i = 0; i < 16; ++i) {
             w[i] = 0;
             for (unsigned j = 0; j < 4; ++j)
-                w[i] = (w[i] << 8) | data[offset + 4 * i + j];
+                w[i] = (w[i] << 8) | byte(offset + 4 * i + j);
         }
         for (unsigned i = 16; i < 64; ++i) {
             auto x = w[i - 15], y = w[i - 2];

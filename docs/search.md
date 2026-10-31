@@ -19,11 +19,11 @@ FP32 输入，平方 L2 使用固定维度顺序的 FP64 减/乘/加，沿用 M2
 
 `src/sst/graph_host.cc` 与 `src/backend/ordinary_device.h` 连接真实 SST SelfLink/EventBridge 和 MQSim ExternalFlow。测量前按连续页地址写入整个布局并排空后端，记录 origin；MQSim 时间不重置。每个应用对象读取通过 Layout/ReadAssociation 绑定实际 request ID/LBA/sector 数。DMA 与 CQ 完成经 ExternalFlow 校验，全部 extents 完成后才发布内容驻留、启动 read 的运行时完成，再让依赖的距离/控制任务前进。功能内容由不可变 ContentStore 保存；MQSim 不存真实字节，此语义沿用 M2.1，不将物理地址当成内容身份。
 
-普通存储、PCIe 数据和队列开销由 MQSim 唯一计费，没有平台链路延迟叠加；query 初始 HostMemory，候选、visited、expanded 和得分留在主机。读取功能字节、sector 字节分别统计。向量与邻接布局独立按 512 B 对齐，C++ 使用 M2.1 ann_layout，运行器保存 layout.json；跨 sector/page 原语仍有既有回归，本任务默认数据不跨页。盘控分块与资源生命周期见[盘控说明](controller.md)。
+普通存储、PCIe 数据和队列开销由 MQSim 唯一计费，没有平台链路延迟叠加；query 初始 HostMemory，候选、visited、expanded 和得分留在主机。读取功能字节、sector 字节分别统计。向量与邻接布局独立按 512 B 对齐，C++ 使用 ann_layout 的公式布局（小测试保留 Placement 布局），运行器保存 layout.json；跨 sector/page 原语仍有既有回归，本任务默认数据不跨页。盘控分块与资源生命周期见[盘控说明](controller.md)。
 
 ## 数据、真值与输出
 
-二进制均 little-endian。vectors.f32 为 N×d 个 IEEE FP32；queries.f32 为 Q×d 个 FP32；adjacency.u32 为 N 条固定 R+1 个 uint32，首项 degree，后续 degree 个 ID 有效，其余为零 padding。ContentStore 中邻接仅保留有效 `4+4*degree` 字节。dataset.json 记录格式、N/d/R/Q、seed、生成器与三个文件 SHA256。
+二进制均 little-endian。vectors.f32 为 N×d 个 IEEE FP32；queries.f32 为 Q×d 个 FP32；adjacency.u32 为 N 条固定 R+1 个 uint32，首项 degree，后续 degree 个 ID 有效，其余为零 padding。ContentStore 对外邻接仅返回有效 `4+4*degree` 字节。dataset.json 记录格式、N/d/R/Q、seed、生成器与三个文件 SHA256。
 
 默认生成器使用 Python Random(seed=42) 的整数网格值除以 128，值可由 FP32 精确表示；每个节点有固定有向环边，再加入确定性 PRNG 邻居并排序。该图用于测试平台闭环，没有建立高质量 ANNS 索引的目标。
 

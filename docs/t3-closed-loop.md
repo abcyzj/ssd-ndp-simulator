@@ -19,7 +19,7 @@ python3 tools/run_experiment.py --config real.json --data prepared --build build
 python3 tools/compare_placements.py results/real/host results/real/controller --output results/real/comparison.json
 ```
 
-SST 的 vector_file/query_file/graph_file 参数绑定验证后的实际二进制文件，不需要复制到旧数据目录。功能内容仍通过 ContentStore、Layout、Runtime 与 Handles 的普通/本地读取门控取得；全布局预装载排空后才能接纳查询，mmap 和大 profile 留待 T4。离线真值与原生搜索诊断不传给 GraphSearch，不生成正式访问 trace。
+SST 的 vector_file/query_file/graph_file 参数绑定验证后的实际二进制文件，不需要复制到旧数据目录。功能内容仍通过 ContentStore、Layout、Runtime 与 Handles 的普通/本地读取门控取得；全布局预装载排空后才能接纳查询，T4 已提供 mmap/公式布局及受控大 profile，见 [内容/profile](t4-content-profiles.md)。离线真值与原生搜索诊断不传给 GraphSearch，不生成正式访问 trace。
 
 v2 results.json 和 queries.csv 增加 original_query_id、one_recall_at_r、result_r、insufficient_results。当前结果长度 R 固定等于搜索 k，明确区别图 max_degree；Recall@k 用真值前 k 的集合交集，1-recall@R 用真值首项。K≥k 与官方 ID-only 走同一质量接口，不要求真值距离；官方并列边界 unresolved 继续保留，不制造距离。模拟返回距离始终来自实际算子。manifest 保存完整数据/索引/真值身份、原始映射、搜索/成本/布局/数值版本、实际代码及依赖哈希；运行结束再次校验输入身份。
 

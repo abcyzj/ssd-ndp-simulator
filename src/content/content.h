@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -63,17 +64,32 @@ struct Metadata {
     std::string sha256;
 };
 std::string sha256(const Bytes&);
+std::string sha256(const uint8_t*, size_t);
 class Handles;
 // Owned immutable bytes. Only the trusted handle registry can obtain content.
 class ContentStore {
 public:
     explicit ContentStore(std::vector<Input>);
+    // Trusted file backend; fixed slots on disk, degree-trimmed adjacency on reads.
+    ContentStore(std::string vectors,
+                 std::string adjacency,
+                 uint32_t count,
+                 uint32_t dimensions,
+                 uint32_t max_degree);
+    ~ContentStore();
+    void verify_identity() const;
+    bool mapped() const {
+        return bool(files_);
+    }
     ContentStore(const ContentStore&) = delete;
     ContentStore& operator=(const ContentStore&) = delete;
     Metadata metadata(ObjectRef) const;
     void validate(const Selection&) const;
 
 private:
+    struct Files;
+    std::unique_ptr<Files> files_;
+    std::pair<const uint8_t*, uint64_t> file_object(ObjectRef) const;
     struct Object {
         ObjectRef ref;
         Bytes bytes;
@@ -102,14 +118,18 @@ struct Plan {
     uint64_t useful_bytes = 0, sector_bytes = 0;
 };
 // Namespace size is a count of 512-byte sectors, not an inclusive last LBA.
+struct AnnLayout;
 class Layout {
 public:
     Layout(const ContentStore&, uint64_t namespace_sectors, std::vector<Placement>);
+    Layout(const ContentStore&, uint64_t namespace_sectors, const AnnLayout&, uint32_t count);
     Plan resolve(const std::vector<Selection>&) const;
 
 private:
     const ContentStore& store_;
     uint64_t sectors_;
+    uint64_t vector_base_ = 0, vector_stride_ = 0, adjacency_base_ = 0, adjacency_stride_ = 0;
+    uint32_t count_ = 0;
     std::map<std::tuple<uint64_t, Kind, uint32_t>, Placement> placements_;
 };
 struct AnnLayout {
@@ -123,7 +143,8 @@ AnnLayout ann_layout(const ContentStore&,
                      uint32_t count,
                      uint32_t dimensions,
                      uint32_t max_degree,
-                     uint64_t start_lba = 0);
+                     uint64_t start_lba = 0,
+                     bool compact = false);
 enum class Location { SSDStorage, DeviceBuffer, HostMemory };
 enum class State { Pending, Visible, Failed, Released };
 enum class Consumer { Algorithm, HostExecutor, ControllerExecutor };

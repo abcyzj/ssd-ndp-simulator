@@ -126,27 +126,37 @@ Controller::Controller(runtime::Runtime& r,
     : runtime_(r), handles_(h), layout_(l), reads_(reads), transport_(p), bridge_(b), now_(n),
       config_(c), fault_(std::move(f)), buffer_(b, n, c.capacity_bytes), port_(b, n, 1),
       compute_(b, n, c.slots) {
-    if (!c.dimension || !c.staging_bytes_per_ns || !c.flops_per_ns || !c.chunk_limit ||
+    auto limits = bounds(c);
+    query_bytes_ = limits.query;
+    chunk_size_ = limits.chunk;
+    block_bound_ = limits.block;
+    admission_limit_ = limits.admission;
+}
+Controller::Bounds Controller::bounds(ControllerConfig c) {
+    Bounds out{};
+    if (!c.slots || !c.dimension || !c.staging_bytes_per_ns || !c.flops_per_ns || !c.chunk_limit ||
         !c.max_inflight || !c.vector_sector_bound || c.vector_sector_bound % 512 ||
         c.source.empty())
         throw Error(Code::InvalidArgument, "controller config units/rates/bounds/source");
-    query_bytes_ = checked_mul(c.dimension, 4);
-    auto fixed = checked_add(checked_add(query_bytes_, 64), c.scratch_bytes);
+    out.query = checked_mul(c.dimension, 4);
+    auto fixed = checked_add(checked_add(out.query, 64), c.scratch_bytes);
     auto per = checked_add(c.vector_sector_bound, 16); // sector input + packed result + command ID
     if (fixed >= c.capacity_bytes || c.capacity_bytes - fixed < per)
         throw Error(Code::CapacityExceeded, "query plus minimum work block cannot fit");
-    chunk_size_ = std::min(c.chunk_limit, (c.capacity_bytes - fixed) / per);
-    block_bound_ = checked_add(checked_add(64, c.scratch_bytes), checked_mul(chunk_size_, per));
-    admission_limit_ = std::min(c.max_inflight, (c.capacity_bytes - block_bound_) / query_bytes_);
+    out.chunk = std::min(c.chunk_limit, (c.capacity_bytes - fixed) / per);
+    out.block = checked_add(checked_add(64, c.scratch_bytes), checked_mul(out.chunk, per));
+    out.admission = std::min(c.max_inflight, (c.capacity_bytes - out.block) / out.query);
     // Bound both Score and ScoreResult against native signed wire length before any upload.
     auto wire = [](uint64_t payload) {
         return checked_add(payload, checked_mul(ceil_div(payload, 128), 28));
     };
-    if (wire(checked_add(64, query_bytes_)) > INT32_MAX ||
-        wire(checked_add(56, checked_mul(chunk_size_, 12))) > INT32_MAX ||
-        wire(checked_add(64, checked_mul(chunk_size_, 4))) > INT32_MAX)
+    if (wire(checked_add(64, out.query)) > INT32_MAX ||
+        wire(checked_add(56, checked_mul(out.chunk, 12))) > INT32_MAX ||
+        wire(checked_add(64, checked_mul(out.chunk, 4))) > INT32_MAX)
         throw Error(Code::CapacityExceeded, "configured chunk/query exceeds PCIe envelope bound");
+    return out;
 }
+
 void Controller::admit() {
     while (admitted_ < admission_limit_ && !admissions_.empty()) {
         auto start = std::move(admissions_.front());

@@ -126,5 +126,33 @@ def main():
         print(json.dumps(exact_truth(a.directory, a.k)))
 
 
+
+def validate_dataset(directory):
+    """v1 simulation validation with bounded decoding; legacy oracle stays separate."""
+    directory = Path(directory)
+    m = json.loads((directory/'dataset.json').read_text())
+    if m['format'] != 'ndpsim-ann-v1': raise ValueError('Unsupported dataset format')
+    n,d,r,q = [integer(m[k],k,0 if k=='degree' else 1) for k in ('count','dimensions','degree','queries')]
+    if r >= n: raise ValueError('R must be less than N')
+    for name, size in [('vectors.f32',n*d*4),('queries.f32',q*d*4),('adjacency.u32',n*(r+1)*4)]:
+        path = directory/name
+        if path.stat().st_size != size or digest(path) != m['sha256'][name]: raise ValueError('size/hash mismatch: '+name)
+        with path.open('rb') as f:
+            if name.endswith('.f32'):
+                for block in iter(lambda:f.read(4*1024*1024),b''):
+                    if any(not math.isfinite(x[0]) for x in struct.iter_unpack('<f',block)):
+                        raise ValueError('nonfinite FP32 input')
+            else:
+                for _ in range(n):
+                    degree = struct.unpack('<I',f.read(4))[0]
+                    if degree > r: raise ValueError('invalid adjacency degree')
+                    # Bound decoding even for deliberately huge fixed slots.
+                    for start in range(0,r,262144):
+                        width = min(262144,r-start)
+                        for j,(node,) in enumerate(struct.iter_unpack('<I',f.read(width*4))):
+                            if start+j < degree and node >= n: raise ValueError('invalid adjacency ID')
+    return m
+
+
 if __name__ == '__main__':
     main()

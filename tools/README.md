@@ -28,3 +28,7 @@
 ## T3 真实小数据闭环
 
 `simulation_input.py` 校验 experiment-v2 与独立数据/图/真值身份；`verify_t3.py` 运行真实 SIFT 两放置、独立逐批/账本对照和内容扰动。接口见 [T3 闭环](../docs/t3-closed-loop.md)，不启动下一任务。
+
+## V0.2 T4
+
+`device_profiles.py` 从 `configs/profiles/devices.json` 与原 native XML 生成正式 profile，根 CMake 自动调用，不需手动准备。`verify_t4.py --prepared <T2产物目录> --build build/delivery --output <新目录>` 验证实际容量/越界、mmap 与 memory、真实小 SIFT 两放置、跨页及 credit；接口和限制见 [T4](../docs/t4-content-profiles.md)。它不开始 T5 或全规模运行。

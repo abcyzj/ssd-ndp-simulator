@@ -1,0 +1,5 @@
+{
+  "native-small": {"blocks_per_plane": 64},
+  "ann-2g-v1": {"blocks_per_plane": 2048},
+  "ann-16g-v1": {"blocks_per_plane": 16384}
+}

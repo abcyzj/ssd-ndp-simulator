@@ -2,6 +2,12 @@
 #include <algorithm>
 #include <limits>
 #include <set>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <cmath>
+#include <cstring>
 namespace ndpsim::content {
 const char* name(Code c) {
     switch (c) {
@@ -9,9 +15,10 @@ const char* name(Code c) {
     case Code::x:                                                                                  \
         return #x;
         CASE(NotReady)
-        CASE(InvalidHandle) CASE(Released) CASE(WrongLocation) CASE(PermissionDenied)
-            CASE(VersionMismatch) CASE(OutOfRange) CASE(Overflow) CASE(InvalidArgument)
-                CASE(Unsupported) CASE(DependencyFailed) CASE(BackendFailure) CASE(CapacityExceeded)
+        CASE(InvalidHandle)
+        CASE(Released) CASE(WrongLocation) CASE(PermissionDenied) CASE(VersionMismatch)
+            CASE(OutOfRange) CASE(Overflow) CASE(InvalidArgument) CASE(Unsupported)
+                CASE(DependencyFailed) CASE(BackendFailure) CASE(CapacityExceeded)
 #undef CASE
     }
     return "Unknown";
@@ -39,6 +46,122 @@ uint64_t next_id() {
     return ++id;
 }
 } // namespace
+struct ContentStore::Files {
+    struct Mapping {
+        std::string path, hash;
+        int fd = -1;
+        const uint8_t* data = nullptr;
+        uint64_t size = 0;
+        struct stat original{};
+        Mapping(std::string p, uint64_t expected) : path(std::move(p)) {
+            fd = open(path.c_str(), O_RDONLY);
+            if (fd < 0)
+                throw Error(Code::InvalidArgument, "cannot open " + path);
+            if (fstat(fd, &original) || !S_ISREG(original.st_mode) ||
+                uint64_t(original.st_size) != expected || !expected || expected > SIZE_MAX) {
+                close(fd);
+                fd = -1;
+                throw Error(Code::InvalidArgument, "bad mapped file size/type " + path);
+            }
+            size = expected;
+            auto ptr = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
+            if (ptr == MAP_FAILED) {
+                close(fd);
+                fd = -1;
+                throw Error(Code::BackendFailure, "mmap " + path);
+            }
+            data = static_cast<const uint8_t*>(ptr);
+            hash = sha256(data, size);
+        }
+        ~Mapping() {
+            if (data)
+                munmap(const_cast<uint8_t*>(data), size);
+            if (fd >= 0)
+                close(fd);
+        }
+        void verify() const {
+            struct stat current{}, named{};
+#ifdef __APPLE__
+            auto changed = [](const struct stat& a, const struct stat& b) {
+                return a.st_mtimespec.tv_sec != b.st_mtimespec.tv_sec ||
+                       a.st_mtimespec.tv_nsec != b.st_mtimespec.tv_nsec ||
+                       a.st_ctimespec.tv_sec != b.st_ctimespec.tv_sec ||
+                       a.st_ctimespec.tv_nsec != b.st_ctimespec.tv_nsec;
+            };
+#else
+            auto changed = [](const struct stat& a, const struct stat& b) {
+                return a.st_mtim.tv_sec != b.st_mtim.tv_sec ||
+                       a.st_mtim.tv_nsec != b.st_mtim.tv_nsec ||
+                       a.st_ctim.tv_sec != b.st_ctim.tv_sec ||
+                       a.st_ctim.tv_nsec != b.st_ctim.tv_nsec;
+            };
+#endif
+            if (fstat(fd, &current) || stat(path.c_str(), &named) || changed(current, original) ||
+                current.st_size != original.st_size || named.st_dev != original.st_dev ||
+                named.st_ino != original.st_ino || named.st_size != original.st_size ||
+                sha256(data, size) != hash)
+                throw Error(Code::VersionMismatch, "mapped input changed " + path);
+        }
+    };
+    uint32_t count, dimensions, degree;
+    Mapping vectors, adjacency;
+    Files(std::string v, std::string a, uint32_t n, uint32_t d, uint32_t r)
+        : count(n), dimensions(d), degree(r), vectors(std::move(v), mul(mul(n, d), 4)),
+          adjacency(std::move(a), mul(mul(n, add(r, 1)), 4)) {
+    }
+};
+ContentStore::~ContentStore() = default;
+ContentStore::ContentStore(std::string v, std::string a, uint32_t n, uint32_t d, uint32_t r) {
+    if (!n || !d || r >= n)
+        throw Error(Code::InvalidArgument, "mapped shape");
+    files_ = std::make_unique<Files>(std::move(v), std::move(a), n, d, r);
+    for (uint32_t id = 0; id < n; ++id) {
+        auto vector = file_object({1, Kind::Vector, id, 1});
+        for (uint64_t j = 0; j < vector.second; j += 4) {
+            uint32_t bits = 0;
+            for (unsigned k = 0; k < 4; ++k)
+                bits |= uint32_t(vector.first[j + k]) << (8 * k);
+            float x;
+            std::memcpy(&x, &bits, 4);
+            if (!std::isfinite(x))
+                throw Error(Code::InvalidArgument, "nonfinite mapped FP32");
+        }
+        auto adjacency = file_object({1, Kind::Adjacency, id, 1});
+        for (uint64_t j = 4; j < adjacency.second; j += 4) {
+            uint32_t neighbor = 0;
+            for (unsigned k = 0; k < 4; ++k)
+                neighbor |= uint32_t(adjacency.first[j + k]) << (8 * k);
+            if (neighbor >= n)
+                throw Error(Code::OutOfRange, "mapped graph ID");
+        }
+    }
+    verify_identity();
+}
+std::pair<const uint8_t*, uint64_t> ContentStore::file_object(ObjectRef ref) const {
+    if (ref.dataset != 1 || ref.version != 1)
+        throw Error(Code::VersionMismatch, "mapped identity");
+    if (ref.id >= files_->count)
+        throw Error(Code::OutOfRange, "mapped ID");
+    if (ref.kind == Kind::Vector) {
+        uint64_t size = uint64_t(files_->dimensions) * 4;
+        return {files_->vectors.data + size * ref.id, size};
+    }
+    if (ref.kind != Kind::Adjacency)
+        throw Error(Code::OutOfRange, "mapped kind");
+    auto data = files_->adjacency.data + (uint64_t(files_->degree) + 1) * 4 * ref.id;
+    uint32_t degree = 0;
+    for (unsigned k = 0; k < 4; ++k)
+        degree |= uint32_t(data[k]) << (8 * k);
+    if (degree > files_->degree)
+        throw Error(Code::OutOfRange, "mapped degree");
+    return {data, (uint64_t(degree) + 1) * 4};
+}
+void ContentStore::verify_identity() const {
+    if (files_) {
+        files_->vectors.verify();
+        files_->adjacency.verify();
+    }
+}
 ContentStore::ContentStore(std::vector<Input> inputs) {
     for (auto& input : inputs) {
         auto ref = input.object;
@@ -63,11 +186,15 @@ const ContentStore::Object& ContentStore::find(ObjectRef ref) const {
     return it->second;
 }
 Metadata ContentStore::metadata(ObjectRef ref) const {
+    if (files_) {
+        auto obj = file_object(ref);
+        return {ref, obj.second, sha256(obj.first, obj.second)};
+    }
     const auto& obj = find(ref);
     return {ref, obj.bytes.size(), obj.hash};
 }
 void ContentStore::validate(const Selection& s) const {
-    auto size = find(s.object).bytes.size();
+    auto size = files_ ? file_object(s.object).second : find(s.object).bytes.size();
     if (!s.range.length)
         throw Error(Code::InvalidArgument, "zero byte range");
     auto end = add(s.range.offset, s.range.length);
@@ -76,6 +203,10 @@ void ContentStore::validate(const Selection& s) const {
 }
 Bytes ContentStore::read(const Selection& s) const {
     validate(s);
+    if (files_) {
+        auto obj = file_object(s.object);
+        return Bytes(obj.first + s.range.offset, obj.first + s.range.offset + s.range.length);
+    }
     const auto& data = find(s.object).bytes;
     return Bytes(data.begin() + s.range.offset, data.begin() + s.range.offset + s.range.length);
 }
@@ -99,6 +230,15 @@ Layout::Layout(const ContentStore& store, uint64_t sectors, std::vector<Placemen
         if (occupied[i].first < occupied[i - 1].second)
             throw Error(Code::InvalidArgument, "overlapping object bytes");
 }
+Layout::Layout(const ContentStore& store, uint64_t sectors, const AnnLayout& ann, uint32_t count)
+    : store_(store), sectors_(sectors), vector_base_(ann.vector_base),
+      vector_stride_(ann.vector_stride), adjacency_base_(ann.adjacency_base),
+      adjacency_stride_(ann.adjacency_stride), count_(count) {
+    if (!count || !sectors || ann.end_lba > sectors ||
+        ann.adjacency_base != add(ann.vector_base, mul(count, ann.vector_stride)) ||
+        mul(ann.end_lba, 512) != add(ann.adjacency_base, mul(count, ann.adjacency_stride)))
+        throw Error(Code::OutOfRange, "formula layout namespace/shape");
+}
 Plan Layout::resolve(const std::vector<Selection>& selections) const {
     if (selections.empty())
         throw Error(Code::InvalidArgument, "empty read batch");
@@ -110,10 +250,23 @@ Plan Layout::resolve(const std::vector<Selection>& selections) const {
     Plan plan;
     for (auto s : selections) {
         store_.validate(s);
-        auto it = placements_.find(s.object.key());
-        if (it == placements_.end())
-            throw Error(Code::OutOfRange, "object has no SSD placement");
-        auto start = add(it->second.byte_offset, s.range.offset), end = add(start, s.range.length);
+        uint64_t position;
+        if (count_) {
+            if (s.object.dataset != 1 || s.object.version != 1 || s.object.id >= count_ ||
+                (s.object.kind != Kind::Vector && s.object.kind != Kind::Adjacency))
+                throw Error(Code::OutOfRange, "formula layout object");
+            bool vector = s.object.kind == Kind::Vector;
+            auto stride = vector ? vector_stride_ : adjacency_stride_;
+            if (store_.metadata(s.object).size > stride)
+                throw Error(Code::OutOfRange, "object exceeds formula stride");
+            position = add(vector ? vector_base_ : adjacency_base_, mul(s.object.id, stride));
+        } else {
+            auto it = placements_.find(s.object.key());
+            if (it == placements_.end())
+                throw Error(Code::OutOfRange, "object has no SSD placement");
+            position = it->second.byte_offset;
+        }
+        auto start = add(position, s.range.offset), end = add(start, s.range.length);
         auto first = start / 512, last = (end - 1) / 512 + 1;
         if (last > sectors_)
             throw Error(Code::OutOfRange, "resolved namespace extent");
@@ -158,7 +311,8 @@ AnnLayout ann_layout(const ContentStore& store,
                      uint32_t count,
                      uint32_t dimensions,
                      uint32_t max_degree,
-                     uint64_t start_lba) {
+                     uint64_t start_lba,
+                     bool compact) {
     if (!count || !dimensions)
         throw Error(Code::InvalidArgument, "nonzero count/dimension required");
     auto vector_bytes = mul(dimensions, 4), adjacency_bytes = add(4, mul(max_degree, 4));
@@ -168,6 +322,8 @@ AnnLayout ann_layout(const ContentStore& store,
     AnnLayout out{mul(start_lba, 512), align(vector_bytes), 0, align(adjacency_bytes), 0, {}};
     out.adjacency_base = add(out.vector_base, mul(count, out.vector_stride));
     out.end_lba = add(out.adjacency_base, mul(count, out.adjacency_stride)) / 512;
+    if (compact)
+        return out;
     for (uint64_t id = 0; id < count; ++id) {
         ObjectRef v{dataset, Kind::Vector, uint32_t(id), version},
             a{dataset, Kind::Adjacency, uint32_t(id), version};

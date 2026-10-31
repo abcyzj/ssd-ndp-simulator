@@ -59,3 +59,9 @@ CTest 的 `benchmark_artifact_schema` 运行 `tests/test_benchmark_artifacts.py`
 ## V0.2 T3 闭环
 
 CTest `simulation_input_schema` 覆盖相对路径、入口匹配、K≥k、未知实验版本、错绑定和坏图的启动前拒绝。`tools/verify_t3.py` 运行真实 10k SIFT 原输入和受控向量交换输入，各自两放置及独立逐批/账本对照；断言后续扩展和实际读取改变。复跑、范围和限制见 [T3](t3-closed-loop.md)。这不是完整 V0.1 AC 或规模验收。
+
+## V0.2 T4 内容与 profile
+
+CTest 新增 `device_profiles`、`mapped_content`、三个 profile 的实际 namespace/资源预检与 namespace 越界测试；当前常规配置共 64 项（以实际发现为准）。原有 V0.1 用例全部保留。`tools/verify_t4.py` 实际交叉运行 memory/mmap × host/controller，覆盖 d128/d96 的并发4、d260 跨页的接纳降额2，以及 T2 真实 SIFT 10k/32 query。比较完整事件、结果及除墙钟外的全部模拟统计，独立核对每批决策、请求完成因果、流量和 credit。参数和证据见 [T4 内容/profile](t4-content-profiles.md) 与 [收口](t4-closeout.md)。
+
+涉及后端，本轮另跑完整 `verify_acceptance.py` 的锁定原生 QD1/QD32/小 CMT 对照及 ASan 矩阵，映射内容探针另外在 ASan 构建下运行。以上不替代 T5 历史事件增长测试或 T6/T7 完整 base 的初始化/查询矩阵。

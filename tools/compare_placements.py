@@ -32,6 +32,8 @@ def inspect(path):
     events = [json.loads(line) for line in (path/'events.jsonl').read_text().splitlines()]
     grouped = defaultdict(list)
     for e in events:grouped[e['type']].append(e)
+    # Completion order across queries is resource dependent; preserve within-query order.
+    grouped['query_result'].sort(key=lambda e:e['query'])
     by = lambda kind: grouped[kind]
     visible_times = {(e['query'], s['id']):e['time_ns'] for e in by('score_visible') for s in e['scores']}
     assert len(by('query_result'))==m['queries']
@@ -79,7 +81,7 @@ def inspect(path):
             assert len(visible)==len(batches)
             for e, batch in zip(visible, batches):
                 scores_equal(e['scores'], [dict(id=n, distance=seen[n]) for n in batch])
-    actual = by('decision')
+    actual = sorted(by('decision'), key=lambda e:e['query'])
     assert len(actual)==len(decisions)
     for a, b in zip(actual, decisions):
         assert a['query']==b['query'] and a['expand']==b['expand']
@@ -109,7 +111,7 @@ def inspect(path):
             assert (r['query'], r['task'], r['lba'], r['sectors'])==(e['query'], e['task'], e['lba'], e['sectors'])
             assert e['time_ns']>=r['time_ns']
             read_times[(e['query'], r['kind'], r['id'])].append(e['time_ns'])
-    assert not pending and issued_adj==expected_adj
+    assert not pending and sorted(issued_adj, key=lambda x:x[0])==expected_adj
     for a in actual:
         for v in a['candidates']:
             if c['placement']=='host':

@@ -102,6 +102,10 @@ public:
     struct StorageRecord {
         uint64_t query, task, submitted, completed, sector_bytes, requests, transactions;
     };
+    struct Bounds {
+        uint64_t query, chunk, block, admission;
+    };
+    static Bounds bounds(ControllerConfig);
     using Fault = std::function<void(const std::string&, content::Context)>;
     Controller(runtime::Runtime&,
                content::Handles&,

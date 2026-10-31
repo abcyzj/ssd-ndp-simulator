@@ -20,7 +20,7 @@
 
 [ContentStore / Layout / Handles](../src/content/content.h) 分别负责不可变内容、逻辑对象到 LBA extent、驻留权限/生命周期。默认向量与邻接分区，512 B 向外对齐，跨页由后端拆分。修改布局必须同步 Python 的 layout.json、后端预装载范围、平台解析及独立核对器；逻辑有效字节、sector 字节和 NAND/PCIe 字节保持分层。PPA 仅供观测，不能作为算法稳定地址。跨 sector/page 是必测边界。
 
-从 `configs/experiments/host.json` 复制配置，用 `--config` 选择，统一入口按 `--mode` 写入 placement。可配置 search、host、controller、max_inflight、parameter_source、event_log；生成参数是 generate。配置字段及单位见 [架构与成本](architecture.md)、[盘控资源](controller.md)、[输出](output.md)。目前 `device_profile` 只支持 native-small；XML 来自 configs/native/ssdconfig.xml 并编译进 profile，改变 XML 后必须重建，不支持 CLI 任意切换 SSD。底层链路/NAND参数实验用 M4.2 的受控入口；不要声称 JSON 暴露所有 MQSim 参数。
+从 `configs/experiments/host.json` 复制配置，用 `--config` 选择，统一入口按 `--mode` 写入 placement。可配置 search、host、controller、max_inflight、parameter_source、event_log；生成参数是 generate。配置字段及单位见 [架构与成本](architecture.md)、[盘控资源](controller.md)、[输出](output.md)。T4 支持 `native-small`、`ann-2g-v1`、`ann-16g-v1`，由受控描述与共同 XML 基线生成，改变描述后必须重配/重编译；不接受任意外部 XML。`content_backend=mmap|memory`、静态资源预检和实际 namespace 见 [内容/profile](t4-content-profiles.md)。底层链路/NAND参数实验用 M4.2 的受控入口；不要声称 JSON 暴露所有 MQSim 参数。
 
 ## 观测与验收
 

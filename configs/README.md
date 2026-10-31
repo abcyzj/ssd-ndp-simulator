@@ -15,3 +15,5 @@
 | M2.2 / M2.3 | `regression/runtime.py` / `host_cost.py` |
 | M3.2a / M3.2b / M3.3 | `regression/local_read.py` / `pcie.py` / `controller.py` |
 | M3.1 / M3.4 分支夹具 | `regression/host-branch.json` / `placements-branch.json` |
+
+T4 受控设备描述为 `profiles/devices.json`，共同基线为 `native/ssdconfig.xml`；根 CMake 和实验快照使用同一生成器。支持 native-small、ann-2g-v1、ann-16g-v1，均未校准；接口/容量/限制见 [T4](../docs/t4-content-profiles.md)。

@@ -15,7 +15,14 @@ content::Bytes load(const std::string& path, size_t expected) {
     std::ifstream f(path, std::ios::binary);
     if (!f)
         throw std::invalid_argument("cannot open " + path);
-    content::Bytes b((std::istreambuf_iterator<char>(f)), {});
+    f.seekg(0, std::ios::end);
+    if (f.tellg() < 0 || uint64_t(f.tellg()) != expected)
+        throw std::invalid_argument("bad file size " + path);
+    f.seekg(0);
+    content::Bytes b(expected);
+    f.read(reinterpret_cast<char*>(b.data()), b.size());
+    if (!f)
+        throw std::invalid_argument("cannot read " + path);
     if (b.size() != expected)
         throw std::invalid_argument("bad file size " + path);
     return b;
@@ -47,6 +54,11 @@ public:
                                "Deterministic host graph search",
                                COMPONENT_CATEGORY_UNCATEGORIZED)
     SST_ELI_DOCUMENT_PARAMS({"placement", "host/controller", "host"},
+                            {"content_backend", "mmap/memory", "mmap"},
+                            {"device_profile", "controlled device profile", "native-small"},
+                            {"resource_budget_bytes",
+                             "metadata admission budget bytes",
+                             "4294967296"},
                             {"capacity_bytes", "independent controller buffer B", "16384"},
                             {"staging_bytes_per_ns", "buffer B/ns", "16"},
                             {"controller_slots", "arithmetic slots", "1"},
@@ -102,32 +114,70 @@ public:
         if (!d_ || !nq_ || r_ >= cfg_.count)
             throw std::invalid_argument("invalid dimensions/queries/degree");
         auto dir = p.find<std::string>("data", "");
-        auto vb = load(p.find<std::string>("vector_file", dir + "/vectors.f32"), uint64_t(cfg_.count) * d_ * 4);
-        auto ab = load(p.find<std::string>("graph_file", dir + "/adjacency.u32"), uint64_t(cfg_.count) * (uint64_t(r_) + 1) * 4);
-        queries_ = load(p.find<std::string>("query_file", dir + "/queries.f32"), uint64_t(nq_) * d_ * 4);
-        std::vector<content::Input> objects;
-        for (uint32_t i = 0; i < cfg_.count; ++i) {
-            auto v = vb.begin() + uint64_t(i) * d_ * 4;
-            auto a = ab.begin() + uint64_t(i) * (r_ + uint64_t(1)) * 4;
-            content::Bytes adjacency(a, a + (r_ + uint64_t(1)) * 4);
-            auto ai = search::ids(adjacency);
-            if (ai[0] > r_)
-                throw std::invalid_argument("degree exceeds R");
-            for (size_t j = 1; j <= ai[0]; ++j)
-                if (ai[j] >= cfg_.count)
-                    throw std::invalid_argument("invalid graph ID");
-            // Validate finite FP32 using the same numerical input contract, without retaining host scores.
-            content::Bytes vector(v, v + uint64_t(d_) * 4);
-            operators::squared_l2(vector, {}, {});
-            objects.push_back({{1, content::Kind::Vector, i, 1}, std::move(vector)});
-            adjacency.resize((uint64_t(ai[0]) + 1) * 4);
-            objects.push_back({{1, content::Kind::Adjacency, i, 1}, std::move(adjacency)});
+        const auto& profile = device_profile(p.find<std::string>("device_profile", "native-small"));
+        auto resource_budget =
+            p.find<uint64_t>("resource_budget_bytes", uint64_t(4) * 1024 * 1024 * 1024);
+        // Checked layout and admission before mapping content or creating MQSim metadata.
+        auto shape = content::ContentStore(std::vector<content::Input>{});
+        ann_ = content::ann_layout(shape, 1, 1, cfg_.count, d_, r_, 0, true);
+        auto preload = model::checked_mul(
+            model::checked_add(ann_.end_lba, profile.page_sectors - 1) / profile.page_sectors,
+            profile.page_sectors);
+        if (preload > profile.raw_sectors || profile.metadata_estimate > resource_budget)
+            throw std::invalid_argument("profile capacity/resource preflight failed");
+        model::ControllerConfig cc;
+        cc.dimension = d_;
+        cc.chunk_limit = cfg_.chunk;
+        cc.max_inflight = max_inflight_;
+        cc.capacity_bytes = p.find<uint64_t>("capacity_bytes", 16384);
+        capacity_ = cc.capacity_bytes;
+        cc.staging_bytes_per_ns = p.find<uint64_t>("staging_bytes_per_ns", 16);
+        cc.slots = p.find<uint64_t>("controller_slots", 1);
+        cc.launch_ns = p.find<uint64_t>("launch_ns", 1);
+        cc.flops_per_ns = p.find<uint64_t>("flops_per_ns", 16);
+        cc.scratch_bytes = p.find<uint64_t>("scratch_bytes", 0);
+        cc.vector_sector_bound = p.find<uint64_t>("vector_sector_bound", 512);
+        if (controller_mode_) {
+            if (cc.vector_sector_bound < ann_.vector_stride)
+                throw std::invalid_argument(
+                    "vector sector bound smaller than actual layout coverage");
+            model::Controller::bounds(cc);
         }
-        store_ = std::make_unique<content::ContentStore>(std::move(objects));
+        auto vector_file = p.find<std::string>("vector_file", dir + "/vectors.f32");
+        auto graph_file = p.find<std::string>("graph_file", dir + "/adjacency.u32");
+        queries_ = load(p.find<std::string>("query_file", dir + "/queries.f32"),
+                        model::checked_mul(model::checked_mul(nq_, d_), 4));
+        auto backend = p.find<std::string>("content_backend", "mmap");
+        if (backend == "mmap") {
+            store_ = std::make_unique<content::ContentStore>(
+                vector_file, graph_file, cfg_.count, d_, r_);
+        } else if (backend == "memory") {
+            auto vb = load(vector_file, uint64_t(cfg_.count) * d_ * 4);
+            auto ab = load(graph_file, uint64_t(cfg_.count) * (uint64_t(r_) + 1) * 4);
+            std::vector<content::Input> objects;
+            for (uint32_t i = 0; i < cfg_.count; ++i) {
+                auto v = vb.begin() + uint64_t(i) * d_ * 4;
+                auto a = ab.begin() + uint64_t(i) * (r_ + uint64_t(1)) * 4;
+                content::Bytes adjacency(a, a + (r_ + uint64_t(1)) * 4);
+                auto ai = search::ids(adjacency);
+                if (ai[0] > r_)
+                    throw std::invalid_argument("degree exceeds R");
+                for (size_t j = 1; j <= ai[0]; ++j)
+                    if (ai[j] >= cfg_.count)
+                        throw std::invalid_argument("invalid graph ID");
+                // Validate finite FP32 using the same numerical input contract, without retaining host scores.
+                content::Bytes vector(v, v + uint64_t(d_) * 4);
+                operators::squared_l2(vector, {}, {});
+                objects.push_back({{1, content::Kind::Vector, i, 1}, std::move(vector)});
+                adjacency.resize((uint64_t(ai[0]) + 1) * 4);
+                objects.push_back({{1, content::Kind::Adjacency, i, 1}, std::move(adjacency)});
+            }
+            store_ = std::make_unique<content::ContentStore>(std::move(objects));
+        } else
+            throw std::invalid_argument("Unsupported content backend");
         handles_ = std::make_unique<content::Handles>(*store_);
-        ann_ = content::ann_layout(*store_, 1, 1, cfg_.count, d_, r_);
-        layout_ = std::make_unique<content::Layout>(*store_, ann_.end_lba, ann_.placements);
-        device_ = std::make_unique<OrdinaryDevice>((ann_.end_lba + 7) / 8 * 8);
+        layout_ = std::make_unique<content::Layout>(*store_, ann_.end_lba, ann_, cfg_.count);
+        device_ = std::make_unique<OrdinaryDevice>(preload, profile.name, resource_budget);
         records_.open(p.find<std::string>("records", ""));
         if (!records_)
             throw std::invalid_argument("cannot open graph records");
@@ -137,6 +187,12 @@ public:
                 throw std::invalid_argument("cannot open graph log");
             out_.rdbuf(log_.rdbuf());
         }
+        records_ << "{\"type\":\"device_profile\",\"name\":\"" << profile.name
+                 << "\",\"xml_sha256\":\"" << profile.xml_sha256
+                 << "\",\"namespace_sectors\":" << device_->namespace_sectors
+                 << ",\"raw_sectors\":" << profile.raw_sectors
+                 << ",\"page_sectors\":" << profile.page_sectors
+                 << ",\"preload_sectors\":" << preload << "}\n";
         observation_ = std::make_unique<Observation>();
         link_ = configureSelfLink(
             "wake", "1ns", new SST::Event::Handler<GraphHost, &GraphHost::wake>(this));
@@ -217,18 +273,6 @@ public:
                 }
             };
             transport_ = std::make_unique<transport::PcieTransport>(*device_->link, *bridge_, now);
-            model::ControllerConfig cc;
-            cc.dimension = d_;
-            cc.chunk_limit = cfg_.chunk;
-            cc.max_inflight = max_inflight_;
-            cc.capacity_bytes = p.find<uint64_t>("capacity_bytes", 16384);
-            capacity_ = cc.capacity_bytes;
-            cc.staging_bytes_per_ns = p.find<uint64_t>("staging_bytes_per_ns", 16);
-            cc.slots = p.find<uint64_t>("controller_slots", 1);
-            cc.launch_ns = p.find<uint64_t>("launch_ns", 1);
-            cc.flops_per_ns = p.find<uint64_t>("flops_per_ns", 16);
-            cc.scratch_bytes = p.find<uint64_t>("scratch_bytes", 0);
-            cc.vector_sector_bound = p.find<uint64_t>("vector_sector_bound", 512);
             controller_ = std::make_unique<model::Controller>(
                 *rt_, *handles_, *layout_, *local_, *transport_, *bridge_, now, cc);
         }
@@ -240,6 +284,7 @@ public:
         bridge_->start();
     }
     void finish() override {
+        store_->verify_identity();
         if (completed_ != nq_ || active_ || !requests_.empty() || cpu_->busy() ||
             rt_->live_results() || handles_->live_records())
             throw std::logic_error("incomplete graph run/leaked handles");
