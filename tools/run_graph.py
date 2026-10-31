@@ -33,6 +33,12 @@ def run(config, build, output, data=None, *, paired=False):
         generate(data, **c['generate'])
         exact_truth(data, c['search']['k'])
     data = Path(data).resolve()
+    # Explicit version gate before loading payloads or launching SST.
+    dataset_format = json.loads((data / 'dataset.json').read_text()).get('format')
+    if dataset_format == 'ndpsim-dataset-v2':
+        from benchmark_data import check
+        check(data)
+        raise ValueError('Unsupported: dataset-v2 requires T2 index/truth binding and T3 simulation integration')
     m, _, _ = read_dataset(data)
     s, h = c['search'], c['host']
     required_search = {'entry', 'k', 'width', 'batch', 'budget', 'chunk'}

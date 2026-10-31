@@ -13,7 +13,11 @@ from pathlib import Path
 
 
 def digest(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    h = hashlib.sha256()
+    with Path(path).open('rb') as stream:
+        for block in iter(lambda: stream.read(8 * 1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
 
 
 def write_json(path, value):
@@ -67,7 +71,7 @@ def read_dataset(directory):
     directory = Path(directory)
     m = json.loads((directory / 'dataset.json').read_text())
     if m['format'] != 'ndpsim-ann-v1':
-        raise ValueError('Unsupported dataset format')
+        raise ValueError('Unsupported simulation dataset format; dataset-v2 is a preparation artifact; index/truth binding is required before simulation')
     n, d, r, q = [integer(m[key], key, 0 if key == 'degree' else 1) for key in ('count', 'dimensions', 'degree', 'queries')]
     if r >= n:
         raise ValueError('R must be less than N')
