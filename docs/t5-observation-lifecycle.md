@@ -32,3 +32,5 @@ python3.13 tools/verify_t5.py --build build/delivery \
 ```
 
 该命令只执行 T5 的固定小 base 查询梯度、日志等价性、资源计数、预算拒绝及可选真实小图逐批核对。T6/T7 完整规模、目标布局联合初始化和扫描矩阵不在该入口中。
+
+T6 增加 `python_parent_peak_rss_bytes`（RUSAGE_SELF、Python父进程生命周期高水位），用于给512MiB后处理预算提供保守上界；它覆盖预检/后处理，不是独立阶段peak。外层wait4在本机可能继承已回收后代的RSS高水位，不能拿运行包装器wait4替代父进程自身RSS。SST仍单独wait4测量。T6初始化状态及矩阵见 [SIFT1M入口](t6-sift1m.md)。

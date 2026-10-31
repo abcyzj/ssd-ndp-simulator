@@ -39,3 +39,32 @@ def decoded(paths, shape):
     def rows(path, d):
         return list(struct.iter_unpack('<'+'f'*d, Path(path).read_bytes()))
     return rows(paths['vector_file'], shape['dimensions']), rows(paths['query_file'], shape['dimensions'])
+
+
+class FileRows:
+    """Read only requested fixed-width rows; no full-base Python expansion."""
+    def __init__(self, path, columns, adjacency=False):
+        self.stream = Path(path).open('rb')
+        self.row = struct.Struct('<' + ('I' if adjacency else 'f') * columns)
+        self.adjacency = adjacency
+        size = Path(path).stat().st_size
+        if size % self.row.size:
+            self.stream.close()
+            raise ValueError('truncated row file')
+        self.count = size // self.row.size
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.stream.close()
+
+    def __len__(self):
+        return self.count
+
+    def __getitem__(self, node):
+        if not 0 <= node < self.count:
+            raise IndexError(node)
+        self.stream.seek(node * self.row.size)
+        row = self.row.unpack(self.stream.read(self.row.size))
+        return row[1:1+row[0]] if self.adjacency else row

@@ -36,3 +36,8 @@
 ## T5 观测与生命周期
 
 `verify_t5.py --build build/delivery --output results/v0.2-t5/new-evidence` 运行固定小 base 的 Q=32/128/512、两放置各三次重复、detail/statistics 等价与输出预算拒绝；可加 `--prepared results/v0.2-t2/real-final` 做真实小图两放置独立逐批对照。不是完整规模或交付验收。接口见 [T5](../docs/t5-observation-lifecycle.md)。
+
+
+## T6 完整 SIFT1M
+
+`verify_t6.py`提供完整base准备、锁定图/官方真值、预注册26次闭环矩阵、预算、重复/并发/detail与质量匹配报告。`--prepare-only`与`--prepared`分离准备/仿真；`--reuse-runs`逐项验证成功独立放置后重新汇总，不能按目录存在跳过检查。配置为`configs/experiments/v0.2/sift1m.json`；接口见 [SIFT1M](../docs/t6-sift1m.md)，实际证据与限制见 [T6收口](../docs/t6-closeout.md)。止于T6，不自动启动T7。

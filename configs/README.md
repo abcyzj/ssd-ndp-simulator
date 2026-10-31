@@ -17,3 +17,5 @@
 | M3.1 / M3.4 分支夹具 | `regression/host-branch.json` / `placements-branch.json` |
 
 T4 受控设备描述为 `profiles/devices.json`，共同基线为 `native/ssdconfig.xml`；根 CMake 和实验快照使用同一生成器。支持 native-small、ann-2g-v1、ann-16g-v1，均未校准；接口/容量/限制见 [T4](../docs/t4-content-profiles.md)。
+
+T6矩阵规格为 [experiments/v0.2/sift1m.json](experiments/v0.2/sift1m.json)，由`tools/verify_t6.py`读取；外层包含实验模板，不直接作为run_config的单点配置。查询/预算继续引用M0冻结身份，实际26次运行与限制见 [T6收口](../docs/t6-closeout.md)。

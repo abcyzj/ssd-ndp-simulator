@@ -259,11 +259,12 @@ def main():
     p.add_argument('action',choices=['build','check-index','exact','official','check-truth'])
     p.add_argument('dataset',type=Path); p.add_argument('artifact',type=Path)
     p.add_argument('--receipt',type=Path); p.add_argument('--threads',type=int,default=1)
+    p.add_argument('--timeout',type=int,default=28800,help='offline builder wall-clock limit in seconds')
     p.add_argument('--k',type=int,default=10); p.add_argument('--block-rows',type=int,default=1024)
     a=p.parse_args()
     if a.action=='build':
         if not a.receipt: p.error('--receipt required')
-        result=build(a.dataset,a.artifact,a.receipt,a.threads)
+        result=build(a.dataset,a.artifact,a.receipt,a.threads,a.timeout)
     elif a.action=='check-index': result=check_index(a.dataset,a.artifact)
     elif a.action=='exact': result=exact(a.dataset,a.artifact,a.k,a.block_rows)
     elif a.action=='official': result=official(a.dataset,a.artifact)

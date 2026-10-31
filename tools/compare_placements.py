@@ -1,4 +1,5 @@
 """Independent batch replay and storage/PCIe accounting for paired graph runs."""
+from contextlib import ExitStack
 import argparse
 from collections import Counter, defaultdict
 import json
@@ -14,7 +15,18 @@ def scores_equal(actual, expected):
         assert abs(a['distance']-b['distance']) <= 1e-9+1e-7*abs(b['distance']), 'distance tolerance'
 
 
+def event_rows(path):
+    with (Path(path)/'events.jsonl').open() as stream:
+        for line in stream:
+            yield json.loads(line)
+
+
 def inspect(path):
+    with ExitStack() as files:
+        return _inspect(path, files)
+
+
+def _inspect(path, files):
     path = Path(path)
     c = json.loads((path/'config.json').read_text())
     manifest = json.loads((path/'manifest.json').read_text())
@@ -22,16 +34,46 @@ def inspect(path):
     identity = manifest.get('input_identity')
     graph_path = data/'adjacency.u32'
     if identity:
-        from simulation_input import load_v2, decoded
+        from simulation_input import load_v2, FileRows
         m, paths, current = load_v2(data, c, path)
         assert current == identity, 'input identity changed'
-        vectors, queries = decoded(paths, m)
+        vectors = files.enter_context(FileRows(paths['vector_file'], m['dimensions']))
+        queries = files.enter_context(FileRows(paths['query_file'], m['dimensions']))
         graph_path = Path(paths['graph_file'])
     else:
         m, vectors, queries = read_dataset(data)
-    events = [json.loads(line) for line in (path/'events.jsonl').read_text().splitlines()]
     grouped = defaultdict(list)
-    for e in events:grouped[e['type']].append(e)
+    keep = {'query_result','score_visible','decision','summary','path_summary','service',
+            'message','local_request','local_storage','controller_service','credit','read_submit'}
+    link_pending = {}; closed_links = set(); platforms = {}; native = Counter()
+    link_totals = Counter()
+    for e in event_rows(path):
+        if e['type']=='link':
+            assert e['id'] not in closed_links, 'reused completed link ID'
+            phases = link_pending.setdefault(e['id'], {})
+            assert e['phase'] not in phases
+            phases[e['phase']] = e
+            if e['phase']=='arrive':
+                assert set(phases)=={'enqueue','start','arrive'}
+                en, st, ar = [phases[k] for k in ('enqueue','start','arrive')]
+                assert en['time_ns']<=st['time_ns']<=ar['time_ns']
+                assert ar['time_ns']-st['time_ns']==st['service_ns']==(st['wire']+3)//4
+                wire=32 if st['message_type']==0 else st['payload']+28*((st['payload']+127)//128)
+                assert st['wire']==wire and ar['wire']==wire
+                if ar['message_type']==3:
+                    assert ar['platform_id'] not in platforms
+                    platforms[ar['platform_id']]=ar
+                    link_totals['platform_wire']+=ar['wire']
+                else:
+                    native[(ar['message_type'],ar['destination'],ar['payload'])]+=1
+                    link_totals['native_wire']+=ar['wire']
+                if ar['message_type']==1 and ar['destination']==0 and ar['payload']>=512:
+                    link_totals['ordinary_dma']+=ar['payload']
+                link_totals['wire']+=ar['wire'];link_totals['transfers']+=1
+                closed_links.add(e['id']);del link_pending[e['id']]
+        elif e['type'] in keep:
+            grouped[e['type']].append(e)
+    assert not link_pending, 'incomplete link transfer'
     # Completion order across queries is resource dependent; preserve within-query order.
     grouped['query_result'].sort(key=lambda e:e['query'])
     by = lambda kind: grouped[kind]
@@ -39,9 +81,8 @@ def inspect(path):
     assert len(by('query_result'))==m['queries']
     assert [e['query'] for e in by('query_result')]==list(range(1,m['queries']+1))
     assert all(1<=e['query']<=m['queries'] for kind in ('message','local_request','local_storage') for e in by(kind))
-    graph = []
-    for row in struct.iter_unpack('<'+'I'*(m['degree']+1), graph_path.read_bytes()):
-        graph.append(row[1:1+row[0]])
+    from simulation_input import FileRows
+    graph = files.enter_context(FileRows(graph_path, m['degree']+1, adjacency=True))
     cfg, decisions, expected_nodes, chunks = c['search'], [], {}, {}
     for q, query in enumerate(queries, 1):
         seen, expanded = {}, set()
@@ -93,7 +134,7 @@ def inspect(path):
     issued_adj, expected_adj = [], [(d['query'], n) for d in decisions for n in d['expand']]
     host_vectors = defaultdict(list)
     read_times = defaultdict(list)
-    for e in events:
+    for e in event_rows(path):
         if e['type']=='read_submit':
             assert e['request'] not in pending
             pending[e['request']] = e
@@ -127,20 +168,6 @@ def inspect(path):
         rate = h[e['kind']+'_rate']
         assert e['end_ns']-e['start_ns']==h[e['kind']+'_setup']+(units+rate-1)//rate
     # Every actual link transfer has precisely one enqueue/start/arrival and one fee.
-    link = defaultdict(dict)
-    for e in by('link'):
-        assert e['phase'] not in link[e['id']]
-        link[e['id']][e['phase']] = e
-    arrived = []
-    for phases in link.values():
-        assert set(phases)=={'enqueue', 'start', 'arrive'}
-        en, st, ar = [phases[k] for k in ('enqueue', 'start', 'arrive')]
-        assert en['time_ns']<=st['time_ns']<=ar['time_ns']
-        assert ar['time_ns']-st['time_ns']==st['service_ns']==(st['wire']+3)//4
-        wire = 32 if st['message_type']==0 else st['payload']+28*((st['payload']+127)//128)
-        assert st['wire']==wire and ar['wire']==wire
-        arrived.append(ar)
-    platforms = {e['platform_id']:e for e in arrived if e['message_type']==3}
     assert len(platforms)==len(by('message'))
     local_sectors = 0
     if c['placement']=='host':
@@ -196,9 +223,8 @@ def inspect(path):
         local_sectors=sum(e['sector_bytes'] for e in by('local_storage'))
         assert local_sectors==sum(len(v)*vs*512 for v in expected_nodes.values())
     # Native NVMe uses WRITE_REQ for both DMA and CQ. All command/CQ fees remain in native_wire.
-    assert sum(e['payload'] for e in arrived if e['message_type']==1 and e['destination']==0 and e['payload']>=512)==ordinary
+    assert link_totals['ordinary_dma']==ordinary
     count=len(by('read_submit'))
-    native=Counter((e['message_type'], e['destination'], e['payload']) for e in arrived if e['message_type']!=3)
     expected=Counter({(1,1,2):2*count, (0,0,4):count, (2,1,72):count, (1,0,16):count})
     expected.update((1,0,e['sectors']*512) for e in by('read_submit'))
     assert native==+expected, 'native NVMe DMA/command/CQ accounting'
@@ -206,9 +232,9 @@ def inspect(path):
                 ledger=dict(ordinary_data_bytes=ordinary, local_vector_bytes=local_sectors,
                             vector_d2h_bytes=0 if c['placement']=='controller' else sum(len(v)*vs*512 for v in expected_nodes.values()),
                             platform_payload=sum(e['payload'] for e in by('message')), platform_useful=sum(e['useful'] for e in by('message')),
-                            platform_wire=sum(e['wire'] for e in arrived if e['message_type']==3),
-                            native_wire=sum(e['wire'] for e in arrived if e['message_type']!=3),
-                            total_wire=sum(e['wire'] for e in arrived), link_transfers=len(arrived)))
+                            platform_wire=link_totals['platform_wire'],
+                            native_wire=link_totals['native_wire'],
+                            total_wire=link_totals['wire'], link_transfers=link_totals['transfers']))
 
 
 def compare(host, controller):

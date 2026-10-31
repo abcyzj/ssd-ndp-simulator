@@ -32,6 +32,11 @@ public:
             throw std::invalid_argument("read outside preload layout");
         return flow_.submit(lba, sectors);
     }
+    uint64_t completed_sectors() const {
+        if (!ready_)
+            throw std::logic_error("preload not drained");
+        return next_;
+    }
     uint64_t origin() const {
         if (!ready_)
             throw std::logic_error("window not ready");

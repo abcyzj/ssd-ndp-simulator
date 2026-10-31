@@ -611,6 +611,11 @@ private:
                 device_->window->advance(!Simulator->Peek_next_time(), getCurrentSimTimeNano())) {
                 measuring_ = true;
                 origin_ = device_->window->origin();
+                records_ << "{\"type\":\"initial_state\",\"origin_ns\":" << origin_
+                         << ",\"completed_preload_sectors\":" << device_->window->completed_sectors()
+                         << ",\"backend_pending\":" << device_->flow->pending()
+                         << ",\"backend_drained\":" << (!Simulator->Peek_next_time() ? "true" : "false")
+                         << ",\"cmt_retained\":true,\"time_reset\":false}\n";
                 observation_->reset_window();
                 query_wall_start_ = std::chrono::steady_clock::now();
                 next();

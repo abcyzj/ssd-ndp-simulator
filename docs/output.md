@@ -24,3 +24,5 @@
 
 channel/die 观测复用 M1.4 的被动 MQSim hook，测量窗口裁剪后的半开区间按实体取并集；bus 仅含总线传输，不含 array。每个实体利用率为其 union/window，不相加成设备利用率。`capabilities.json` 明确 device/request/channel/die 支持定义，plane/latch、共享 DRAM 和内部命令参与集合等 Unsupported。算法不获得全局内部状态。
 
+
+T6新增`resources.initial_state`/同名CSV，记录完整预装载实际完成sectors、origin和后端排空；`sst-measurement.json.python_parent_peak_rss_bytes`为Python父进程RUSAGE_SELF生命周期高水位，单独约束后处理预算，不是分阶段RSS。扫描/质量匹配/复用产物见 [SIFT1M接口](t6-sift1m.md)。

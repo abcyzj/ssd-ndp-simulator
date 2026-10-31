@@ -69,3 +69,8 @@ CTest 新增 `device_profiles`、`mapped_content`、三个 profile 的实际 nam
 ## V0.2 T5 观测与生命周期
 
 新增 CTest `observation_lifecycle`（10,000 次任务/lease 回收、非复用 ID、失败在途 completion 保留、20,000 条乱序/重叠/跨窗口/零长度区间外排序独立核对）和 `streaming_output`（1,000→30,000 条资源记录，导出字段/CSV 和 Python 堆增长）。常规配置共 66 项，以实际发现为准；既有回归及断言保留。`tools/verify_t5.py` 运行固定 N256/d128/R8/E8/并发4、Q32/128/512 两放置三次重复、统计/详细等价、终态及退休容器计数、RSS 阈值和明确预算失败；可选真实 T2 SIFT 10k/32 query 完整逐批/账本对照。实际证据与未执行范围见 [T5 收口](t5-closeout.md)。
+
+
+## V0.2 T6 SIFT1M
+
+CTest `sift1m_matrix`运行六项测试：冻结26点/查询分割与参数拒绝、百万行按需读取、完整统计比较仅排除墙钟、成功产物复用的配置/输入/模型/元素/输出篡改拒绝、3万行流式事件堆界及重复/缺阶段/错误wire/已完成ID复用拒绝。当前常规配置67项，原断言保留。`tools/verify_t6.py`独立执行完整SIFT1M准备、26次矩阵和T6 AC-02-07/09/11；它不启动Deep10M或交付任务。最终记录为67/67 CTest、完整V0.1 AC-01～11、原生oracle和17项ASan；实际命令、初轮预算拒绝与严格复用恢复见 [T6收口](t6-closeout.md)。

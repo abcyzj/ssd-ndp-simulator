@@ -3,6 +3,8 @@ import argparse
 import hashlib
 import json
 import os
+import resource
+import sys
 import subprocess
 import time
 from experiment_output import export, RecordStream
@@ -175,6 +177,8 @@ def run(config, build, output, data=None, *, paired=False):
     (output/'records.jsonl').unlink()
     write_json(output / 'results.json', report)
     measurement['postprocessing_wall_seconds'] = time.perf_counter()-postprocess_start
+    measurement['python_parent_peak_rss_bytes'] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * (1 if sys.platform == 'darwin' else 1024)
+    measurement['python_parent_rss_scope'] = 'RUSAGE_SELF Python parent lifetime high-water; upper bound for postprocessing, not a phase peak or simultaneous tree RSS'
     write_json(measurement_path, measurement)
     if sum(f.stat().st_size for f in output.iterdir() if f.is_file()) > output_budget:
         raise RuntimeError('experiment output byte budget exhausted during postprocessing')
