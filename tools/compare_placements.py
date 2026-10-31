@@ -19,7 +19,16 @@ def inspect(path):
     c = json.loads((path/'config.json').read_text())
     manifest = json.loads((path/'manifest.json').read_text())
     data = Path(manifest['data'])
-    m, vectors, queries = read_dataset(data)
+    identity = manifest.get('input_identity')
+    graph_path = data/'adjacency.u32'
+    if identity:
+        from simulation_input import load_v2, decoded
+        m, paths, current = load_v2(data, c, path)
+        assert current == identity, 'input identity changed'
+        vectors, queries = decoded(paths, m)
+        graph_path = Path(paths['graph_file'])
+    else:
+        m, vectors, queries = read_dataset(data)
     events = [json.loads(line) for line in (path/'events.jsonl').read_text().splitlines()]
     grouped = defaultdict(list)
     for e in events:grouped[e['type']].append(e)
@@ -29,7 +38,7 @@ def inspect(path):
     assert [e['query'] for e in by('query_result')]==list(range(1,m['queries']+1))
     assert all(1<=e['query']<=m['queries'] for kind in ('message','local_request','local_storage') for e in by(kind))
     graph = []
-    for row in struct.iter_unpack('<'+'I'*(m['degree']+1), (data/'adjacency.u32').read_bytes()):
+    for row in struct.iter_unpack('<'+'I'*(m['degree']+1), graph_path.read_bytes()):
         graph.append(row[1:1+row[0]])
     cfg, decisions, expected_nodes, chunks = c['search'], [], {}, {}
     for q, query in enumerate(queries, 1):
@@ -191,7 +200,7 @@ def inspect(path):
     expected=Counter({(1,1,2):2*count, (0,0,4):count, (2,1,72):count, (1,0,16):count})
     expected.update((1,0,e['sectors']*512) for e in by('read_submit'))
     assert native==+expected, 'native NVMe DMA/command/CQ accounting'
-    return dict(placement=c['placement'], decisions=actual, results=by('query_result'), dataset=m, config=c,
+    return dict(placement=c['placement'], decisions=actual, results=by('query_result'), dataset=identity or m, config=c,
                 ledger=dict(ordinary_data_bytes=ordinary, local_vector_bytes=local_sectors,
                             vector_d2h_bytes=0 if c['placement']=='controller' else sum(len(v)*vs*512 for v in expected_nodes.values()),
                             platform_payload=sum(e['payload'] for e in by('message')), platform_useful=sum(e['useful'] for e in by('message')),

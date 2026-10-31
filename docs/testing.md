@@ -55,3 +55,7 @@ SDKROOT="$(xcrun --show-sdk-path)" /opt/homebrew/Caskroom/miniconda/base/bin/pyt
 ## T2 图与真值回归
 
 CTest 的 `benchmark_artifact_schema` 运行 `tests/test_benchmark_artifacts.py`，覆盖独立完整排序小 oracle 与分块堆 top-K 的数值/同分交叉核对、K≥k、ID/距离/身份错误、全图边界/可达性及重复边/自环保留、两种质量指标和不足 k。真实数据构建与官方 ID-only 的实际验证使用 `tools/verify_t2.py`，见 [T2 收口](t2-closeout.md)；它不是完整 V0.2 AC 或 T3 模拟贯通。
+
+## V0.2 T3 闭环
+
+CTest `simulation_input_schema` 覆盖相对路径、入口匹配、K≥k、未知实验版本、错绑定和坏图的启动前拒绝。`tools/verify_t3.py` 运行真实 10k SIFT 原输入和受控向量交换输入，各自两放置及独立逐批/账本对照；断言后续扩展和实际读取改变。复跑、范围和限制见 [T3](t3-closed-loop.md)。这不是完整 V0.1 AC 或规模验收。

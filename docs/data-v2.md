@@ -22,6 +22,6 @@ Spec 示例（路径相对 spec；sha256 必须填写真实完整源文件哈希
 
 `dataset.json` 版本 `ndpsim-dataset-v2`，记录度量、预处理声明、转换器/校验器/spec 哈希；各角色记录 shape、dtype、endian、原始完整身份和来源、选择规则、转换后字节数/哈希及映射哈希。base/query/learn 输出无头 FP32；groundtruth 输出无头 int32，仅作为原始 ID 数据，不冒充已经绑定的 `ndpsim-truth-v2`。完整 base 的官方真值必须按 query 相同原始行号选行；base 子集附带官方真值会被拒绝，需 T2 独立重算。来源及预处理为用户声明，不自动认定官方来源；正式输入应取自 M0 内容锁。
 
-`check` 不需要原始文件，重新校验输出字节、映射、shape、角色、数值与关系；不提供防恶意篡改的签名。输入实验期间不可变。v1 合成生成器、truth 和运行路径保持兼容；v2 准备产物在 run_graph 中校验后明确拒绝模拟，图/真值准备已由 [T2](index-truth-v2.md) 实现，等待 T3 模拟接线。experiment schema 尚待相应任务，wire schema 不变。
+`check` 不需要原始文件，重新校验输出字节、映射、shape、角色、数值与关系；不提供防恶意篡改的签名。输入实验期间不可变。v1 合成生成器、truth 和运行路径保持兼容；v2 准备产物通过 [T3 闭环入口](t3-closed-loop.md) 绑定独立图/真值并进入 SST；配置使用 ndpsim-experiment-v2，wire schema 不变。
 
 验证记录见 [T1 收口](t1-closeout.md)。T1 不代表 M1 整体闭环完成。

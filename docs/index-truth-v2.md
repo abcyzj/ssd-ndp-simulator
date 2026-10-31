@@ -1,6 +1,6 @@
 # T2 图与真值准备
 
-T2 接受 T1 的 `ndpsim-dataset-v2`。离线 Faiss 与 SST 查询实现独立；不将建图或真值成本计入模拟时间。图来自 NSG 不表示项目搜索忠实复现 NSG。T3 仍负责正式仿真接线；现有 v1 随机图、真值和模拟 CLI 保持原行为。
+T2 接受 T1 的 `ndpsim-dataset-v2`。离线 Faiss 与 SST 查询实现独立；不将建图或真值成本计入模拟时间。图来自 NSG 不表示项目搜索忠实复现 NSG。正式仿真接线见 [T3](t3-closed-loop.md)；现有 v1 随机图、真值和模拟 CLI 保持原行为。
 
 锁定的本机 macOS/arm64 构建（Python 3.12+ 安全 tar；示例使用锁定 3.13）：
 
@@ -27,7 +27,7 @@ python3.13 tools/benchmark_artifacts.py check-truth prepared exact-truth --k 10
 
 `official` 只接收 M0 内容锁匹配的完整 SIFT base、query、groundtruth。T1 已按 query 原始行号选择相同顺序的真值行；此处进一步绑定三者完整源哈希。只提供 IDs、不制造距离，保留官方顺序；有限 top-100 的严格 FP64/ID 并列边界统一标记 `unresolved`。base 子集必须重新精确计算，不能过滤完整库真值。Deep 全库真值不接受为 10M 真值；其他来源可扩展新显式方法，当前不提供任意来源的通用“官方”声明入口。
 
-`quality(returned, truth, k, result_r)` 分别给出 `recall_at_k`（前 k 集合交集数/k）、`one_recall_at_r`（真值第一近邻是否在返回前 R）、`insufficient_results`。R 是结果截断长度，和图度数无关；空/不足 k 的返回分母仍为 k，重复结果 ID 拒绝。正式仿真输出接入归 T3；T2 验证器输出原生建图器诊断的两种指标。
+`quality(returned, truth, k, result_r)` 分别给出 `recall_at_k`（前 k 集合交集数/k）、`one_recall_at_r`（真值第一近邻是否在返回前 R）、`insufficient_results`。R 是结果截断长度，和图度数无关；空/不足 k 的返回分母仍为 k，重复结果 ID 拒绝。正式仿真输出已由 [T3](t3-closed-loop.md) 接入；T2 验证器输出原生建图器诊断的两种指标。
 
 输出通过临时目录校验后改名；失败保留为 `<output>.failed`（不作为可复用产物），完整输出用 check 重新验证。输入在准备期间应不可变，产出前再次检查 dataset。建图先核对冻结本机预算与存储量下界、20 GiB 磁盘余量，实际子进程用 wait4 记录 RSS/墙钟并完成后核对 RSS；超时终止进程组。下界不能证明峰值可行，也不是硬 RSS 限制。完整 Deep10M 当前下界已超过本机上限，启动前明确拒绝；T7 资源门槛仍保留。
 

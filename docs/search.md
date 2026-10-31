@@ -30,3 +30,5 @@ FP32 输入，平方 L2 使用固定维度顺序的 FP64 减/乘/加，沿用 M2
 `tools/ann_data.py truth` 独立解码 FP32，以 Python binary64 按维度顺序穷举每个查询与每个向量的距离，按距离/ID 排序取 k；不调用 C++ 算子或近似搜索。truth.json 绑定向量与查询哈希和 k，包含每查询精确 ID/距离。Recall@k 为每查询 `|返回 ID ∩ 精确 top-k ID| / k` 的均值，不足 k 仍以 k 为分母；同分按 ID 决定精确集合，不采用距离阈值扩张集合。
 
 结果、可选事件日志、并发与时延口径见[输出说明](output.md)。
+
+V0.2 真实图入口见 [T3 闭环](t3-closed-loop.md)。正式命名 ndpsim-ranked-expansion-v1，NSG 图来源不改变以上搜索或控制计费语义。

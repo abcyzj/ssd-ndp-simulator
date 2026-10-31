@@ -17,6 +17,8 @@ if __name__ == '__main__':
     if a.pair:
         a.output.mkdir(parents=True, exist_ok=True)
         config=json.loads(a.config.read_text())
+        for key in ('index', 'truth'):
+            if key in config: config[key] = str((a.config.resolve().parent/config[key]).resolve())
         shared=a.data
         for placement in ('host', 'controller'):
             config['placement']=placement

@@ -28,6 +28,8 @@ def main():
     if output.exists():
         parser.error('choose a new --output directory; experiment artifacts are never overwritten')
     config = json.loads(args.config.read_text())
+    for key in ('index', 'truth'):
+        if key in config: config[key] = str((args.config.resolve().parent/config[key]).resolve())
     if args.event_log:
         config['event_log'] = True
     data = args.data.resolve() if args.data else None

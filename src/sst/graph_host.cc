@@ -58,6 +58,9 @@ public:
                             {"event_log", "enable JSONL events", "0"},
                             {"records", "mandatory result records", ""},
                             {"data", "Validated dataset directory", ""},
+                            {"vector_file", "Validated FP32 base file", ""},
+                            {"query_file", "Validated FP32 query file", ""},
+                            {"graph_file", "Validated fixed-slot graph file", ""},
                             {"output", "JSONL output file", ""},
                             {"count", "N", "2048"},
                             {"dimensions", "d", "32"},
@@ -99,9 +102,9 @@ public:
         if (!d_ || !nq_ || r_ >= cfg_.count)
             throw std::invalid_argument("invalid dimensions/queries/degree");
         auto dir = p.find<std::string>("data", "");
-        auto vb = load(dir + "/vectors.f32", uint64_t(cfg_.count) * d_ * 4);
-        auto ab = load(dir + "/adjacency.u32", uint64_t(cfg_.count) * (uint64_t(r_) + 1) * 4);
-        queries_ = load(dir + "/queries.f32", uint64_t(nq_) * d_ * 4);
+        auto vb = load(p.find<std::string>("vector_file", dir + "/vectors.f32"), uint64_t(cfg_.count) * d_ * 4);
+        auto ab = load(p.find<std::string>("graph_file", dir + "/adjacency.u32"), uint64_t(cfg_.count) * (uint64_t(r_) + 1) * 4);
+        queries_ = load(p.find<std::string>("query_file", dir + "/queries.f32"), uint64_t(nq_) * d_ * 4);
         std::vector<content::Input> objects;
         for (uint32_t i = 0; i < cfg_.count; ++i) {
             auto v = vb.begin() + uint64_t(i) * d_ * 4;

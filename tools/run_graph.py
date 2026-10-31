@@ -17,6 +17,8 @@ def run(config, build, output, data=None, *, paired=False):
     config, build, output = Path(config).resolve(), Path(build).resolve(), Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     c = json.loads(config.read_text())
+    for key in ('index', 'truth'):
+        if key in c: c[key] = str((config.parent/c[key]).resolve())
     if c['placement'] not in (('host', 'controller') if paired else ('host',)) or c['device_profile'] != 'native-small':
         raise ValueError('Unsupported: requires supported placement/native-small')
     integer(c['max_inflight'], 'max_inflight')
@@ -28,6 +30,10 @@ def run(config, build, output, data=None, *, paired=False):
         (output/name).unlink(missing_ok=True)
     if not c['parameter_source']:
         raise ValueError('parameter_source is required')
+    if 'format' in c and c['format'] != 'ndpsim-experiment-v2':
+        raise ValueError('unsupported experiment schema')
+    if c.get('format') == 'ndpsim-experiment-v2' and data is None:
+        raise ValueError('experiment-v2 requires explicit prepared --data')
     if data is None:
         data = output / 'data'
         generate(data, **c['generate'])
@@ -35,11 +41,14 @@ def run(config, build, output, data=None, *, paired=False):
     data = Path(data).resolve()
     # Explicit version gate before loading payloads or launching SST.
     dataset_format = json.loads((data / 'dataset.json').read_text()).get('format')
+    if c.get('format') == 'ndpsim-experiment-v2' and dataset_format != 'ndpsim-dataset-v2':
+        raise ValueError('experiment-v2 requires dataset-v2')
+    identity, input_paths = None, {}
     if dataset_format == 'ndpsim-dataset-v2':
-        from benchmark_data import check
-        check(data)
-        raise ValueError('Unsupported: dataset-v2 requires T2 index/truth binding and T3 simulation integration')
-    m, _, _ = read_dataset(data)
+        from simulation_input import load_v2
+        m, input_paths, identity = load_v2(data, c, config.parent)
+    else:
+        m, _, _ = read_dataset(data)
     s, h = c['search'], c['host']
     required_search = {'entry', 'k', 'width', 'batch', 'budget', 'chunk'}
     required_host = {'slots', 'distance_setup', 'distance_rate', 'control_setup', 'control_rate', 'check_units', 'comparison_units'}
@@ -51,20 +60,22 @@ def run(config, build, output, data=None, *, paired=False):
         integer(val, key, 1 if key in ('slots', 'distance_rate', 'control_rate') else 0, 2**64-1)
     if s['entry'] >= m['count'] or s['k'] > m['count'] or s['width'] < s['k']:
         raise ValueError('invalid entry/k/L')
-    truth = json.loads((data / 'truth.json').read_text())
-    if truth['k'] != s['k'] or truth['vectors_sha256'] != m['sha256']['vectors.f32'] or truth['queries_sha256'] != m['sha256']['queries.f32']:
-        raise ValueError('ground truth does not match data/query/k')
-    if len(truth['top_k']) != m['queries']:
-        raise ValueError('ground truth query count mismatch')
-    for row in truth['top_k']:
-        if len(row) != s['k'] or len({v['id'] for v in row}) != s['k']:
-            raise ValueError('invalid truth cardinality')
-        for v in row:
-            integer(v['id'], 'truth ID', 0, m['count']-1)
-            if not isinstance(v['distance'], (float, int)) or not 0 <= v['distance'] < float('inf'):
-                raise ValueError('invalid truth distance')
+    if identity is None:
+        truth = json.loads((data / 'truth.json').read_text())
+        if truth['k'] != s['k'] or truth['vectors_sha256'] != m['sha256']['vectors.f32'] or truth['queries_sha256'] != m['sha256']['queries.f32']:
+            raise ValueError('ground truth does not match data/query/k')
+        if len(truth['top_k']) != m['queries']:
+            raise ValueError('ground truth query count mismatch')
+        for row in truth['top_k']:
+            if len(row) != s['k'] or len({v['id'] for v in row}) != s['k']:
+                raise ValueError('invalid truth cardinality')
+            for v in row:
+                integer(v['id'], 'truth ID', 0, m['count']-1)
+                if not isinstance(v['distance'], (float, int)) or not 0 <= v['distance'] < float('inf'):
+                    raise ValueError('invalid truth distance')
     paths = json.loads((build / 'sst-paths.json').read_text())
     params = {key: m[key] for key in ('count', 'dimensions', 'degree', 'queries')}
+    params.update(input_paths)
     params.update(s)
     params.update(h)
     if paired:
@@ -104,17 +115,37 @@ def run(config, build, output, data=None, *, paired=False):
     results = sorted([e for e in events if e['type'] == 'query_result'], key=lambda r:r['query'])
     if len(results) != m['queries'] or len([e for e in events if e['type'] == 'summary']) != 1:
         raise ValueError('incomplete SST results')
+    if identity:
+        from simulation_input import truth_ids
+        from benchmark_artifacts import quality
+        truth_rows = list(truth_ids(identity))
     for i, result in enumerate(results):
         if result['query'] != i+1:
             raise ValueError('out of order queries')
-        expected = {v['id'] for v in truth['top_k'][i]}
+        expected = set(truth_rows[i][:s['k']]) if identity else {v['id'] for v in truth['top_k'][i]}
         returned = {v['id'] for v in result['top_k']}
         if len(returned) != len(result['top_k']) or len(returned) > s['k']:
             raise ValueError('invalid result cardinality')
         result['recall_at_k'] = len(expected & returned)/s['k']
+        if identity:
+            result.update(quality([v['id'] for v in result['top_k']], truth_rows[i], s['k'], s['k']))
+            mapping = identity['dataset']['files']['query']['mapping']
+            import struct
+            with (data/mapping).open('rb') as f:
+                f.seek(i*4)
+                result['original_query_id'] = struct.unpack('<I', f.read(4))[0]
+    if identity:
+        from simulation_input import load_v2
+        if load_v2(data, c, config.parent)[2] != identity:
+            raise ValueError('input identity changed during simulation')
     report = dict(k=s['k'], recall_definition='mean |returned IDs intersect exact top-k IDs| / k; ties by ID',
                   recall_at_k=sum(r['recall_at_k'] for r in results)/len(results), queries=results,
                   summary=next(e for e in events if e['type'] == 'summary'))
+    if identity:
+        report.update(search=identity['search'], truth_method=identity['truth']['method'],
+                      tie_boundary=identity['truth']['tie_boundary'], result_r=s['k'],
+                      one_recall_at_r=sum(r['one_recall_at_r'] for r in results)/len(results),
+                      recall_definition='mean |returned first k IDs intersect truth first k IDs| / k')
     export(output, results, events, wall_seconds)
     write_json(output / 'results.json', report)
     def git(*args):
@@ -123,9 +154,9 @@ def run(config, build, output, data=None, *, paired=False):
     base = json.loads((ROOT/'deps.lock.json').read_text())['dependencies']['MQSim']['commit']
     names = subprocess.check_output(['git','-C',str(mqsim),'ls-files','--cached','--others','--exclude-standard','-z']).decode().split('\0')
     source_files = [ROOT/'CMakeLists.txt', ROOT/'deps.lock.json', *sorted((ROOT/'src').rglob('*.cc')),
-                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/sst/graph.py', ROOT/'tools/run_pair.py', ROOT/'tools/compare_placements.py', ROOT/'tools/experiment_output.py', ROOT/'tools/run_experiment.py']
+                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/sst/graph.py', ROOT/'tools/run_pair.py', ROOT/'tools/compare_placements.py', ROOT/'tools/experiment_output.py', ROOT/'tools/run_experiment.py', ROOT/'tools/simulation_input.py', ROOT/'tools/benchmark_data.py', ROOT/'tools/benchmark_artifacts.py']
     write_json(output / 'manifest.json', dict(data=str(data), dataset=m, config_sha256=digest(config),
-        truth_sha256=digest(data/'truth.json'), code_commit=git('rev-parse', 'HEAD'),
+        input_identity=identity, truth_sha256=digest(Path(identity['directories']['truth'])/'truth.json' if identity else data/'truth.json'), code_commit=git('rev-parse', 'HEAD'),
         source_sha256={str(p.relative_to(ROOT)):digest(p) for p in source_files},
         element_sha256=digest(build/'libndpsim.so'),
         mqsim_native_base=base,
