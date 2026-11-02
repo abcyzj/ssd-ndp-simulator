@@ -3,7 +3,8 @@
 - 当前目标为 V0.3。先读 README.md、docs/prd-v0.3.md、docs/ir-v0.3.md，
   再按任务从 docs/README.md 选择现行规范、接口与测试说明；docs/releases/v0.2.md 用于核对可运行基线和验证证据，不要求通读历史。
   docs/prd-v0.1.md 保留 V0.1 需求基线；docs/archive/v0.1/ 与 docs/archive/v0.2/ 仅供按需追溯，阶段指令和状态不继续生效。
-- V0.3 当前仅形成需求与设计基线，尚未实施或验收 IR；后续先核对现有代码与 direct 参考路径，再形成实施计划。
+- V0.3 当前仅形成需求与设计基线，尚未实施或验收 IR；实施前按 docs/implementation-plan-v0.3.md 冻结 direct 参考路径及证据。
+  可执行任务、完成证据、阻塞项及默认决策均见该清单；每次按实际产物更新任务状态。
   V0.2 的 T0～T6、T8 已收口（T7/M3 已取消），docs/archive/v0.2/implementation-plan.md 用于追溯，不继续当作新版本任务清单。
   每次以实际产物/证据更新阶段状态，不把规划或历史通过当成本轮完成；局部门槛未满足时继续不依赖它的工作。
 - V0.3 仅将现有 SIFT1M 图搜索通过动态进程内 IR 执行，保持搜索结果、模拟时序和资源账本与 direct 基线等价。
