@@ -1,11 +1,13 @@
 # SSD 近存计算仿真平台 V0.2 产品需求描述
 
+> 历史归档（2026-11-02）：阶段状态、待办和通过结论仅适用于当时；不是 V0.3 执行指令。现行入口见[文档索引](../../README.md)，已交付基线见[V0.2 交付记录](../../releases/v0.2.md)。命令路径随归档更新，原证据与哈希不改写。
+
 版本：0.2  
 日期：2026-10-31（Asia/Shanghai）
-用途：V0.2 当前开发需求与验收目标，配合 [实施计划](v0.2-implementation-plan.md) 推进开发。
-状态：已进入开发；T0/M0 前置实证已完成，见 [M0 记录](m0-closeout.md)，T1～T3/M1 小规模闭环已完成，见 [T3 收口](t3-closeout.md)；T4/M2 内容与 profile 已完成，见 [T4 收口](t4-closeout.md)，T5/M2 观测与生命周期已完成，见 [T5 收口](t5-closeout.md)，T6/M2 完整 SIFT1M 已完成，见 [T6 收口](t6-closeout.md)，M3/Deep10M 已取消，M4/SIFT1M 交付已验收，见 [V0.2 交付](releases/v0.2.md)。实施计划中的默认方案作为实施起点，建议默认和待核实项仍须经相应阶段验证，不能当成已经具备的能力。
+用途：V0.2 当前开发需求与验收目标，配合 [实施计划](implementation-plan.md) 推进开发。
+状态：已进入开发；T0/M0 前置实证已完成，见 [M0 记录](m0-closeout.md)，T1～T3/M1 小规模闭环已完成，见 [T3 收口](t3-closeout.md)；T4/M2 内容与 profile 已完成，见 [T4 收口](t4-closeout.md)，T5/M2 观测与生命周期已完成，见 [T5 收口](t5-closeout.md)，T6/M2 完整 SIFT1M 已完成，见 [T6 收口](t6-closeout.md)，M3/Deep10M 已取消，M4/SIFT1M 交付已验收，见 [V0.2 交付](../../releases/v0.2.md)。实施计划中的默认方案作为实施起点，建议默认和待核实项仍须经相应阶段验证，不能当成已经具备的能力。
 
-V0.1 需求保留在 [prd-v0.1.md](prd-v0.1.md)，现行行为与交付证据见[版本交接](releases/v0.1.md)、[文档索引](README.md)。本文描述增量目标，不覆盖 V0.1 历史验收，也不将历史阶段指令重新启用。
+V0.1 需求保留在 [prd-v0.1.md](../../prd-v0.1.md)，现行行为与交付证据见[版本交接](../../releases/v0.1.md)、[文档索引](../../README.md)。本文描述增量目标，不覆盖 V0.1 历史验收，也不将历史阶段指令重新启用。
 
 ## 1. 产品目标与使用者
 
@@ -220,7 +222,7 @@ V0.2 应能回答：
 | M3：已取消 | 原 Deep10M 阶段不再执行；M2 直接进入 M4 | AC-02-10 标记 N/A |
 | M4：交付 | 复现证据、比较结果、完整回归及限制文档 | AC-02-11、12 与全部适用验收汇总（排除已取消的 AC-02-10） |
 
-当前执行顺序、任务依赖和出口以 [实施计划](v0.2-implementation-plan.md) 第 0、6 节为准；不是工期承诺。模型校准可后续推进；本版至少确保参数来源与结论边界透明。
+当前执行顺序、任务依赖和出口以 [实施计划](implementation-plan.md) 第 0、6 节为准；不是工期承诺。模型校准可后续推进；本版至少确保参数来源与结论边界透明。
 
 ## 9. 技术核查与阶段出口必须解决的问题
 
@@ -233,13 +235,13 @@ V0.2 应能回答：
 7. 明确 mmap/元数据/观测回收的实现边界，证明不会绕过驻留和可见性契约。
 8. 将 FR、代码模块、里程碑及 AC 建立对应关系；列出风险、技术决策与未决项，不将实现建议直接当作已批准架构。
 
-现有 [实施计划](v0.2-implementation-plan.md) 已给出架构起点与任务分解；上述核查项按阶段补充实证，无需重新开始整轮规划。实施记录应包含任务依赖、每阶段可运行产物、验证命令与证据位置，以及新需求相对现行文档/代码/测试的冲突处理。不得自动提交、推送、升级或初始化依赖；MQSim 若需修改，遵循原位开发、原生 oracle 和源码身份约定，SST Core 不修改。
+现有 [实施计划](implementation-plan.md) 已给出架构起点与任务分解；上述核查项按阶段补充实证，无需重新开始整轮规划。实施记录应包含任务依赖、每阶段可运行产物、验证命令与证据位置，以及新需求相对现行文档/代码/测试的冲突处理。不得自动提交、推送、升级或初始化依赖；MQSim 若需修改，遵循原位开发、原生 oracle 和源码身份约定，SST Core 不修改。
 
 ## 10. 技术核查与参考入口
 
-- 现行实现：[搜索与数据](search.md)、[扩展指南](extensions.md)、[契约](contracts.md)、[输出](output.md)、[模型限制](model-limitations.md)、[测试](testing.md)。
-- 数据准备：[ann_data.py](../tools/ann_data.py)；实验校验与布局：[run_graph.py](../tools/run_graph.py)。
-- 搜索与装载：[graph.cc](../src/search/graph.cc)、[graph_host.cc](../src/sst/graph_host.cc)、[content.h](../src/content/content.h)。
-- 设备与观测：[ordinary_device.h](../src/backend/ordinary_device.h)、[observation.h](../src/backend/observation.h)、[SSD XML](../configs/native/ssdconfig.xml)。
+- 现行实现：[搜索与数据](../../search.md)、[扩展指南](../../extensions.md)、[契约](../../contracts.md)、[输出](../../output.md)、[模型限制](../../model-limitations.md)、[测试](../../testing.md)。
+- 数据准备：[ann_data.py](../../../tools/ann_data.py)；实验校验与布局：[run_graph.py](../../../tools/run_graph.py)。
+- 搜索与装载：[graph.cc](../../../src/search/graph.cc)、[graph_host.cc](../../../src/sst/graph_host.cc)、[content.h](../../../src/content/content.h)。
+- 设备与观测：[ordinary_device.h](../../../src/backend/ordinary_device.h)、[observation.h](../../../src/backend/observation.h)、[SSD XML](../../../configs/native/ssdconfig.xml)。
 - SIFT 格式及评测参考：[Faiss 官方示例](https://github.com/facebookresearch/faiss/blob/main/demos/demo_sift1M.cpp)。
 - 候选建图实现参考：[DiskANN](https://github.com/microsoft/DiskANN)、[NSG](https://github.com/ZJULearning/nsg)。仅供规划核查，不表示已经选用、锁定版本或完成兼容性验证。

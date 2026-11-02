@@ -1,4 +1,4 @@
-# T5 观测与生命周期接口
+# 观测与生命周期接口
 
 默认 `event_log=false` 为统计模式，`true` 增加详细诊断。两者执行相同闭环、费用、资源排队与可见性边界，不向算法开放内部观测。保持现有 JSON/CSV 结果字段，新增逐查询 `decision_digest_fnv1a64`、`lifecycle_sample` 和最终 `lifecycle` 资源记录。摘要按每次实际 decision 的候选 `(ID, FP64 distance)` 与扩展 ID 的确定性文本累计 FNV-1a64；用于定位路径差异，非密码学身份或完整逐批证据的替代。
 
@@ -31,6 +31,6 @@ python3.13 tools/verify_t5.py --build build/delivery \
   --prepared results/v0.2-t2/real-final --output results/v0.2-t5/new-evidence
 ```
 
-该命令只执行 T5 的固定小 base 查询梯度、日志等价性、资源计数、预算拒绝及可选真实小图逐批核对。T6/T7 完整规模、目标布局联合初始化和扫描矩阵不在该入口中。
+该命令只执行 T5 的固定小 base 查询梯度、日志等价性、资源计数、预算拒绝及可选真实小图逐批核对。完整 SIFT1M、目标布局联合初始化和扫描矩阵不在该入口中。
 
-T6 增加 `python_parent_peak_rss_bytes`（RUSAGE_SELF、Python父进程生命周期高水位），用于给512MiB后处理预算提供保守上界；它覆盖预检/后处理，不是独立阶段peak。外层wait4在本机可能继承已回收后代的RSS高水位，不能拿运行包装器wait4替代父进程自身RSS。SST仍单独wait4测量。T6初始化状态及矩阵见 [SIFT1M入口](t6-sift1m.md)。
+T6 增加 `python_parent_peak_rss_bytes`（RUSAGE_SELF、Python父进程生命周期高水位），用于给512MiB后处理预算提供保守上界；它覆盖预检/后处理，不是独立阶段peak。外层wait4在本机可能继承已回收后代的RSS高水位，不能拿运行包装器wait4替代父进程自身RSS。SST仍单独wait4测量。T6初始化状态及矩阵见 [SIFT1M入口](sift1m.md)。

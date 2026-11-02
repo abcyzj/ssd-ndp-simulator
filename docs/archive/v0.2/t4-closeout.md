@@ -1,5 +1,7 @@
 # T4 / M2 内容与 profile 收口
 
+> 历史归档（2026-11-02）：阶段状态、待办和通过结论仅适用于当时；不是 V0.3 执行指令。现行入口见[文档索引](../../README.md)，已交付基线见[V0.2 交付记录](../../releases/v0.2.md)。命令路径随归档更新，原证据与哈希不改写。
+
 2026-10-31（Asia/Shanghai）。已读取根 AGENTS、README、V0.2 PRD/实施计划、相关契约/接口/测试说明，并核对 T1 数据/schema 和 T3 真实小数据闭环收口。开工工作区干净；MQSim/SST 子模块未改，未自动提交、推送、升级或初始化依赖。本轮范围止于 T4；M2 整体及 T5～T8 不标完成。
 
 实现：默认 POSIX 只读 mmap 内容后端，保留 memory 后端；按请求读取范围并裁去邻接 padding，公式地址替代 N 项 Placement map，SHA256 不再复制全文件。文件开始/结束 SHA256、inode/大小/纳秒 mtime/ctime 和运行器身份复核防止改变输入后输出成功。算法仍只持 Runtime/Handles 能力；普通 DMA/CQ、跨 extent/local 子事务、计算与返回可见性边界不变。v1 仿真前校验也改为分块解码，小离线 oracle/生成器保留。

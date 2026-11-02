@@ -1,6 +1,6 @@
-# T4 内容与设备 profile
+# 内容后端与设备 profile
 
-T4 保留 `independent-sector-v1` 布局、搜索/控制成本、FP32 输入和固定维序 FP64 L2。文件内容与模拟驻留独立；mmap 页命中没有模拟缓存优惠。实现/验证证据见 [T4 收口](t4-closeout.md)。
+现行内容后端保留 `independent-sector-v1` 布局、搜索/控制成本、FP32 输入和固定维序 FP64 L2。文件内容与模拟驻留独立；mmap 页命中没有模拟缓存优惠。实现/验证证据见 [T4 收口](archive/v0.2/t4-closeout.md)。
 
 实验配置新增可选字段：
 
@@ -25,7 +25,7 @@ T4 保留 `independent-sector-v1` 布局、搜索/控制成本、FP32 输入和�
 
 `configs/profiles/devices.json` 为受控覆盖描述，以原有 `configs/native/ssdconfig.xml` 为共同基线，2×1×2×1、64 pages/block、4096 B/page，blocks/plane 分别 64/2048/16384。`tools/device_profiles.py` 同时生成 C++ 内嵌 XML/几何与运行器快照；CMake 依赖两文件及生成器，修改后必须重配/重编译。native-small XML 字节不变。不接受运行时任意 XML；XML SHA256 由实际元素返回并与配置快照比较，防止旧构建冒充当前配置。
 
-启动前 checked arithmetic 检查布局末地址、整页向上对齐预装载边界、原始容量、query/消息大小及盘控前进块；构建 MQSim 后以其实际 namespace 再检查，不能用 raw×0.93 冒充 namespace。`preflight.json`、manifest 与 `device_profile.csv` 保存静态/实际值。静态资源预检采用 `pages*256 + blocks*4096` 字节的元数据估算并与显式 budget 比较，在创建 MQSim 前拒绝；**这是保守代理估算，不是经证明的 RSS 上界**，不包含历史事件、搜索、memory 后端内容或系统页缓存。完整阶段的预算监控仍须由 T5～T7 实现/验证，不以此宣称不会 OOM。
+启动前 checked arithmetic 检查布局末地址、整页向上对齐预装载边界、原始容量、query/消息大小及盘控前进块；构建 MQSim 后以其实际 namespace 再检查，不能用 raw×0.93 冒充 namespace。`preflight.json`、manifest 与 `device_profile.csv` 保存静态/实际值。静态资源预检采用 `pages*256 + blocks*4096` 字节的元数据估算并与显式 budget 比较，在创建 MQSim 前拒绝；**这是保守代理估算，不是经证明的 RSS 上界**，不包含历史事件、搜索、memory 后端内容或系统页缓存。实际运行预算监控见[观测与生命周期](observation-lifecycle.md)和[SIFT1M](sift1m.md)，不以静态估算宣称不会 OOM。
 
 控制器从同一个 `Controller::bounds` 接口验证并计算 query 字节、确定性 chunk、最大块和接纳限制；单向量 sector_bound 不得小于实际独立对齐 stride。d128/d96、chunk16、scratch0、capacity16384、max_inflight4 时 block=8512，可接纳4条。d260 必须把 vector_sector_bound 设为1536；相同配置 chunk=9、block=14032、接纳2条。降额保留可前进空间，并非四块可并行保证。
 
@@ -39,4 +39,4 @@ T4 保留 `independent-sector-v1` 布局、搜索/控制成本、FP32 输入和�
   --output results/v0.2-t4-new
 ```
 
-此入口包含三个 profile 的实际 namespace/越界/资源拒绝、文件内容错误与可见性、小 d128/d96/d260 两后端两放置的完整事件/结果/模拟统计等价、独立逐批及流量/credit 核对，以及真实 SIFT 10k/32 query 对照。跨查询完成顺序允许交错，核对器按查询保留内部顺序和因果关系。完整 V0.1 AC 与映射后端 ASan 是单独证据；不自动启动 T5 或规模实验。
+此入口包含三个 profile 的实际 namespace/越界/资源拒绝、文件内容错误与可见性、小 d128/d96/d260 两后端两放置的完整事件/结果/模拟统计等价、独立逐批及流量/credit 核对，以及真实 SIFT 10k/32 query 对照。跨查询完成顺序允许交错，核对器按查询保留内部顺序和因果关系。完整 V0.1 AC 与映射后端 ASan 是单独证据；规模矩阵与完整验收需使用各自入口。

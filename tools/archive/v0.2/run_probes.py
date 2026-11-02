@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from verify_m0 import measure, sha, write
 
 
@@ -54,7 +54,7 @@ def main():
                                            quality=graph['recall_at_10'] >= .95)
                     r['artifacts'] = {str(f): sha(f) for f in (Path(str(stem)+'.u32'), Path(str(stem)+'.graph.json'))}
             else:
-                argv = [paths['sst'], '--add-lib-path='+str(a.build.resolve()), 'configs/regression/m0_preload.py']
+                argv = [paths['sst'], '--add-lib-path='+str(a.build.resolve()), 'configs/archive/v0.2/m0_preload.py']
                 r = measure(argv, str(stem)+'.json', 3600, 4*1024**3,
                             {'NDPSIM_M0_PRELOAD_BYTES': str(size), 'NDPSIM_M0_BLOCKS': str(a.blocks)})
                 if r['passed']:

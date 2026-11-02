@@ -1,30 +1,30 @@
 # 文档入口
 
-当前开发目标为 V0.2：先读 [V0.2 PRD](prd-v0.2.md) 和 [实施计划](v0.2-implementation-plan.md)，以 SIFT1M 为交付数据集，Deep10M 已取消；从计划第 0 节核对状态并按第 6 节任务依赖推进，T0～T6 与 T8/M4 已完成，交付证据见 [V0.2 记录](releases/v0.2.md)。其余文档按任务选择，不要求遍历全部文档；现行说明包含继承的 V0.1 边界及已验收的 V0.2 增量。
+当前开发目标为 V0.3，先读 [PRD](prd-v0.3.md) 与 [IR 设计规范](ir-v0.3.md)。目前只有需求与设计基线，尚未实现或验收 IR；实施前须核对代码与 direct 参考路径，再形成实施计划。两份正式文档独立于早期 Word 草案。
+
+当前可运行基线仍为 V0.2。以下接口文档描述已实现能力，不能把 V0.3 目标视为现有接口；按任务选读，无须遍历历史阶段材料。
 
 | 目的 | 现行入口 |
 | --- | --- |
-| V0.2 交付、总入口、全部适用 AC 和限制 | [V0.2 交付记录](releases/v0.2.md)、[复建交付](delivery.md) |
-| V0.1 交付状态、验证证据与继承基线 | [V0.1 交接](releases/v0.1.md) |
-| 安装、构建、只运行实验 | [项目 README](../README.md)、[复建交付](delivery.md) |
-| 需求范围与验收标准 | [V0.1 PRD](prd-v0.1.md)（V0.1 基线，非 V0.2 任务） |
-| V0.2 需求与验收目标 | [V0.2 产品需求](prd-v0.2.md)（当前开发需求，非已实现能力） |
-| V0.2 开发顺序、阶段门槛与当前起点 | [V0.2 实施计划](v0.2-implementation-plan.md)（第 0 节开工，第 6 节 T0～T6、T8；T7 已取消） |
-| T6 完整SIFT1M准备、矩阵、复用与资源证据 | [实验入口](t6-sift1m.md)、[实际验证](t6-closeout.md) |
-| T5 统计/详细模式、回收、流式输出和资源证据 | [接口与限制](t5-observation-lifecycle.md)、[实际验证](t5-closeout.md) |
-| T4 mmap/内存后端、公式布局与受控大 profile | [接口与限制](t4-content-profiles.md)、[实际验证](t4-closeout.md) |
-| T3 真实小数据两放置闭环 | [接入接口与验证](t3-closed-loop.md)、[实际验证](t3-closeout.md) |
-| T2 离线图、精确/官方真值及质量指标 | [图与真值](index-truth-v2.md)、[实际验证](t2-closeout.md) |
-| T1 数据导入与 schema | [数据说明](data-v2.md)、[实际验证](t1-closeout.md) |
-| T0 数据/建图依赖锁、资源预算及本机证据 | [M0 实证与接续](m0-closeout.md) |
-| 模块职责、有效设计决定及原因 | [架构](architecture.md) |
-| 完成边界、消息、时间与计费规范 | [契约](contracts.md) |
-| 实际 C++ 接口与扩展方法 | [扩展指南](extensions.md) |
-| 搜索语义与输入格式 | [搜索与数据](search.md) |
-| 盘控分块、缓冲与生命周期 | [盘控资源](controller.md) |
-| 并发、JSON/CSV、观测与统计 | [输出口径](output.md) |
-| 持续回归与完整 AC | [测试说明](testing.md)、[工具分类](../tools/README.md)、[配置分类](../configs/README.md) |
+| V0.3 范围、等价性、验收要求 | [产品需求](prd-v0.3.md) |
+| V0.3 对象、算子、依赖、映射与生命周期 | [IR 设计规范](ir-v0.3.md) |
+| 构建、日常实验与复建 | [项目 README](../README.md)、[复建交付](delivery.md) |
+| 模块职责、有效设计决定 | [架构](architecture.md) |
+| 时间、消息、可见性与唯一计费 | [契约](contracts.md) |
+| C++ 接口与扩展 | [扩展指南](extensions.md) |
+| 搜索语义、盘控资源 | [搜索](search.md)、[盘控](controller.md) |
+| 数据导入、离线图与真值 | [dataset-v2](data-v2.md)、[图与真值](index-truth-v2.md) |
+| 真实输入接线与身份校验 | [仿真输入](simulation-input.md) |
+| mmap、公式布局与设备 profile | [内容与设备](content-profiles.md) |
+| 观测、资源回收与输出 | [观测与生命周期](observation-lifecycle.md)、[输出口径](output.md) |
+| SIFT1M 准备、固定矩阵与严格复用 | [SIFT1M 实验](sift1m.md) |
+| 持续测试与继承验收 | [测试说明](testing.md)、[工具分类](../tools/README.md)、[配置分类](../configs/README.md) |
 | 未校准参数、Unsupported 和已知问题 | [模型限制](model-limitations.md) |
-| 依赖修改、原生 oracle 与许可证 | [MQSim 维护](mqsim-source-management.md)、[锁文件](../deps.lock.json) |
+| 依赖维护、原生 oracle 与许可证 | [MQSim 维护](mqsim-source-management.md)、[锁文件](../deps.lock.json) |
 
-[历史归档](archive/v0.1/README.md)仅用于追溯，不是当前执行清单。历史“未实现/下一步”描述属于当时阶段；历史通过也不等于当前检出已重跑。需求、现行文档、代码或测试发生冲突时，明确差异、影响和证据，再修正相应内容，不能直接用旧方案覆盖当前行为。
+## 版本基线与历史追溯
+
+- [V0.2 交付记录](releases/v0.2.md)：当前可运行基线和历史验证证据；[归档索引](archive/v0.2/README.md)收纳 PRD、阶段计划、收口和实验记录。
+- [V0.1 交接](releases/v0.1.md)、[V0.1 PRD](prd-v0.1.md)：继承需求与验收基线；[归档索引](archive/v0.1/README.md)保留阶段过程。
+
+归档中的“当前”“未实现”“下一步”只适用于当时，不是 V0.3 任务清单。历史通过不等于当前检出已重跑。需求、现行文档、代码或测试冲突时，明确差异与影响后处理，不能直接用旧方案覆盖当前行为。

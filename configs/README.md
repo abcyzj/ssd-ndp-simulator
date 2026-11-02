@@ -1,21 +1,23 @@
 # 配置入口
 
-- [experiments/host.json](experiments/host.json)、[experiments/controller.json](experiments/controller.json)：当前默认实验配置，原 configs/m4.1/；日常运行器默认使用此处。
-- [sst/graph.py](sst/graph.py)：当前图搜索 SST 组件接线，原 m3.1/host.py；由运行器校验并传入参数，不是阶段废弃代码。
-- `regression/`：持续维护的 SST 探针和分支夹具。CTest、完整 AC、分层验证继续使用，归档不减少执行范围。
-- `native/`：锁定 native-small XML 与独立原生 oracle 输入，保留原路径。
-- [archive/v0.1/](archive/v0.1/README.md)：旧阶段专用 smoke 配置，保留供对应归档脚本复现，不作为当前实验默认值。
+V0.3 继承现有模型、数据和查询身份，当前配置尚未增加 IR 执行引擎。版本名标识冻结来源，不表示已失效；不为归档重排查询、改参数或重算锁。
 
-配置移动未改参数值或 SST 组件行为。路径调整已同步 CMake、Python 入口、输入哈希记录与文档。回归配置的来源如下：
-
-| 原任务 | 当前回归配置 |
+| 分类 | 现行用途 |
 | --- | --- |
-| M0.3a | `regression/bridge_poc.py` |
-| M1.1 / M1.2 / M1.3 | `regression/lifecycle.py` / `event_bridge.py` / `ordinary.py` |
-| M2.2 / M2.3 | `regression/runtime.py` / `host_cost.py` |
-| M3.2a / M3.2b / M3.3 | `regression/local_read.py` / `pcie.py` / `controller.py` |
-| M3.1 / M3.4 分支夹具 | `regression/host-branch.json` / `placements-branch.json` |
+| [experiments/host.json](experiments/host.json)、[experiments/controller.json](experiments/controller.json) | 默认日常实验配置 |
+| [sst/graph.py](sst/graph.py) | 实际图搜索 SST 组件接线，运行器校验并传参 |
+| `regression/` | CTest、完整 AC 和持续分层回归探针/分支夹具 |
+| `native/` | 锁定 native-small XML 与独立原生 oracle 输入 |
+| [profiles/devices.json](profiles/devices.json) | native-small、ann-2g-v1、ann-16g-v1 设备描述；根构建与运行器共用 |
+| [benchmarks/datasets.lock.json](benchmarks/datasets.lock.json)、[建图锁](benchmarks/m0-builder.lock.json) | 原始数据身份、离线 Faiss 与工具链锁 |
+| [查询锁](benchmarks/v0.2-query-selection.json)、[预算](benchmarks/v0.2-budgets.json) | V0.3 继承的查询分割、搜索与资源基线；路径/内容保持冻结 |
+| [experiments/v0.2/sift1m.json](experiments/v0.2/sift1m.json) | `verify_t6.py` 使用的固定矩阵，外层含实验模板，不能直接作为 run_config 单点配置 |
 
-T4 受控设备描述为 `profiles/devices.json`，共同基线为 `native/ssdconfig.xml`；根 CMake 和实验快照使用同一生成器。支持 native-small、ann-2g-v1、ann-16g-v1，均未校准；接口/容量/限制见 [T4](../docs/t4-content-profiles.md)。
+内容后端与容量见[内容/profile](../docs/content-profiles.md)，完整准备与26次基线矩阵见[SIFT1M](../docs/sift1m.md)。V0.3 的双引擎矩阵与预算增量以[PRD](../docs/prd-v0.3.md)为目标，尚未由当前配置实现。
 
-T6矩阵规格为 [experiments/v0.2/sift1m.json](experiments/v0.2/sift1m.json)，由`tools/verify_t6.py`读取；外层包含实验模板，不直接作为run_config的单点配置。查询/预算继续引用M0冻结身份，实际26次运行与限制见 [T6收口](../docs/t6-closeout.md)。
+## 历史配置
+
+- [archive/v0.2/](archive/v0.2/README.md)：仅由历史 M0 工具调用的初始化可行性探针。
+- [archive/v0.1/](archive/v0.1/README.md)：旧阶段 smoke 配置；低层 CLI 仍可复用默认值。
+
+归档不改变模型参数或删除持续回归。原有回归配置中的 bridge/lifecycle/event_bridge/ordinary/runtime/host_cost/local_read/pcie/controller 和分支夹具均保留。

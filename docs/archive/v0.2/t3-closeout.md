@@ -1,8 +1,10 @@
 # T3 / M1 闭环贯通收口
 
+> 历史归档（2026-11-02）：阶段状态、待办和通过结论仅适用于当时；不是 V0.3 执行指令。现行入口见[文档索引](../../README.md)，已交付基线见[V0.2 交付记录](../../releases/v0.2.md)。命令路径随归档更新，原证据与哈希不改写。
+
 2026-10-31（Asia/Shanghai）。T0 数据/建图/预算锁、T1 schema 与 T2 图/真值依赖已核对。开工工作区干净；MQSim/SST HEAD 分别为 `8f7ddf6d8cafdb7c783b3fcfd4693f15c6c5854b` / `ffd71527bc26a1f2a4fb685fdeb2ca0799997d78`，未改子模块、初始化依赖、提交或推送。T3 完成，M1 小规模闭环出口完成，本轮不开始 T4 或其他下一任务。
 
-实现独立 dataset-v2/index-v1/truth-v2 的 SST 接线、experiment-v2 配置、入口/完整身份验证、搜索/控制成本/布局/数值版本元数据、原始 query ID 和双质量指标。K≥k 与 ID-only 不再被旧 truth 解析器拒绝。缺少显式 v2 数据、错入口、错身份/映射、未知版本和损坏产物在 SST 前拒绝，不回退生成合成数据。现有 GraphSearch、异步服务可见性、读取路径、计费和 v1 默认保持原行为；不是 NSG 搜索复现。接口与复跑见 [闭环说明](t3-closed-loop.md)。
+实现独立 dataset-v2/index-v1/truth-v2 的 SST 接线、experiment-v2 配置、入口/完整身份验证、搜索/控制成本/布局/数值版本元数据、原始 query ID 和双质量指标。K≥k 与 ID-only 不再被旧 truth 解析器拒绝。缺少显式 v2 数据、错入口、错身份/映射、未知版本和损坏产物在 SST 前拒绝，不回退生成合成数据。现有 GraphSearch、异步服务可见性、读取路径、计费和 v1 默认保持原行为；不是 NSG 搜索复现。接口与复跑见 [闭环说明](../../simulation-input.md)。
 
 `compare_placements.py` 新增 v2 输入解码/身份检查，保留独立逐批距离、候选、扩展、top-k、完成因果和流量账本断言。`verify_t3.py` 保留可重复运行的真实小图与内容扰动验收，失败 manifest 不标成功；新增 CTest `simulation_input_schema`。
 

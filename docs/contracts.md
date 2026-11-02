@@ -137,4 +137,4 @@ Open 失败返回 Error(token=0)；Score 失败返回 Error 而非部分 ScoreRe
 
 ## V0.2 T5 受信回收边界
 
-生产观测不保留已完成任务/lease/消息历史；结果 owner/pin、依赖与发布 continuation、服务/返回 completion 全部解除后才删除 Runtime 任务。Controller 只在已有安全失败边界排空本地读取、staging/compute 及 Error 返回后调用 `fail_after_drain`；不能将该入口用于任意在途取消。详情见 [T5 观测与生命周期](t5-observation-lifecycle.md)。不改变 SST/MQSim 时间、可见性或唯一计费者。
+生产观测不保留已完成任务/lease/消息历史；结果 owner/pin、依赖与发布 continuation、服务/返回 completion 全部解除后才删除 Runtime 任务。Controller 只在已有安全失败边界排空本地读取、staging/compute 及 Error 返回后调用 `fail_after_drain`；不能将该入口用于任意在途取消。详情见 [T5 观测与生命周期](observation-lifecycle.md)。不改变 SST/MQSim 时间、可见性或唯一计费者。

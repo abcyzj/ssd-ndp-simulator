@@ -1,14 +1,16 @@
 # V0.2 源码核查与实施规划
 
+> 历史归档（2026-11-02）：阶段状态、待办和通过结论仅适用于当时；不是 V0.3 执行指令。现行入口见[文档索引](../../README.md)，已交付基线见[V0.2 交付记录](../../releases/v0.2.md)。命令路径随归档更新，原证据与哈希不改写。
+
 日期：2026-10-31（Asia/Shanghai）。状态：当前 V0.2 开发执行计划，按用户启动 V0.2 开发的要求启用。默认方案作为实施起点，待核实项和阶段出口继续有效；规划本身不代表通过，实际任务状态及证据见第 0 节。原规划轮仅做文档与探针的工作范围不再限制后续开发；不自动提交、推送、升级或初始化依赖。
 
-依据：README、V0.1 交接、现行架构/契约/搜索/扩展/测试/限制文档，以及 [V0.2 PRD](prd-v0.2.md) 第 9 节。核查主仓 HEAD 为 `9f58946ef5214bcd1c6ef40a5fd39ef36cd621b0`，含用户已有暂存修改；不能只以 HEAD 代表本次文档和工具身份。MQSim gitlink 为 `8f7ddf6d8cafdb7c783b3fcfd4693f15c6c5854b`，SST 为 `ffd71527bc26a1f2a4fb685fdeb2ca0799997d78`。
+依据：README、V0.1 交接、现行架构/契约/搜索/扩展/测试/限制文档，以及 [V0.2 PRD](prd.md) 第 9 节。核查主仓 HEAD 为 `9f58946ef5214bcd1c6ef40a5fd39ef36cd621b0`，含用户已有暂存修改；不能只以 HEAD 代表本次文档和工具身份。MQSim gitlink 为 `8f7ddf6d8cafdb7c783b3fcfd4693f15c6c5854b`，SST 为 `ffd71527bc26a1f2a4fb685fdeb2ca0799997d78`。
 
 ## 0. 开工入口与进度维护
 
 下一轮直接执行本计划，不再从“V0.2 范围未定”开始需求分析。先核对工作区、子模块与已有证据身份，保留用户已有变更；本页源码核查和探针均为规划时快照，不能代替当前检出验证。
 
-当前进度：**T0/M0 前置实证已收口**，详见 [M0 实证与接续](m0-closeout.md) 和本机 `results/v0.2-m0/{manifest.json,assertions.json}`；64 项证据核对通过。T1 数据与 schema 已完成（见 [T1 收口](t1-closeout.md)）；T2 图与真值已完成（见 [T2 收口](t2-closeout.md)）；T3/M1 闭环已完成（见 [T3 收口](t3-closeout.md)）；T4/M2 内容与 profile 已完成（见 [T4 收口](t4-closeout.md)）；T5/M2 观测与生命周期已完成（见 [T5 收口](t5-closeout.md)）；T6/M2 完整 SIFT1M 已完成（见 [T6 收口](t6-closeout.md)），T7/M3 已取消，T8/M4 已完成（见 [V0.2 交付](releases/v0.2.md)）；不把准备探针或 T4 小布局运行计为规模查询验收。
+当前进度：**T0/M0 前置实证已收口**，详见 [M0 实证与接续](m0-closeout.md) 和本机 `results/v0.2-m0/{manifest.json,assertions.json}`；64 项证据核对通过。T1 数据与 schema 已完成（见 [T1 收口](t1-closeout.md)）；T2 图与真值已完成（见 [T2 收口](t2-closeout.md)）；T3/M1 闭环已完成（见 [T3 收口](t3-closeout.md)）；T4/M2 内容与 profile 已完成（见 [T4 收口](t4-closeout.md)）；T5/M2 观测与生命周期已完成（见 [T5 收口](t5-closeout.md)）；T6/M2 完整 SIFT1M 已完成（见 [T6 收口](t6-closeout.md)），T7/M3 已取消，T8/M4 已完成（见 [V0.2 交付](../../releases/v0.2.md)）；不把准备探针或 T4 小布局运行计为规模查询验收。
 
 1. **T0 数据/依赖身份已完成**：六个完整原始文件通过头部/长度/有限值/ID 校验并锁定 SHA256；SIFT 官方 FTP 归档与官方 MD5 一致，Deep 为官方独立 10M 文件。数据使用条件与未发现独立数据许可证的事实写入 `configs/benchmarks/datasets.lock.json`。Faiss 1.12.0 完整 commit、OpenMP/LLVM CMake 源码包与系统工具链身份见 `m0-builder.lock.json`，离线构建入口实跑通过。
 2. **T0 资源证据及预算已完成**：本机 RAM=16 GiB；两维度 10k/100k/1M 建图各三次及单线程小图通过；2/16 GiB 探针几何各三档初始化与两种目标布局各三次排空通过。预算、质量门槛及正式查询 ID 已冻结。原 Deep 建图资源门槛随 T7/M3 取消而退出交付要求；既有测量保留为历史证据。SIFT1M 预算不变，不自动减小 N 或放宽门槛。
@@ -25,7 +27,7 @@
 - [x] T5/M2：终态任务/lease/消息回收，资源流式输出、SSD区间外排序和磁盘分组后处理、决策摘要/生命周期计数/预算/RSS；66/66 CTest、Q32/128/512两放置三次重复、detail/statistics等价及真实SIFT10k独立对照通过。完整V0.1 AC-01～11、独立锁定原生oracle、17项既有和2项专项ASan通过。实际证据和限制见 [T5 收口](t5-closeout.md)。
 - [x] T6/M2：完整1M真实NSG图、官方匹配真值和固定查询身份；26次放置运行、四点扫描、重复/并发/detail对照、1,066批独立核对及473条断言通过，完整布局初始化和冻结资源预算通过；最终67/67 CTest、完整V0.1 AC-01～11、锁定原生oracle、17项ASan。初轮后处理RSS拒绝已以流式核对和严格逐项复用恢复，证据与限制见 [T6 收口](t6-closeout.md)。
 - T7/M3：已取消（2026-10-31 范围调整）；不执行 Deep10M 适配和完整矩阵，不计为完成。
-- [x] T8/M4：统一 verify_v02.py --all、交付 manifest/适用AC汇总；本轮根构建/CTest 67/67、完整V0.1 AC-01～11、独立锁定原生oracle、17项ASan、T3/T4/T5复验通过；SIFT矩阵26次严格身份复用并重新执行473条断言，评价128条主配置两放置新运行的结果/模拟统计一致。11项适用V0.2 AC通过，AC-02-10=N/A；首轮短墙钟夹具失败保留，扩大验证输入后完整重跑通过。命令、预算、证据与限制见 [V0.2 交付](releases/v0.2.md)。
+- [x] T8/M4：统一 verify_v02.py --all、交付 manifest/适用AC汇总；本轮根构建/CTest 67/67、完整V0.1 AC-01～11、独立锁定原生oracle、17项ASan、T3/T4/T5复验通过；SIFT矩阵26次严格身份复用并重新执行473条断言，评价128条主配置两放置新运行的结果/模拟统计一致。11项适用V0.2 AC通过，AC-02-10=N/A；首轮短墙钟夹具失败保留，扩大验证输入后完整重跑通过。命令、预算、证据与限制见 [V0.2 交付](../../releases/v0.2.md)。
 
 当前任务清单已收口：T0～T6、T8完成，T7取消；不自动开始后续任务。交付证据在本机 `results/v0.2-t8/final/`，首轮失败保留在 `results/v0.2-t8/delivery/`。统一入口已实现，完整使用方法见 [交付说明](delivery.md)。
 
@@ -67,7 +69,7 @@ flowchart LR
 
 ## 2. 源码核查发现及影响
 
-下表保留规划时核查起点；T3 已接通 v2，T4 已替换 native-small-only、全量内容复制及 Placement map 等路径，现行接口见 [T4](t4-content-profiles.md)。其余历史状态不应覆盖第0节实际进度。
+下表保留规划时核查起点；T3 已接通 v2，T4 已替换 native-small-only、全量内容复制及 Placement map 等路径，现行接口见 [T4](../../content-profiles.md)。其余历史状态不应覆盖第0节实际进度。
 
 | 源码位置 | 已确认行为 | V0.2 处理 |
 | --- | --- | --- |
@@ -253,7 +255,7 @@ python3.13 tools/verify_v02.py --all \
 
 当前 `AGENTS.md`、README、文档索引与交接已指向本计划及 V0.2 PRD；旧“V0.2范围未定”不再作为开发指令。默认方案已作为实施起点启用，待核实项仍按阶段出口验证，不用归档规划覆盖现在代码。`docs/extensions.md` 的native-small-only、`docs/search.md` 的旧truth、`docs/model-limitations.md` 的RSS Unsupported与历史保留，都必须在新能力验收后按版本更新；本轮获取到Python RSS不代表SST整进程树监控已实现。协议消息继续v1，离线schema升级不自动修改wire schema。
 
-M0 的实际数据 SHA256/使用条件与文件头、Faiss 本机构建/图导出及依赖锁、物理 RAM、建图样本与目标布局 SST 预装载墙钟/RSS 已有本轮证据，见第 0 节和 M0 记录。Deep10M 相关未决项已随 T7 取消退出本版；SIFT1M 已由 T6 实际验收。T8已完成交付复现、完整回归与全部适用AC汇总，见 [交付记录](releases/v0.2.md)；历史段落仍作为规划快照，实际验收以第0节与该交付记录为准。
+M0 的实际数据 SHA256/使用条件与文件头、Faiss 本机构建/图导出及依赖锁、物理 RAM、建图样本与目标布局 SST 预装载墙钟/RSS 已有本轮证据，见第 0 节和 M0 记录。Deep10M 相关未决项已随 T7 取消退出本版；SIFT1M 已由 T6 实际验收。T8已完成交付复现、完整回归与全部适用AC汇总，见 [交付记录](../../releases/v0.2.md)；历史段落仍作为规划快照，实际验收以第0节与该交付记录为准。
 
 ## 9. 外部依据
 

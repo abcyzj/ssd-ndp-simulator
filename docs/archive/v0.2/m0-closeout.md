@@ -1,5 +1,7 @@
 # V0.2 T0 / M0 实证与接续
 
+> 历史归档（2026-11-02）：阶段状态、待办和通过结论仅适用于当时；不是 V0.3 执行指令。现行入口见[文档索引](../../README.md)，已交付基线见[V0.2 交付记录](../../releases/v0.2.md)。命令路径随归档更新，原证据与哈希不改写。
+
 日期：2026-10-30（Asia/Shanghai）。本页只记录 T0 的准备与可行性检查；不推进 T1～T8，也不替代 V0.2 AC 或完整 V0.1 AC。源码与输入身份、实际命令、退出码、断言见本机 `results/v0.2-m0/`。该目录及 `.cache/v0.2-m0/` 被 Git 忽略，新检出须重新获取原始数据和运行探针。
 
 ## 工具与复跑
@@ -31,11 +33,11 @@ python3.13 tools/verify_m0.py inventory --output results/m0-inventory.json
 初始化探针用根 CMake 构建后的 SST 元素库；只有探针局部 XML 修改 blocks/plane，普通 `native-small` 及正式图运行器不增加新 profile。2×1×2×1、64 pages/block、4 KiB/page、7% OP，其余参数沿用锁定 XML。仍为 SST SelfLink / EventBridge 驱动 MQSim，逐页普通写、逐次排空；启用现行 Observation 保留初始化历史，完成时验证写入地址/次数、实际 namespace、无在途请求和后端事件，保留 CMT，不重置模拟时间。
 
 ```sh
-python3.13 tools/m0/run_probes.py init --output results/m0-init-2g
-python3.13 tools/m0/run_probes.py init --blocks 16384 --output results/m0-init-16g
-python3.13 tools/m0/run_probes.py init --sizes 1024000000 --output results/m0-init-sift
-python3.13 tools/m0/run_probes.py init --blocks 16384 --sizes 10240000000 --output results/m0-init-deep
-python3.13 tools/m0/run_probes.py builder \
+python3.13 tools/archive/v0.2/run_probes.py init --output results/m0-init-2g
+python3.13 tools/archive/v0.2/run_probes.py init --blocks 16384 --output results/m0-init-16g
+python3.13 tools/archive/v0.2/run_probes.py init --sizes 1024000000 --output results/m0-init-sift
+python3.13 tools/archive/v0.2/run_probes.py init --blocks 16384 --sizes 10240000000 --output results/m0-init-deep
+python3.13 tools/archive/v0.2/run_probes.py builder \
   --base .cache/v0.2-m0/data/sift/sift_base.fvecs --query .cache/v0.2-m0/data/sift/sift_query.fvecs \
   --format fvecs --dimensions 128 --output results/m0-builder-sift
 ```
@@ -56,7 +58,7 @@ Deep 的 32 GiB 建图预算不能在本机使用；不因初始化探针通过�
 
 ## 实际检查结果
 
-**T0/M0 已收口，T1～T8 未启动。** `tools/m0/summarize.py --evidence results/v0.2-m0` 退出 0，64 项证据核对通过；核对原始文件与内容锁、建图重建锁、各矩阵完整性、日志/产物哈希、导出 degree 直方图、初始化断言、RAM 和磁盘保留空间。`assertions.json`、`ac-matrix.json`、`manifest.json` 分别保存断言、前置 AC 映射及最终源码/证据身份。没有将未完成的正式 AC 标通过。
+**T0/M0 已收口，T1～T8 未启动。** `tools/archive/v0.2/summarize.py --evidence results/v0.2-m0` 退出 0，64 项证据核对通过；核对原始文件与内容锁、建图重建锁、各矩阵完整性、日志/产物哈希、导出 degree 直方图、初始化断言、RAM 和磁盘保留空间。`assertions.json`、`ac-matrix.json`、`manifest.json` 分别保存断言、前置 AC 映射及最终源码/证据身份。没有将未完成的正式 AC 标通过。
 
 | 本轮实际命令 / 检查 | 结果 |
 | --- | --- |

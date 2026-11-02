@@ -1,8 +1,10 @@
 # T2 / M1 图与真值收口
 
+> 历史归档（2026-11-02）：阶段状态、待办和通过结论仅适用于当时；不是 V0.3 执行指令。现行入口见[文档索引](../../README.md)，已交付基线见[V0.2 交付记录](../../releases/v0.2.md)。命令路径随归档更新，原证据与哈希不改写。
+
 2026-10-31（Asia/Shanghai）。T1 与 T0 建图前置已核对，工作区起始无未提交修改，MQSim/SST 的锁定子模块身份和内容未改。T2 完成；M1 还需 T3 闭环贯通。本轮未启动 T3，未提交、推送或初始化依赖。
 
-实现 `tools/offline/index_builder.cc` 与 `tools/benchmark_artifacts.py`：锁定 Faiss CPU NSG 读取规范化 base 并导出原顺序固定槽邻接、入口和节点映射，完整记录依赖/线程/RNG/参数/输入输出身份；index-v1 全图检查及绑定；truth-v2 独立有界内存固定维序 FP64 穷举、严格距离/ID 排序；完整锁定 SIFT 官方 K=100 ID-only 真值绑定与 unresolved 并列边界；集合 Recall@k、1-recall@R 和不足 k 状态。接口及复跑见 [图与真值](index-truth-v2.md)。v1 模拟行为未改，v2 模拟接线仍等待 T3。
+实现 `tools/offline/index_builder.cc` 与 `tools/benchmark_artifacts.py`：锁定 Faiss CPU NSG 读取规范化 base 并导出原顺序固定槽邻接、入口和节点映射，完整记录依赖/线程/RNG/参数/输入输出身份；index-v1 全图检查及绑定；truth-v2 独立有界内存固定维序 FP64 穷举、严格距离/ID 排序；完整锁定 SIFT 官方 K=100 ID-only 真值绑定与 unresolved 并列边界；集合 Recall@k、1-recall@R 和不足 k 状态。接口及复跑见 [图与真值](../../index-truth-v2.md)。v1 模拟行为未改，v2 模拟接线仍等待 T3。
 
 实际证据保存在本机忽略目录 `results/v0.2-t2/`：
 

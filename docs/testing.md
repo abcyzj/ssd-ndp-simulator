@@ -35,10 +35,10 @@
 
 - `tests/` 的 probe、scenario 和 fixtures 均保留；根 CMake/CTest 是常规回归入口，T8交付轮非 ASan 配置实际注册并通过67项。测试数量以实际发现为准。
 - `tools/verify_acceptance.py`、`verify_concurrency.py` 和 `compare_placements.py` 持续维护；CMake/CTest 已同步调用路径。`verify_contract.py` 是独立契约/ABI 账本核查，不在 CTest 中。
-- `configs/regression/` 保留所有持续回归探针/分支夹具；`configs/experiments/` 为当前默认实验，`configs/sst/graph.py` 是实际组件接线；`configs/native/` 保持不变。
+- `configs/regression/` 保留所有持续回归探针/分支夹具（仅历史工具使用的 M0 预装载配置已移入 `configs/archive/v0.2/`）；`configs/experiments/` 为当前默认实验，`configs/sst/graph.py` 是实际组件接线；`configs/native/` 保持不变。
 - 历史阶段入口归入 [tools/archive/v0.1](../tools/archive/v0.1/README.md)，三个旧 smoke 配置归入 [configs/archive/v0.1](../configs/archive/v0.1/README.md)。保留复现能力，不默认执行全部历史阶段。完整 AC 自行导出原生 oracle；历史 macOS 原生工具仍可按需运行。
 - `build/`、`.cache/`、`results/`、`docs/evidence/` 是已忽略的生成产物，保留本机历史数据，不承诺新检出存在。清理前确认无运行占用、无唯一证据；本次未删除。
-- 历史结果与阶段方法见[归档](archive/v0.1/README.md)；本次验证见[版本交接](releases/v0.1.md)。未运行完整矩阵时不得继承历史通过结论。
+- 历史阶段方法见[V0.1 归档](archive/v0.1/README.md)和[V0.2 归档](archive/v0.2/README.md)；已交付基线见[V0.2 记录](releases/v0.2.md)。未运行完整矩阵时不得继承历史通过结论。
 
 常用检查（仓库根目录）：
 
@@ -52,32 +52,22 @@ SDKROOT="$(xcrun --show-sdk-path)" /opt/homebrew/Caskroom/miniconda/base/bin/pyt
 
 独立契约脚本直接调用 Clang；在本机显式提供 SDKROOT，避免找不到 C++ 标准头。根 CMake 已自动选择 SDK。输出路径须选择未使用目录。环境要求见[README](../README.md)；ASan 是独立探针，不是完整 SST 泄漏审计。
 
-## T2 图与真值回归
+## 继承的真实数据、资源与规模验证
 
-CTest 的 `benchmark_artifact_schema` 运行 `tests/test_benchmark_artifacts.py`，覆盖独立完整排序小 oracle 与分块堆 top-K 的数值/同分交叉核对、K≥k、ID/距离/身份错误、全图边界/可达性及重复边/自环保留、两种质量指标和不足 k。真实数据构建与官方 ID-only 的实际验证使用 `tools/verify_t2.py`，见 [T2 收口](t2-closeout.md)；它不是完整 V0.2 AC 或 T3 模拟贯通。
+V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用于兼容旧入口。当前有效 CTest 数量以实际发现为准，历史67项不是本轮通过证据。
 
-## V0.2 T3 闭环
+| 覆盖 | 持续验证与入口 |
+| --- | --- |
+| 数据/schema | `tests/test_m0.py`、`test_benchmark_data.py`、`test_benchmark_artifacts.py`；完整原始文件验证、查询分割、独立完整排序小 oracle、分块 top-K、绑定/边界/可达性、同分和不足 k |
+| 真实图与真值 | `tools/verify_t2.py`；SIFT 10k 重排子集、32条诊断query、精确真值与完整base官方ID-only导入；[接口](index-truth-v2.md) |
+| 输入与闭环 | `simulation_input_schema`、`tools/verify_t3.py`；相对路径/身份/入口/K校验，原输入及向量扰动的两放置逐批、距离与账本；[接口](simulation-input.md) |
+| 内容与容量 | `device_profiles`、`mapped_content`、三种profile预检/越界，`tools/verify_t4.py`；memory/mmap × host/controller、d128/d96并发4、d260跨页/接纳降额、真实小SIFT；[接口](content-profiles.md) |
+| 回收与流式输出 | `observation_lifecycle`、`streaming_output`、`tools/verify_t5.py`；任务/lease/区间回收、失败在途completion、外排序、Python堆界；Q32/128/512两放置各三次、日志等价、预算拒绝与可选真实SIFT核对；[接口](observation-lifecycle.md) |
+| SIFT矩阵与复用 | `sift1m_matrix`、`tools/verify_t6.py`；冻结26点、百万行按需读取、仅排除墙钟的统计比较、配置/输入/模型/元素/产物篡改拒绝、流式日志及因果错误拒绝；[完整矩阵](sift1m.md) |
+| V0.2 总验收 | `tools/verify_v02.py --all`；根构建、完整V0.1 AC、T3/T4/T5、26次SIFT及主配置两放置新复现；[命令与前置准备](archive/v0.2/delivery.md) |
 
-CTest `simulation_input_schema` 覆盖相对路径、入口匹配、K≥k、未知实验版本、错绑定和坏图的启动前拒绝。`tools/verify_t3.py` 运行真实 10k SIFT 原输入和受控向量交换输入，各自两放置及独立逐批/账本对照；断言后续扩展和实际读取改变。复跑、范围和限制见 [T3](t3-closed-loop.md)。这不是完整 V0.1 AC 或规模验收。
+`tests/test_v02_delivery.py` 的三类失败关闭回归由 V0.2 总入口执行，覆盖完整适用 AC/N/A、缺项/失败/quick 拒绝、产物篡改/缺失拒绝；也可单独运行，不能因不在 CTest 中而遗漏。
 
-## V0.2 T4 内容与 profile
+完整 V0.1 AC 仍包含独立锁定原生 oracle 和 ASan；慢功能夹具为 N256/d128/R8/Q8、k10/L16/E16，要求两放置墙钟慢化且全部事件/结果/模拟统计一致。V0.2 AC-02-10=N/A（Deep10M取消），不能混同仍须执行的 V0.1 AC-10。
 
-CTest 新增 `device_profiles`、`mapped_content`、三个 profile 的实际 namespace/资源预检与 namespace 越界测试；当前常规配置共 64 项（以实际发现为准）。原有 V0.1 用例全部保留。`tools/verify_t4.py` 实际交叉运行 memory/mmap × host/controller，覆盖 d128/d96 的并发4、d260 跨页的接纳降额2，以及 T2 真实 SIFT 10k/32 query。比较完整事件、结果及除墙钟外的全部模拟统计，独立核对每批决策、请求完成因果、流量和 credit。参数和证据见 [T4 内容/profile](t4-content-profiles.md) 与 [收口](t4-closeout.md)。
-
-涉及后端，本轮另跑完整 `verify_acceptance.py` 的锁定原生 QD1/QD32/小 CMT 对照及 ASan 矩阵，映射内容探针另外在 ASan 构建下运行。以上不替代 T5 历史事件增长测试或 T6/T7 完整 base 的初始化/查询矩阵。
-
-## V0.2 T5 观测与生命周期
-
-新增 CTest `observation_lifecycle`（10,000 次任务/lease 回收、非复用 ID、失败在途 completion 保留、20,000 条乱序/重叠/跨窗口/零长度区间外排序独立核对）和 `streaming_output`（1,000→30,000 条资源记录，导出字段/CSV 和 Python 堆增长）。常规配置共 66 项，以实际发现为准；既有回归及断言保留。`tools/verify_t5.py` 运行固定 N256/d128/R8/E8/并发4、Q32/128/512 两放置三次重复、统计/详细等价、终态及退休容器计数、RSS 阈值和明确预算失败；可选真实 T2 SIFT 10k/32 query 完整逐批/账本对照。实际证据与未执行范围见 [T5 收口](t5-closeout.md)。
-
-
-## V0.2 T6 SIFT1M
-
-CTest `sift1m_matrix`运行六项测试：冻结26点/查询分割与参数拒绝、百万行按需读取、完整统计比较仅排除墙钟、成功产物复用的配置/输入/模型/元素/输出篡改拒绝、3万行流式事件堆界及重复/缺阶段/错误wire/已完成ID复用拒绝。当前常规配置67项，原断言保留。`tools/verify_t6.py`独立执行完整SIFT1M准备、26次矩阵和T6 AC-02-07/09/11；它不启动Deep10M或交付任务。最终记录为67/67 CTest、完整V0.1 AC-01～11、原生oracle和17项ASan；实际命令、初轮预算拒绝与严格复用恢复见 [T6收口](t6-closeout.md)。
-
-
-## V0.2 / T8 完整交付
-
-`tools/verify_v02.py --all` 是完整交付总入口，锁定Python、参数、前置准备、复用与新运行策略见 [交付说明](delivery.md)。它执行根配置/构建、完整V0.1 AC（含67项CTest、原生oracle和17项ASan）、T3/T4/T5复验、SIFT26次矩阵重新验证及主配置两放置新运行复现；新增 `tests/test_v02_delivery.py` 三类失败关闭回归由总入口执行。没有 `--stage` 或 quick 交付通过模式；单阶段用各自已有入口。
-
-成功总入口与失败恢复实证见 [V0.2交付记录](releases/v0.2.md)。V0.2顶层AC-02-10=N/A，V0.1 AC-10仍完整执行。慢功能验收夹具现用N256/d128/R8/Q8、k10/L16/E16，减少约50ms小输入的启动噪声；仍要求两放置慢化且全部事件/结果/模拟统计一致，没有删除或降低原断言。
+历史阶段命令、成功与失败证据统一见[V0.2 归档](archive/v0.2/README.md)及[交付记录](releases/v0.2.md)。V0.3 新增 direct/ir 等价、动态依赖、资源回收与52条矩阵等要求见[PRD](prd-v0.3.md)，这些新检查尚未实现或执行。

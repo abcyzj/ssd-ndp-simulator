@@ -1,6 +1,6 @@
-# T6 SIFT1M 实验入口
+# SIFT1M 准备与固定基线矩阵
 
-`tools/verify_t6.py` 执行完整 1,000,000×128 SIFT base 上的锁定 Faiss NSG 图和项目 `ndpsim-ranked-expansion-v1` 搜索。配置为 `configs/experiments/v0.2/sift1m.json`，查询身份和预算继续使用 M0 冻结的两个 JSON，不重新抽样、不用评价集选择配置，也不启动 T7。
+`tools/verify_t6.py` 执行完整 1,000,000×128 SIFT base 上的锁定 Faiss NSG 图和项目 `ndpsim-ranked-expansion-v1` 搜索。配置为 `configs/experiments/v0.2/sift1m.json`，查询身份和预算继续使用 M0 冻结的两个 JSON，不重新抽样、不用评价集选择配置。V0.3 继承这些输入和配置；本入口尚未实现 direct/ir 双路径验收。
 
 分开准备与运行（锁定 Python；目录必须不存在）：
 
@@ -34,7 +34,7 @@ GraphHost 仅在 `PreloadWindow` 确认全部页写入完成、后端无事件�
 
 资源预算：导入1GiB/30min、建图8GiB/8h、真值2GiB/2h、初始化4GiB/1h、每点查询4GiB/2h、后处理512MiB/10min，另受60%物理RAM限制。完整SST peak同时约束初始化/查询；Python父进程的RUSAGE_SELF生命周期peak作为后处理的保守上界，不是分阶段RSS实测。SST RSS通过wait4、Python父进程RSS通过RUSAGE_SELF完成后检查，不是硬隔离；超时杀进程组。磁盘每秒采样输入/准备/输出的逻辑文件大小及卷余量，记录采样峰值、15GiB预算与20GiB余量断言；可能遗漏亚秒瞬时峰值，不是allocated-block或全进程树scratch监控。
 
-官方真值不虚构距离，严格FP64/ID并列边界仍unresolved。128条评价为固定样本，不能称全10k查询或稳定p99；硬件参数仍configured_unvalidated，模拟ns/QPS与宿主墙钟/RSS分开。实际执行与阶段状态见 [T6收口](t6-closeout.md)；入口存在不等于规模验收通过。
+官方真值不虚构距离，严格FP64/ID并列边界仍unresolved。128条评价为固定样本，不能称全10k查询或稳定p99；硬件参数仍configured_unvalidated，模拟ns/QPS与宿主墙钟/RSS分开。实际执行与阶段状态见 [T6收口](archive/v0.2/t6-closeout.md)；入口存在不等于规模验收通过。
 
 
 需要重新后处理已成功的26个独立放置产物时，可在第二条运行命令增加 `--reuse-runs <原始运行目录>` 并使用新的 `--output`。入口逐项检查有效配置、完整准备身份、元素/模型源码、MQSim/SST身份、所有产物SHA及原命令receipt/log；只允许不进入正式仿真路径的独立离线核对器单独修订并记录旧/新SHA。缺失/不匹配即拒绝，不能把失败汇总或目录存在当成成功缓存。复用引用用符号链接保留原产物，原产物不可移动/改变；另存`*-reuse.json`及`*-initial-state.json`。核对报告与测量分别为`detail-comparison-report.json`和`detail-comparison.json`。

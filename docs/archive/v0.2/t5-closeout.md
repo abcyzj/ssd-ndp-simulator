@@ -1,8 +1,10 @@
 # T5 / M2 观测与生命周期收口
 
+> 历史归档（2026-11-02）：阶段状态、待办和通过结论仅适用于当时；不是 V0.3 执行指令。现行入口见[文档索引](../../README.md)，已交付基线见[V0.2 交付记录](../../releases/v0.2.md)。命令路径随归档更新，原证据与哈希不改写。
+
 2026-10-31（Asia/Shanghai）。已读取 AGENTS、README、V0.2 PRD/实施计划、现行契约/输出/测试/限制，并核对 T3 依赖与 T4 收口。开工工作区干净；MQSim/SST 子模块未改，未自动提交、推送、升级或初始化依赖。本轮范围止于 T5；M2 的完整 SIFT1M 出口及 T6～T8 不标完成。
 
-实现与接口见 [T5 观测与生命周期](t5-observation-lifecycle.md)。生产路径回收终态 Runtime Task、内容 lease、PCIe 在途关联和已关闭协议状态；错误位置、未就绪、重复释放/完成及旧句柄保护保留。内部回调及服务/返回 completion 单独保护任务生命周期，Controller 安全错误路径只在排空后通知 Runtime。HostCpu/Controller/消息记录流式输出，SSD 区间以固定排序块和落盘归并计算并集，初始化期间不捕获查询区间。Python 不再一次载入全部事件，以磁盘分组保持原 JSON/CSV 资源数组；新增决策摘要、生命周期采样、明确输出预算及 wait4 RSS/阶段墙钟产物。
+实现与接口见 [T5 观测与生命周期](../../observation-lifecycle.md)。生产路径回收终态 Runtime Task、内容 lease、PCIe 在途关联和已关闭协议状态；错误位置、未就绪、重复释放/完成及旧句柄保护保留。内部回调及服务/返回 completion 单独保护任务生命周期，Controller 安全错误路径只在排空后通知 Runtime。HostCpu/Controller/消息记录流式输出，SSD 区间以固定排序块和落盘归并计算并集，初始化期间不捕获查询区间。Python 不再一次载入全部事件，以磁盘分组保持原 JSON/CSV 资源数组；新增决策摘要、生命周期采样、明确输出预算及 wait4 RSS/阶段墙钟产物。
 
 ## 实际验证
 

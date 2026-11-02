@@ -1,8 +1,10 @@
 # T1 / M1 数据与 schema 收口
 
+> 历史归档（2026-11-02）：阶段状态、待办和通过结论仅适用于当时；不是 V0.3 执行指令。现行入口见[文档索引](../../README.md)，已交付基线见[V0.2 交付记录](../../releases/v0.2.md)。命令路径随归档更新，原证据与哈希不改写。
+
 2026-10-30（Asia/Shanghai）。T0 数据身份前置已核对：M0 内容锁和本机完整 SIFT 源文件可用；未修改子模块或依赖。T1 完成，M1 整体尚未完成；本轮不启动 T2。
 
-实现：`tools/benchmark_data.py` 提供四种格式的流式校验、原字节转换、显式/seed 选行、原始行号映射、独立 base/query/learn/groundtruth 角色及 dataset-v2 schema 检查。输出临时目录校验后改名，拒绝覆盖；原始完整哈希必须匹配 spec 声明。`ann_data.digest` 改为增量哈希；v1 生成/读取语义保留。`run_graph` 显式检查并拒绝尚未接线的 v2 准备产物。接口与例子见 [数据说明](data-v2.md)。
+实现：`tools/benchmark_data.py` 提供四种格式的流式校验、原字节转换、显式/seed 选行、原始行号映射、独立 base/query/learn/groundtruth 角色及 dataset-v2 schema 检查。输出临时目录校验后改名，拒绝覆盖；原始完整哈希必须匹配 spec 声明。`ann_data.digest` 改为增量哈希；v1 生成/读取语义保留。`run_graph` 显式检查并拒绝尚未接线的 v2 准备产物。接口与例子见 [数据说明](../../data-v2.md)。
 
 实际检查（均退出 0，日志在本机忽略目录 `results/v0.2-t1/`）：
 

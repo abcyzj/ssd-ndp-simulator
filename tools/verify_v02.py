@@ -71,8 +71,8 @@ def dependencies(prepared, small, source):
     exe = Path(receipt['executable'])
     verify_hashes(exe.parent, {exe.name: receipt['executable_sha256']})
     # Historical closeouts are traceability, never a current regression pass.
-    trace = {str(p.relative_to(ROOT)): sha(p) for p in [ROOT/'docs/m0-closeout.md',
-        *(ROOT/f'docs/t{i}-closeout.md' for i in range(1, 7))]}
+    trace = {str(p.relative_to(ROOT)): sha(p) for p in [ROOT/'docs/archive/v0.2/m0-closeout.md',
+        *(ROOT/f'docs/archive/v0.2/t{i}-closeout.md' for i in range(1, 7))]}
     return dict(raw=raw, builder=receipt, small_prepared=str(small), prepared=str(prepared),
                 historical_closeout_sha256=trace,
                 policy='T0-T6 closeouts retained as historical trace; current tests and strict matrix revalidation decide delivery')
