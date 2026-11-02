@@ -225,6 +225,8 @@ option(NDPSIM_SLOW_FUNCTIONAL "Acceptance-only equivalent L2 implementation with
 if(NDPSIM_SLOW_FUNCTIONAL)
     target_compile_definitions(ndpsim_operators PRIVATE NDPSIM_SLOW_FUNCTIONAL=1)
 endif()
+add_executable(bench_host_cpu EXCLUDE_FROM_ALL tools/bench_host_cpu.cc)
+target_link_libraries(bench_host_cpu PRIVATE ndpsim_operators)
 add_library(ndpsim_host STATIC src/model/host_cpu.cc)
 set_target_properties(ndpsim_host PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(ndpsim_host PUBLIC ndpsim_runtime ndpsim_operators)

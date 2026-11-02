@@ -50,3 +50,17 @@
 ## T8 / M4 交付
 
 `verify_v02.py --all` 统一当前根构建/完整V0.1回归、T3/T4/T5复验、SIFT1M矩阵、主配置两放置新复现和适用AC/manifest。要求锁定Python、`--prepared`完整T6准备、`--small-prepared`T2真实小图/精确真值、`--source-dir`原始SIFT；可选`--reuse-runs`逐项严格核验26次成功运行，否则重跑矩阵。输出须新目录；缺项或失败非零退出且不生成成功结论。完整命令与证据见 [交付说明](../docs/delivery.md)、[V0.2交付记录](../docs/releases/v0.2.md)。不支持规划中未实现的`--stage`模式，不启动后续任务。
+
+## 本机 HostCPU 粗测
+
+从根目录执行：
+
+```sh
+cmake -S . -B build/delivery -DBUILD_TESTING=ON
+cmake --build build/delivery --target bench_host_cpu -j2
+build/delivery/bench_host_cpu
+```
+
+固定随机种子 42、128 维 FP32、batch=1/16/32/128；直接运行现有距离和 candidates 算子，控制保留 top-10。每项预热 100 次后测 7 组、每组至少 20 ms，输出每调用耗时中位数及默认模型预测（距离 setup=3/rate=4，控制 setup=1/rate=1、两种权重均为1）。`measured_over_model` 大于1表示本机实现慢于模型。校验和防止结果被消除。
+
+这是单线程、重复访问相同输入的缓存热场景，包含解码、分配、ID检查、打包及测量循环开销；不是 SIMD 上限、随机冷内存、SST查询端到端或完整AC验收。请使用优化构建且关闭 NDPSIM_SLOW_FUNCTIONAL；记录机器型号、编译器、构建选项和负载状态再比较，不自动回填或宣称硬件参数已校准。
