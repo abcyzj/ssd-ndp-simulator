@@ -35,7 +35,7 @@ class Contract(unittest.TestCase):
         p=self.run_doc(self.doc)
         self.assertEqual(p.returncode,0,p.stderr)
         self.assertEqual(json.loads(p.stdout)['operations'],7)
-        self.assertFalse(json.loads(p.stdout)['execution_supported'])
+        self.assertTrue(json.loads(p.stdout)['execution_supported'])
         for flag,path in [('--schema','ndpsim-ir-v1.schema.json'),('--capabilities','ndpsim-ir-v1.capabilities.json')]:
             actual=json.loads(subprocess.check_output([str(VALIDATOR),flag]))
             self.assertEqual(actual,json.loads((ROOT/'schemas'/path).read_text()))

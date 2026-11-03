@@ -1,7 +1,7 @@
 {
   "ir_version": "ndpsim-ir/1",
   "catalog_version": 1,
-  "execution_supported": false,
+  "execution_supported": true,
   "operators": [
     {
       "operator": "QUERY_READY",

@@ -1,6 +1,6 @@
 # V03-1 schema 与能力目录
 
-2026-11-03（Asia/Shanghai）。V03-1 完成 `ndpsim-ir/1` 的结构契约和静态校验；本页记录 V03-1 当轮结果；后续 [V03-2](ir-lifecycle-v0.3.md) 已实现动态依赖/值生命周期和 JOIN，后续 [V03-3](ir-mapping-v0.3.md) 已完成资源映射；生产 GraphSearch 接入及完整 V0.3 验收仍未完成。依赖 V03-0 已关闭，本轮重新核对冻结 manifest SHA256 与全部冻结产物 hash；没有重新运行完整 SIFT，也没有用历史通过标记替代本轮检查。
+2026-11-03（Asia/Shanghai）。V03-1 完成 `ndpsim-ir/1` 的结构契约和静态校验；本页记录 V03-1 当轮结果；后续 [V03-2](ir-lifecycle-v0.3.md) 已实现动态依赖/值生命周期和 JOIN，后续 [V03-3](ir-mapping-v0.3.md) 已完成资源映射；后续 [V03-4](ir-frontend-v0.3.md) 已完成生产 GraphSearch 接入；完整 V0.3 验收仍未完成。依赖 V03-0 已关闭，本轮重新核对冻结 manifest SHA256 与全部冻结产物 hash；没有重新运行完整 SIFT，也没有用历史通过标记替代本轮检查。
 
 ## 产物与使用
 
@@ -25,7 +25,7 @@ ctest --test-dir build/delivery --output-on-failure
 2. 核心字段严格封闭；只有 `extensions={non_semantic:true,metadata:{...}}` 允许未知元信息。未知版本、算子/版本/Kind 组合、位置、依赖及字段直接拒绝，不静默回退。保留类别不赋予 WRITE/PQ/任意分支等执行能力。
 3. `shape` 的每一维为 `{extent:uint64,dynamic:bool}`；本版标量/状态/令牌为零维，集合/向量/得分/邻接为一维，动态 extent 表示上界，实际长度仍须在后续执行阶段检查。邻接 shape 计记录数，每条记录另有 degree 和有效 IDs；逻辑范围按字段元素计，不能携带 LBA/PPA。SCORE/READ 保持地址批次 shape，控制输出声明动态长度，上界和字节算术受检查。
 4. 对象绑定 manifest 中 dataset/index 身份与 artifact shape；查询向量对象也归属 dataset 内容身份，queries artifact 另外记录查询选择及顺序。uint64 描述不解除现有 uint32 节点 ID 限制；整数不得经浮点或布尔转换。大小/索引/范围溢出、记录类型不符、错误内容版本、重复对象/op/端口/依赖均拒绝。
-5. V03-1 冻结时七个算子都标记 `schema_supported=true,execution_supported=false,mapping_status=not_implemented`；V03-2 当轮仅 JOIN 更新为 `execution_supported=true,mapping_status=runtime_async`，全局执行能力仍为 false。V03-3 现已将七算子更新为可执行，顶层仍表示完整 engine 尚未集成，详见[映射](ir-mapping-v0.3.md)。目录声明端口、允许位置、效果、工作量规则、功能/成本版本、输出及 scratch 上界。只有 SCORE_L2 声明 host/controller 两种目标映射；对前端仍只发布 HostMemory，内部 DeviceBuffer 不作为免费可读输出。控制、邻接及 JOIN 仅 host。
+5. V03-1 冻结时七个算子都标记 `schema_supported=true,execution_supported=false,mapping_status=not_implemented`；V03-2 当轮仅 JOIN 更新为 `execution_supported=true,mapping_status=runtime_async`，全局执行能力仍为 false。V03-3 将七算子更新为可执行；V03-4 接入生产 engine 后将顶层 execution_supported 更新为 true，并同步目录 hash/样例/验证器；这不等于完整 V0.3 验收通过，详见[前端](ir-frontend-v0.3.md)。目录声明端口、允许位置、效果、工作量规则、功能/成本版本、输出及 scratch 上界。只有 SCORE_L2 声明 host/controller 两种目标映射；对前端仍只发布 HostMemory，内部 DeviceBuffer 不作为免费可读输出。控制、邻接及 JOIN 仅 host。
 6. 提交的 workload 只选择冻结规则；真实 counts 由后续受信 evaluate 生成，本版拒绝提交者填写 counts。V03-3 另允许初次 MERGE.previous 的固定空得分 literal；其余 literal 仅允许小标量配置和一个静态入口 ID，不接受距离、向量或完整后继 trace。现有 SCORE/READ 要求完整逻辑字段；合法局部 range 描述不意味着这些算子支持部分读取。
 7. 诊断文件静态检查已出现的 producer/端口/类型/shape/查询归属、单调 ID、ADDRESS/DATA 绑定及 access 与地址输入一致。它不创建运行期活动表、值所有权、可见性或等待状态；state_ref 的非零版本和本 query 归属仅为结构检查，运行期版本存活/所有权见 V03-2 接口，不属于该静态校验器职责。非空 state_version 仅允许 ORDER/query_state 组合，不代表已经验证运行期状态发布。
 

@@ -1,6 +1,6 @@
 # 工具入口
 
-从仓库根目录执行。V0.3 尚未实现 IR，以下均为仍需维护的直接执行、数据准备及继承回归工具；阶段编号保留兼容，不表示当前开发任务。
+从仓库根目录执行。V03-4 已支持显式 direct/ir，默认仍 direct；以下包含数据准备、IR阶段验证及继承回归工具；阶段编号保留兼容，不表示当前开发任务。
 
 | 日常与准备工具 | 用途 |
 | --- | --- |
@@ -31,6 +31,7 @@
 | `verify_t5.py` | Q=32/128/512 三次重复、日志等价、回收与预算拒绝；[接口](../docs/observation-lifecycle.md) |
 | `verify_t6.py` | 完整 SIFT1M 准备、固定26次矩阵及严格复用；[入口](../docs/sift1m.md) |
 | `freeze_direct_baseline.py` | V03-0 新 direct 参考运行、身份/独立账本/预算冻结；[证据与复现](../docs/direct-baseline-v0.3.md)，不执行 IR 或完整 AC |
+| `verify_ir_frontend.py` | V03-4 生产前端/engine、合成与真实SIFT10k四组合、扰动/因果、冻结direct和定向ASan；[接口与证据](../docs/ir-frontend-v0.3.md)，不启动V03-5或完整矩阵 |
 | `verify_ir_mapping.py` | V03-3 算子映射、真实 MQSim 四组合/边界、继承 CTest、冻结 smoke 锚点和定向 ASan；[接口与证据](../docs/ir-mapping-v0.3.md)，不启动生产 IR 前端或完整矩阵 |
 | `verify_v02.py --all` | V0.2 完整基线复现；[前置准备与命令](../docs/archive/v0.2/delivery.md) |
 
@@ -58,4 +59,4 @@ build/delivery/bench_host_cpu
 
 ## V03-1 schema 生成
 
-`generate_ir_schema.py` 从同一声明生成 `schemas/ndpsim-ir-v1.schema.json` 与能力目录；`--check` 只读核对已提交生成物。校验入口为根构建的 `ir_validate`，接口、合法样例及限制见 [V03-1](../docs/ir-schema-v0.3.md)。V03-3 已将七算子声明为有执行映射；完整 engine/生产前端尚未集成，见 [V03-3](../docs/ir-mapping-v0.3.md)。
+`generate_ir_schema.py` 从同一声明生成 `schemas/ndpsim-ir-v1.schema.json` 与能力目录；`--check` 只读核对已提交生成物。校验入口为根构建的 `ir_validate`，接口、合法样例及限制见 [V03-1](../docs/ir-schema-v0.3.md)。V03-3 已将七算子声明为有执行映射；V03-4 已接入生产前端并将顶层 execution_supported 更新为 true，完整版本验收仍待后续，见 [V03-4](../docs/ir-frontend-v0.3.md)。

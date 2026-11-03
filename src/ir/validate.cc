@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
                 throw Error("InvalidArgument", "/", "typed representation differs from input");
             std::cout << Json({{"valid", true},
                                {"ir_version", d.manifest.ir_version},
-                               {"execution_supported", false},
+                               {"execution_supported", capabilities().at("execution_supported")},
                                {"objects", d.objects.size()},
                                {"operations", d.operations.size()},
                                {"catalog_sha256", catalog_sha256()}})

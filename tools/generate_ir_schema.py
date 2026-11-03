@@ -55,7 +55,7 @@ import argparse
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--check',action='store_true',help='fail on stale checked-in output; do not write')
 a=p.parse_args()
-for path,value in [('schemas/ndpsim-ir-v1.schema.json',schema),('schemas/ndpsim-ir-v1.capabilities.json',dict(ir_version='ndpsim-ir/1',catalog_version=1,execution_supported=False,operators=catalog))]:
+for path,value in [('schemas/ndpsim-ir-v1.schema.json',schema),('schemas/ndpsim-ir-v1.capabilities.json',dict(ir_version='ndpsim-ir/1',catalog_version=1,execution_supported=True,operators=catalog))]:
  text=json.dumps(value,indent=2)+'\n'
  if a.check:
   if (root/path).read_text()!=text: p.error('stale generated file: '+path)

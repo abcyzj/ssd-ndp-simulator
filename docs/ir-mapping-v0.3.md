@@ -1,6 +1,6 @@
 # V03-3 算子与 placement 映射
 
-2026-11-03（Asia/Shanghai）。V03-1、V03-2 的成功 manifest 与全部登记产物 hash 本轮重新核对通过。**V03-3 已完成；V03-4 未开始。**本轮提供真实算子后端和小规模测试驱动，不接入生产 GraphSearch、不增加 engine 配置、不切换 direct 默认，也不代表 V0.3 总验收通过。
+2026-11-03（Asia/Shanghai）。V03-1、V03-2 的成功 manifest 与全部登记产物 hash 本轮重新核对通过。**本页记录 V03-3 当轮结果；后续 [V03-4](ir-frontend-v0.3.md) 已完成生产前端。**本轮提供真实算子后端和小规模测试驱动，不接入生产 GraphSearch、不增加 engine 配置、不切换 direct 默认，也不代表 V0.3 总验收通过。
 
 ## 接口与映射
 

@@ -22,6 +22,10 @@ def run(config, build, output, data=None, *, paired=False):
         if key in c: c[key] = str((config.parent/c[key]).resolve())
     if c['placement'] not in (('host', 'controller') if paired else ('host',)):
         raise ValueError('Unsupported: requires supported placement')
+    engine = c.get('execution_engine', 'direct')
+    if engine not in ('direct', 'ir'):
+        raise ValueError('Unsupported execution_engine')
+    c['execution_engine'] = engine
     integer(c['max_inflight'], 'max_inflight')
     from device_profiles import profile, preflight
     selected = profile(c['device_profile'])
@@ -99,6 +103,12 @@ def run(config, build, output, data=None, *, paired=False):
     params.update(output_budget_bytes=output_budget, content_backend=backend, device_profile=c['device_profile'],
                   resource_budget_bytes=resource_check['resource_budget_bytes'], data=str(data), output=str(output / 'events.jsonl'), records=str(output/'records.jsonl'),
                   event_log=int(event_log), max_inflight=c['max_inflight'])
+    params['execution_engine'] = engine
+    if engine == 'ir':
+        from ir_frontend import contract
+        ir_contract = contract(c, m, dict(params, _build=str(build)), data, identity)
+        write_json(output/'ir-manifest.json', ir_contract)
+        params['ir_contract'] = str(output/'ir-manifest.json')
     write_json(output / 'sst-params.json', params)
     write_json(output / 'config.json', c)
     vs = (4*m['dimensions']+511)//512*512
@@ -188,8 +198,8 @@ def run(config, build, output, data=None, *, paired=False):
     base = json.loads((ROOT/'deps.lock.json').read_text())['dependencies']['MQSim']['commit']
     names = subprocess.check_output(['git','-C',str(mqsim),'ls-files','--cached','--others','--exclude-standard','-z']).decode().split('\0')
     source_files = [ROOT/'CMakeLists.txt', ROOT/'deps.lock.json', *sorted((ROOT/'src').rglob('*.cc')),
-                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/sst/graph.py', ROOT/'tools/run_pair.py', ROOT/'tools/compare_placements.py', ROOT/'tools/experiment_output.py', ROOT/'tools/run_experiment.py', ROOT/'tools/simulation_input.py', ROOT/'tools/benchmark_data.py', ROOT/'tools/benchmark_artifacts.py', ROOT/'tools/device_profiles.py', ROOT/'tools/verify_m0.py', ROOT/'configs/profiles/devices.json', ROOT/'configs/native/ssdconfig.xml']
-    write_json(output / 'manifest.json', dict(data=str(data), dataset=m, config_sha256=digest(config),
+                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ir_frontend.py', ROOT/'schemas/ndpsim-ir-v1.capabilities.json', ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/sst/graph.py', ROOT/'tools/run_pair.py', ROOT/'tools/compare_placements.py', ROOT/'tools/experiment_output.py', ROOT/'tools/run_experiment.py', ROOT/'tools/simulation_input.py', ROOT/'tools/benchmark_data.py', ROOT/'tools/benchmark_artifacts.py', ROOT/'tools/device_profiles.py', ROOT/'tools/verify_m0.py', ROOT/'configs/profiles/devices.json', ROOT/'configs/native/ssdconfig.xml']
+    write_json(output / 'manifest.json', dict(execution_engine=engine, ir_contract_sha256=digest(output/'ir-manifest.json') if engine == 'ir' else None, data=str(data), dataset=m, config_sha256=digest(config),
         input_identity=identity, device_preflight=resource_check, content_backend=backend, truth_sha256=digest(Path(identity['directories']['truth'])/'truth.json' if identity else data/'truth.json'), code_commit=git('rev-parse', 'HEAD'),
         source_sha256={str(p.relative_to(ROOT)):digest(p) for p in source_files},
         element_sha256=digest(build/'libndpsim.so'),
@@ -199,7 +209,7 @@ def run(config, build, output, data=None, *, paired=False):
         code_diff_sha256=hashlib.sha256(subprocess.check_output(['git', 'diff', 'HEAD'], cwd=ROOT)).hexdigest(),
         mqsim_commit=git('-C', 'third_party/MQSim', 'rev-parse', 'HEAD'),
         sst_commit=git('-C', 'third_party/sst-core', 'rev-parse', 'HEAD'), parameter_source=c['parameter_source'],
-        artifacts_sha256={name:digest(output/name) for name in ('config.json','layout.json','preflight.json','ssdconfig.xml','results.json','statistics.json','capabilities.json','sst-params.json', 'sst-measurement.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []))},
+        artifacts_sha256={name:digest(output/name) for name in ('config.json','layout.json','preflight.json','ssdconfig.xml','results.json','statistics.json','capabilities.json','sst-params.json', 'sst-measurement.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []), *(['ir-manifest.json'] if engine == 'ir' else []))},
         assumptions=['single SSD/'+c['device_profile']+'/SIMPLE/TURNED_OFF; CMT retained',
                      'deterministic page preload drained before measurement; no cross-query object cache',
                      'all queries offered at measurement origin, FIFO bounded admission; slots retire after CloseAck; host control; distance placement='+c['placement'],

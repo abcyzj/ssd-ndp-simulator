@@ -3,6 +3,8 @@
 #include <sst/core/link.h>
 #include "backend/ordinary_device.h"
 #include "search/graph.h"
+#include "search/ir_graph.h"
+#include "ir/mapping.h"
 #include "model/controller.h"
 #include "backend/observation.h"
 #include "observation/output.h"
@@ -55,7 +57,9 @@ public:
                                SST_ELI_ELEMENT_VERSION(0, 1, 0),
                                "Deterministic host graph search",
                                COMPONENT_CATEGORY_UNCATEGORIZED)
-    SST_ELI_DOCUMENT_PARAMS({"placement", "host/controller", "host"},
+    SST_ELI_DOCUMENT_PARAMS({"execution_engine", "direct/ir", "direct"},
+                            {"ir_contract", "validated run contract", ""},
+                            {"placement", "host/controller", "host"},
                             {"content_backend", "mmap/memory", "mmap"},
                             {"device_profile", "controlled device profile", "native-small"},
                             {"resource_budget_bytes",
@@ -97,6 +101,10 @@ public:
     GraphHost(SST::ComponentId_t id, SST::Params& p) : SST::Component(id) {
         if (getNumRanks().rank != 1 || getNumRanks().thread != 1)
             throw std::invalid_argument("graph requires one rank/thread");
+        auto engine = p.find<std::string>("execution_engine", "direct");
+        if (engine != "direct" && engine != "ir")
+            throw std::invalid_argument("Unsupported execution_engine");
+        ir_mode_ = engine == "ir";
         controller_mode_ = p.find<std::string>("placement", "host") == "controller";
         if (p.find<std::string>("placement", "host") != "host" && !controller_mode_)
             throw std::invalid_argument("Unsupported placement");
@@ -116,6 +124,23 @@ public:
         nq_ = p.find<uint32_t>("queries", 32);
         if (!d_ || !nq_ || r_ >= cfg_.count)
             throw std::invalid_argument("invalid dimensions/queries/degree");
+        if (ir_mode_) {
+            ir_contract_ = ir::parse(ir::read_json(p.find<std::string>("ir_contract", "")));
+            const auto& m = ir_contract_.manifest;
+            ir::Json expected = {{"strategy", "ndpsim-ranked-expansion-v1"},
+                                 {"entry", cfg_.entry},
+                                 {"k", cfg_.k},
+                                 {"L", cfg_.width},
+                                 {"B", cfg_.batch},
+                                 {"E", cfg_.budget},
+                                 {"chunk", cfg_.chunk}};
+            if (!ir_contract_.operations.empty() || m.search != expected ||
+                m.mapping.at("placement") != (controller_mode_ ? "controller" : "host") ||
+                m.artifacts.at("dataset").at("shape") != ir::Json::array({cfg_.count, d_}) ||
+                m.artifacts.at("queries").at("shape") != ir::Json::array({nq_, d_}) ||
+                m.artifacts.at("index").at("shape") != ir::Json::array({cfg_.count, r_}))
+                throw std::invalid_argument("IR contract differs from admitted run parameters");
+        }
         auto dir = p.find<std::string>("data", "");
         const auto& profile = device_profile(p.find<std::string>("device_profile", "native-small"));
         auto resource_budget =
@@ -281,6 +306,22 @@ public:
             controller_ = std::make_unique<model::Controller>(
                 *rt_, *handles_, *layout_, *local_, *transport_, *bridge_, now, cc);
         }
+        if (ir_mode_) {
+            executor_ = std::make_unique<ir::Executor>(ir_contract_, *rt_, now);
+            mapping_ = std::make_unique<ir::Mapping>(
+                ir_contract_,
+                *executor_,
+                *rt_,
+                *cpu_,
+                *store_,
+                *layout_,
+                [this](auto q, const content::Selection& selection) {
+                    return read(q, selection.object.kind, selection.object.id);
+                },
+                std::vector<ir::Mapping::ObjectBinding>{{"base", 1, 1, content::Kind::Vector},
+                                                        {"graph", 1, 1, content::Kind::Adjacency}},
+                controller_.get());
+        }
         rt_->statistics_only();
         handles_->statistics_only();
         cpu_->observations().sink = [this](const auto& s) {
@@ -342,6 +383,9 @@ public:
         if (completed_ != nq_ || active_ || !requests_.empty() || cpu_->busy() ||
             rt_->live_results() || handles_->live_records())
             throw std::logic_error("incomplete graph run/leaked handles");
+        if (executor_ && (executor_->counts().active_ops || executor_->counts().active_values ||
+                          mapping_->sessions() || !ir_sessions_.empty()))
+            throw std::logic_error("IR graph run leaked active operations/values/sessions");
         // Mandatory records are independent of the optional detailed event stream.
         out_.rdbuf(records_.rdbuf());
         observation_->emit = [this](bool stat, const std::string& value) {
@@ -490,11 +534,12 @@ private:
         bridge_->enqueue(
             getCurrentSimTimeNano(), EventBridge::ContinueSubmit, "admit query", [this, q] {
                 sessions_.erase(q);
+                ir_sessions_.erase(q);
                 records_ << "{\"type\":\"lifecycle_sample\",\"completed\":" << completed_
                          << ",\"runtime_tasks\":" << rt_->task_records()
                          << ",\"waiters\":" << rt_->wait_records()
                          << ",\"leases\":" << handles_->lease_records()
-                         << ",\"sessions\":" << sessions_.size() << "}\n";
+                         << ",\"sessions\":" << sessions_.size() + ir_sessions_.size() << "}\n";
                 next();
             });
     }
@@ -506,7 +551,7 @@ private:
         auto start = getCurrentSimTimeNano();
         decision_digest_[q] = 14695981039346656037ULL;
         search::GraphSearch::Score scorer;
-        if (controller_) {
+        if (controller_ && !ir_mode_) {
             // Decode the validated FP32 query without giving the search state machine content access.
             std::vector<float> values;
             for (size_t i = 0; i < qb.size(); i += 4) {
@@ -538,67 +583,104 @@ private:
                 return h;
             };
         }
-        sessions_[q] = std::make_unique<search::GraphSearch>(
-            *rt_,
-            *cpu_,
-            [this] {
-                return getCurrentSimTimeNano();
-            },
-            q,
-            cfg_,
-            std::move(qb),
-            [this, q](auto kind, auto id) {
-                return read(q, kind, id);
-            },
-            [this, q](const search::Decision& d) {
-                out_ << "{\"type\":\"decision\",\"query\":" << q << ",\"time_ns\":" << d.time
-                     << ",\"candidates\":";
-                score_json(out_, d.candidates);
-                out_ << ",\"expand\":[";
-                for (size_t i = 0; i < d.expand.size(); ++i) {
-                    if (i)
-                        out_ << ',';
-                    out_ << d.expand[i];
-                }
-                out_ << "]}\n";
-                std::ostringstream decision;
-                score_json(decision, d.candidates);
-                for (auto id : d.expand)
-                    decision << ':' << id;
-                auto& digest = decision_digest_.at(q);
-                for (unsigned char byte : decision.str()) {
-                    digest ^= byte;
-                    digest *= 1099511628211ULL;
-                }
-            },
-            [this, q, start](auto scores, auto expanded) {
-                last_result_ = getCurrentSimTimeNano();
-                std::ostringstream row;
-                row << "{\"type\":\"query_result\",\"query\":" << q << ",\"offered_ns\":" << origin_
-                    << ",\"start_ns\":" << start << ",\"end_ns\":" << last_result_
-                    << ",\"admission_wait_ns\":" << start - origin_
-                    << ",\"offered_latency_ns\":" << last_result_ - origin_
-                    << ",\"latency_ns\":" << last_result_ - start << ",\"expanded\":" << expanded
-                    << ",\"decision_digest_fnv1a64\":" << decision_digest_.at(q)
-                    << ",\"insufficient\":" << (scores.size() < cfg_.k ? "true" : "false")
-                    << ",\"top_k\":";
-                score_json(row, scores);
-                row << "}\n";
-                records_ << row.str();
-                out_ << row.str();
-                if (controller_) {
-                    auto closed = controller_->close(q);
-                    rt_->when_all({closed}, q, [this, q, closed](auto o) {
-                        if (o.failure)
-                            throw std::runtime_error(o.failure->detail);
-                        rt_->release(closed);
-                        retired(q);
-                    });
-                } else
+        search::GraphSearch::Trace trace = [this, q](const search::Decision& d) {
+            out_ << "{\"type\":\"decision\",\"query\":" << q << ",\"time_ns\":" << d.time
+                 << ",\"candidates\":";
+            score_json(out_, d.candidates);
+            out_ << ",\"expand\":[";
+            for (size_t i = 0; i < d.expand.size(); ++i) {
+                if (i)
+                    out_ << ',';
+                out_ << d.expand[i];
+            }
+            out_ << "]}\n";
+            std::ostringstream decision;
+            score_json(decision, d.candidates);
+            for (auto id : d.expand)
+                decision << ':' << id;
+            auto& digest = decision_digest_.at(q);
+            for (unsigned char byte : decision.str()) {
+                digest ^= byte;
+                digest *= 1099511628211ULL;
+            }
+        };
+        search::GraphSearch::Done done = [this, q, start](auto scores, auto expanded) {
+            last_result_ = getCurrentSimTimeNano();
+            std::ostringstream row;
+            row << "{\"type\":\"query_result\",\"query\":" << q << ",\"offered_ns\":" << origin_
+                << ",\"start_ns\":" << start << ",\"end_ns\":" << last_result_
+                << ",\"admission_wait_ns\":" << start - origin_
+                << ",\"offered_latency_ns\":" << last_result_ - origin_
+                << ",\"latency_ns\":" << last_result_ - start << ",\"expanded\":" << expanded
+                << ",\"decision_digest_fnv1a64\":" << decision_digest_.at(q)
+                << ",\"insufficient\":" << (scores.size() < cfg_.k ? "true" : "false")
+                << ",\"top_k\":";
+            score_json(row, scores);
+            row << "}\n";
+            records_ << row.str();
+            out_ << row.str();
+            if (controller_ || ir_mode_) {
+                auto closed = ir_mode_ ? mapping_->close(q) : controller_->close(q);
+                rt_->when_all({closed}, q, [this, q, closed](auto o) {
+                    if (o.failure)
+                        throw std::runtime_error(o.failure->detail);
+                    rt_->release(closed);
                     retired(q);
-            },
-            std::move(scorer));
-        sessions_.at(q)->start();
+                });
+            } else
+                retired(q);
+        };
+        if (ir_mode_) {
+            std::vector<float> values(d_);
+            for (size_t i = 0; i < values.size(); ++i) {
+                uint32_t bits = 0;
+                for (unsigned j = 0; j < 4; ++j)
+                    bits |= uint32_t(qb[4 * i + j]) << (8 * j);
+                std::memcpy(&values[i], &bits, 4);
+            }
+            auto initial = ir::StateSnapshot::initial(
+                q,
+                "search-state",
+                {{"scored", ir::Json::array()}, {"expanded", ir::Json::array()}});
+            mapping_->admit(q, std::move(values), initial);
+            ir_sessions_[q] = std::make_unique<search::IrGraphSearch>(
+                *executor_,
+                [this](auto op, auto producers, auto states) {
+                    return mapping_->submit(std::move(op), std::move(producers), std::move(states));
+                },
+                next_ir_op_,
+                ir_contract_.manifest.run,
+                q,
+                q - 1,
+                cfg_,
+                d_,
+                r_,
+                controller_ ? ir::Placement::Controller : ir::Placement::Host,
+                initial,
+                [this] {
+                    return getCurrentSimTimeNano();
+                },
+                std::move(trace),
+                std::move(done));
+            ir_sessions_.at(q)->start();
+        } else {
+            sessions_[q] = std::make_unique<search::GraphSearch>(
+                *rt_,
+                *cpu_,
+                [this] {
+                    return getCurrentSimTimeNano();
+                },
+                q,
+                cfg_,
+                std::move(qb),
+                [this, q](auto kind, auto id) {
+                    return read(q, kind, id);
+                },
+                std::move(trace),
+                std::move(done),
+                std::move(scorer));
+            sessions_.at(q)->start();
+        }
     }
     void wake(SST::Event* raw) {
         std::unique_ptr<GraphWake> e(static_cast<GraphWake*>(raw));
@@ -612,9 +694,11 @@ private:
                 measuring_ = true;
                 origin_ = device_->window->origin();
                 records_ << "{\"type\":\"initial_state\",\"origin_ns\":" << origin_
-                         << ",\"completed_preload_sectors\":" << device_->window->completed_sectors()
+                         << ",\"completed_preload_sectors\":"
+                         << device_->window->completed_sectors()
                          << ",\"backend_pending\":" << device_->flow->pending()
-                         << ",\"backend_drained\":" << (!Simulator->Peek_next_time() ? "true" : "false")
+                         << ",\"backend_drained\":"
+                         << (!Simulator->Peek_next_time() ? "true" : "false")
                          << ",\"cmt_retained\":true,\"time_reset\":false}\n";
                 observation_->reset_window();
                 query_wall_start_ = std::chrono::steady_clock::now();
@@ -630,6 +714,12 @@ private:
     }
     std::chrono::steady_clock::time_point wall_start_ = std::chrono::steady_clock::now(),
                                           query_wall_start_;
+    bool ir_mode_ = false;
+    uint64_t next_ir_op_ = 0;
+    ir::Document ir_contract_;
+    std::unique_ptr<ir::Executor> executor_;
+    std::unique_ptr<ir::Mapping> mapping_;
+    std::map<uint64_t, std::unique_ptr<search::IrGraphSearch>> ir_sessions_;
     bool controller_mode_ = false;
     uint64_t capacity_ = 0, last_result_ = 0, active_ = 0, peak_active_ = 0;
     uint32_t submitted_ = 0, max_inflight_ = 1;

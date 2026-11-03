@@ -1,6 +1,9 @@
 #include "backend/ordinary_device.h"
 #include "ir/mapping.h"
 #include "search/graph.h"
+#ifdef NDPSIM_PRODUCTION_FRONTEND
+#include "search/ir_graph.h"
+#endif
 #include <iostream>
 #include <queue>
 using namespace ndpsim;
@@ -216,6 +219,10 @@ struct Scenario {
     std::unique_ptr<Executor> executor;
     std::unique_ptr<Mapping> mapping;
     std::unique_ptr<Driver> driver;
+#ifdef NDPSIM_PRODUCTION_FRONTEND
+    std::unique_ptr<search::IrGraphSearch> frontend;
+    uint64_t next_op = 0;
+#endif
     std::unique_ptr<search::GraphSearch> direct;
     struct Read {
         uint64_t task;
@@ -514,7 +521,28 @@ struct Scenario {
             return;
         }
         if (driver) {
+#ifdef NDPSIM_PRODUCTION_FRONTEND
+            auto initial = StateSnapshot::initial(7, "search-state",
+                {{"scored", Json::array()}, {"expanded", Json::array()}});
+            mapping->admit(7, std::vector<float>(260, 0), initial);
+            frontend = std::make_unique<search::IrGraphSearch>(*executor,
+                [this](auto op, auto producers, auto states) {
+                    return mapping->submit(std::move(op), std::move(producers), std::move(states));
+                }, next_op, "example", 7, 0, search::Config{5, 0, 5, 5, 2, 5, 2}, 260, 4,
+                controller ? Placement::Controller : Placement::Host, initial,
+                [this] { return now; }, [this](const search::Decision& d) {
+                    Json scores = Json::array();
+                    for (auto s : d.candidates) scores.push_back({{"id", s.id}, {"distance", s.distance}});
+                    report["decisions"].push_back({{"time", now-origin}, {"scores", scores}, {"ids", d.expand}});
+                }, [this](auto scores, auto) {
+                    Json values = Json::array();
+                    for (auto s : scores) values.push_back({{"id", s.id}, {"distance", s.distance}});
+                    finish(values);
+                });
+            frontend->start();
+#else
             driver->start();
+#endif
             return;
         }
         search::GraphSearch::Score score;

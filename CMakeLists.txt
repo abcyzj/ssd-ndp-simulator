@@ -407,3 +407,24 @@ if(BUILD_TESTING)
     add_test(NAME ir_operator_placements COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_ir_mapping.py" --probe "$<TARGET_FILE:ir_mapping_probe>")
 endif()
+
+if(BUILD_TESTING)
+    add_executable(ir_frontend_probe tests/ir_mapping_probe.cc)
+    target_compile_definitions(ir_frontend_probe PRIVATE NDPSIM_PRODUCTION_FRONTEND=1)
+    target_include_directories(ir_frontend_probe PRIVATE "${CMAKE_BINARY_DIR}/generated")
+    target_link_libraries(ir_frontend_probe PRIVATE ndpsim_ir)
+    add_test(NAME ir_graph_frontend COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_ir_mapping.py" --probe "$<TARGET_FILE:ir_frontend_probe>")
+endif()
+
+if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
+    add_test(NAME sst_ir_graph_frontend COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_ir_frontend.py" --build "${PROJECT_BINARY_DIR}")
+    set_tests_properties(sst_ir_graph_frontend PROPERTIES TIMEOUT 240)
+endif()
+if(BUILD_TESTING)
+    add_executable(ir_frontend_causal_probe tests/ir_frontend_causal_probe.cc)
+    target_link_libraries(ir_frontend_causal_probe PRIVATE ndpsim_ir)
+    add_test(NAME ir_graph_frontend_causality COMMAND ir_frontend_causal_probe
+        "${PROJECT_SOURCE_DIR}/examples/ir/graph-contract.json")
+endif()
