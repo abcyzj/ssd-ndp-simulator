@@ -27,6 +27,8 @@ public:
     using Evaluate = std::function<operators::Result(const std::vector<content::Bytes>&)>;
     HostCpu(runtime::Runtime&, EventBridge&, EventBridge::Clock, HostConfig);
     runtime::Handle submit(uint64_t query, std::vector<runtime::Handle>, Kind, Evaluate);
+    // Trusted IR adapter may reuse this exact Runtime operation on its parent task.
+    runtime::Operation operation(uint64_t query, std::vector<runtime::Handle>, Kind, Evaluate);
     const std::vector<Service>& services() const {
         return services_;
     }

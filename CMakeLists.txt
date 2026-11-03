@@ -359,17 +359,17 @@ if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
     add_test(NAME streaming_output COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/test_streaming_output.py")
 endif()
 
-# V03-1/2: typed contract and dynamic lifetime management; graph/placement mappings remain pending.
+# V03-1/2/3: contract, dynamic lifetime management and trusted operator mappings.
 file(READ "${PROJECT_SOURCE_DIR}/schemas/ndpsim-ir-v1.schema.json" IR_SCHEMA)
 file(READ "${PROJECT_SOURCE_DIR}/schemas/ndpsim-ir-v1.capabilities.json" IR_CATALOG)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     schemas/ndpsim-ir-v1.schema.json schemas/ndpsim-ir-v1.capabilities.json)
 configure_file(src/ir/embedded.h.in generated/ir/embedded.h @ONLY)
-add_library(ndpsim_ir STATIC src/ir/schema.cc src/ir/encode.cc src/ir/executor.cc)
+add_library(ndpsim_ir STATIC src/ir/schema.cc src/ir/encode.cc src/ir/executor.cc src/ir/mapping.cc)
 set_target_properties(ndpsim_ir PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(ndpsim_ir PUBLIC src "${PROJECT_SOURCE_DIR}/third_party/sst-core/external"
     PRIVATE "${PROJECT_BINARY_DIR}/generated")
-target_link_libraries(ndpsim_ir PUBLIC ndpsim_runtime)
+target_link_libraries(ndpsim_ir PUBLIC ndpsim_runtime ndpsim_host ndpsim_controller ndpsim_search)
 target_compile_options(ndpsim_ir PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(ir_validate src/ir/validate.cc)
 target_link_libraries(ir_validate PRIVATE ndpsim_ir)
@@ -398,4 +398,12 @@ if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
             set_tests_properties(sst_ir_${variant} PROPERTIES ENVIRONMENT "NDPSIM_IR_${delay}_DELAY=100")
         endif()
     endforeach()
+endif()
+
+if(BUILD_TESTING)
+    add_executable(ir_mapping_probe tests/ir_mapping_probe.cc)
+    target_include_directories(ir_mapping_probe PRIVATE "${CMAKE_BINARY_DIR}/generated")
+    target_link_libraries(ir_mapping_probe PRIVATE ndpsim_ir)
+    add_test(NAME ir_operator_placements COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_ir_mapping.py" --probe "$<TARGET_FILE:ir_mapping_probe>")
 endif()

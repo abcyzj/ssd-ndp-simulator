@@ -321,7 +321,7 @@ Lease Executor::submit(Operation op,
         if (!control)
             error(op, "InvalidArgument", "logical read requires explicit CONTROL permission");
     }
-    if (!adapter.grant || !adapter.evaluate || !adapter.service ||
+    if ((!adapter.grant && !adapter.launch) || !adapter.evaluate || !adapter.service ||
         (adapter.needs_return && !adapter.send_return))
         error(op, "Unsupported", "no trusted execution adapter");
     auto id = op.op_id;
@@ -332,7 +332,12 @@ Lease Executor::submit(Operation op,
         task.inputs.push_back(records_.at(producer).completion);
     auto resolved = std::make_shared<Values>();
     auto states = std::make_shared<States>(std::move(snapshots));
-    task.grant = [this, id, resolved, states, grant = std::move(adapter.grant)](uint64_t task_id) {
+    task.grant = [this,
+                  id,
+                  resolved,
+                  states,
+                  grant = std::move(adapter.grant),
+                  launch = std::move(adapter.launch)](uint64_t task_id) {
         try {
             *resolved = resolve(records_.at(id).op, *states);
             states->clear();
@@ -346,7 +351,10 @@ Lease Executor::submit(Operation op,
             throw content::Error(code, e.diagnostic().dump());
         }
         try {
-            grant(task_id);
+            if (launch)
+                launch(task_id, *resolved);
+            else
+                grant(task_id);
         } catch (const content::Error& e) {
             throw adapter_error(records_.at(id).op, now_(), e, e.code);
         } catch (const std::exception& e) {

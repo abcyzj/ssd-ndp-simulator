@@ -31,6 +31,12 @@ HostCpu::HostCpu(runtime::Runtime& r, EventBridge& b, EventBridge::Clock n, Host
 }
 runtime::Handle
 HostCpu::submit(uint64_t query, std::vector<runtime::Handle> inputs, Kind kind, Evaluate evaluate) {
+    return runtime_.submit(operation(query, std::move(inputs), kind, std::move(evaluate)));
+}
+runtime::Operation HostCpu::operation(uint64_t query,
+                                      std::vector<runtime::Handle> inputs,
+                                      Kind kind,
+                                      Evaluate evaluate) {
     if (!evaluate)
         throw content::Error(Code::InvalidArgument, "host evaluator required");
     auto work = std::make_shared<operators::Work>();
@@ -66,7 +72,7 @@ HostCpu::submit(uint64_t query, std::vector<runtime::Handle> inputs, Kind kind, 
                             pump();
                         });
     };
-    return runtime_.submit(std::move(op));
+    return op;
 }
 void HostCpu::pump() {
     while (busy_ < config_.slots && !queue_.empty()) {

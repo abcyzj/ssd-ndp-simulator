@@ -83,6 +83,13 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 
 ## V03-2 动态依赖与值生命周期
 
-`ir_dynamic_lifecycle` 使用合成结构夹具及受信测试 adapter，覆盖增量接纳、非法引用、ADDRESS/DATA/CONTROL/ORDER、可见值驱动动态后继、版本化状态所有权、空/零时长 JOIN、失败排空、同刻提交顺序和 2,001 JOIN 回收。`sst_ir_base/input/compute/return` 通过真实 SST SelfLink 验证三阶段延迟与非提前可见，输出逐任务因果状态日志。JOIN 是当前唯一有内置执行实现的算子；其余测试 adapter 不替代 V03-3 的真实资源映射。
+`ir_dynamic_lifecycle` 使用合成结构夹具及受信测试 adapter，覆盖增量接纳、非法引用、ADDRESS/DATA/CONTROL/ORDER、可见值驱动动态后继、版本化状态所有权、空/零时长 JOIN、失败排空、同刻提交顺序和 2,001 JOIN 回收。`sst_ir_base/input/compute/return` 通过真实 SST SelfLink 验证三阶段延迟与非提前可见，输出逐任务因果状态日志。V03-2 当轮仅 JOIN 有内置执行实现；其余测试 adapter 不替代后续 V03-3 的真实资源映射。
 
 根 CTest 已包含这些用例。定向 ASan 通过 `-DNDPSIM_SANITIZE=ON` 独立构建，运行 `ir_dynamic_lifecycle`、`runtime_dependencies_visibility` 和 `ir_schema_memory`；不是完整 SST/LSan 审计。实际命令、74/74 CTest、3/3 ASan、冻结输入证据重查及限制见 [V03-2 收口](ir-lifecycle-v0.3.md)。未运行的完整 AC、真实搜索矩阵和 RSS 梯度不计通过。
+
+
+## V03-3 算子与 placement 映射
+
+`ir_operator_placements` 运行测试专用动态 Driver 与原 GraphSearch 的真实 MQSim 四组合；20次独立进程覆盖跨页 d260、多chunk、单块容量、同刻 CPU 竞争、提前 Close、原子拒绝、部分提交和 Controller/Open 失败排空。逐字段比较结果/批次/时刻/Work/普通与本地读取/消息/link wire/credit/资源服务，失败也要求终态清零。
+
+`tools/verify_ir_mapping.py --output <新目录>` 使用锁定 Python 运行根构建、完整 CTest、映射/schema/证据检查、冻结 direct smoke 新运行与独立 ASan 4项；保存失败关闭的 manifest、输入/源码/依赖身份及命令/log/hash。本轮最终75/75 CTest、4/4 ASan、10组 schema、3组冻结证据测试通过；方法、失败记录与限制见 [V03-3](ir-mapping-v0.3.md)。不包含完整 AC、原生 oracle、生产 IR engine 或完整 SIFT 矩阵验收。

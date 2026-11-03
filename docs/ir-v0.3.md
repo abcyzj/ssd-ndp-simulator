@@ -2,7 +2,7 @@
 
 日期：2026-11-02（Asia/Shanghai）  
 契约标识：`ndpsim-ir/1`  
-状态：设计规范；V03-1 的 [C++ 类型、schema 与静态校验](ir-schema-v0.3.md)已实现，V03-2 的[动态依赖、值生命周期与异步 JOIN](ir-lifecycle-v0.3.md)已实现，真实算子映射和图前端尚未实现。诊断格式不是可独立执行文件。产品范围与验收见 [V0.3 PRD](prd-v0.3.md)。
+状态：设计规范；V03-1 的 [C++ 类型、schema 与静态校验](ir-schema-v0.3.md)已实现，V03-2 的[动态依赖、值生命周期与异步 JOIN](ir-lifecycle-v0.3.md)已实现，V03-3 的[算子与 placement 映射](ir-mapping-v0.3.md)已实现；生产图前端和 engine 集成尚未实现。诊断格式不是可独立执行文件。产品范围与验收见 [V0.3 PRD](prd-v0.3.md)。
 
 ## 1. 目的与设计取舍
 
@@ -104,7 +104,7 @@ Manifest最小内容如下；名称为本版设计基线，正式schema需在实
 
 基本类型至少包含`u32/u64/bool`、`ids_u32[n]`、`fp32[d]`、`scores_id_f64[n]`、带有效长度的邻接记录和不透明查询状态。运行期长度用可校验的动态shape，不能跳过实际长度检查。得分仍为uint32 ID加binary64 distance，每项12B；拒绝非有限距离。
 
-`object_slice`包含地址选择，不能隐式当`DATA`满足；实际读取/评分映射才获得内容能力。`op_output`的数值和目标位置由生产者声明并经发布门控；前端仅有HostMemory可读权限。literal不产生目标硬件加载豁免，query上传仍由原协议计费。
+`object_slice`包含地址选择，不能隐式当`DATA`满足；实际读取/评分映射才获得内容能力。`op_output`的数值和目标位置由生产者声明并经发布门控；前端仅有HostMemory可读权限。初次MERGE的`previous`可使用固定零长度`scores_id_f64[0]`、值为`[]`的literal；只允许此空历史初始化，不允许非空得分或用于其他端口。literal不产生目标硬件加载豁免，query上传仍由原协议计费。
 
 每个输出端口单次定义。旧状态版本可能仍被在途操作持有，不能原地覆盖；可用移动所有权/共享不可变块/按需快照，禁止为此永久保存全部迭代状态。动态状态值不伪装为可写持久化DataObject；在线索引写入仍Unsupported。
 

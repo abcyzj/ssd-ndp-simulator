@@ -445,7 +445,7 @@
                     "minimum": 0,
                     "maximum": 4294967295
                   },
-                  "minItems": 1,
+                  "minItems": 0,
                   "maxItems": 1
                 }
               ]

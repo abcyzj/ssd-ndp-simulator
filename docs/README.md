@@ -1,6 +1,6 @@
 # 文档入口
 
-当前开发目标为 V0.3，先读 [PRD](prd-v0.3.md) 与 [IR 设计规范](ir-v0.3.md)。V03-0 已完成本轮 direct 参考冻结，V03-1 已完成 schema 与能力目录，V03-2 已完成动态依赖与值生命周期；真实算子映射和 GraphSearch IR 执行尚未实现或验收，后续按实施清单推进。两份正式文档独立于早期 Word 草案。
+当前开发目标为 V0.3，先读 [PRD](prd-v0.3.md) 与 [IR 设计规范](ir-v0.3.md)。V03-0 已完成本轮 direct 参考冻结，V03-1 已完成 schema 与能力目录，V03-2 已完成动态依赖与值生命周期，V03-3 已完成算子与 placement 映射；生产 GraphSearch IR 前端和完整 IR 执行验收尚未完成，后续按实施清单推进。两份正式文档独立于早期 Word 草案。
 
 当前可运行基线仍为 V0.2。以下接口文档描述已实现能力，不能把 V0.3 目标视为现有接口；按任务选读，无须遍历历史阶段材料。
 
@@ -11,6 +11,7 @@
 | V0.3 direct 冻结证据、预算与复现 | [V03-0 收口](direct-baseline-v0.3.md) |
 | V0.3 已实现 schema、能力目录与静态校验 | [V03-1 接口与收口](ir-schema-v0.3.md) |
 | V0.3 已实现动态依赖、可见值、状态及回收 | [V03-2 接口与收口](ir-lifecycle-v0.3.md) |
+| V0.3 已实现算子、host/controller 映射与验证 | [V03-3 接口与收口](ir-mapping-v0.3.md) |
 | V0.3 可执行任务、完成证据、阻塞项与默认决策 | [实施清单](implementation-plan-v0.3.md) |
 | 构建、日常实验与复建 | [项目 README](../README.md)、[复建交付](delivery.md) |
 | 模块职责、有效设计决定 | [架构](architecture.md) |

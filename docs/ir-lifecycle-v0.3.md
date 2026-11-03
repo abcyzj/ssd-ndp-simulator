@@ -1,6 +1,6 @@
 # V03-2 动态依赖与值生命周期
 
-2026-11-03（Asia/Shanghai）。依赖 V03-1 已完成；本轮新增进程内增量接纳、可见值绑定、不可变状态快照、异步 JOIN、失败传播与活动对象回收。**仅 JOIN 有内置执行实现；其余六算子的资源映射、GraphSearch IR 前端及 engine 配置尚未实现**，不代表 V0.3 验收通过。V03-3 未开始。
+2026-11-03（Asia/Shanghai）。依赖 V03-1 已完成；本轮新增进程内增量接纳、可见值绑定、不可变状态快照、异步 JOIN、失败传播与活动对象回收。**本页记录 V03-2 当轮仅 JOIN 可执行的收口。**后续 [V03-3](ir-mapping-v0.3.md) 已实现其余六算子映射；生产 GraphSearch IR 前端及 engine 配置尚未实现，不代表 V0.3 验收通过。
 
 ## 接口与边界
 
@@ -12,7 +12,7 @@
 
 `StateSnapshot::initial/advance` 建立查询私有不可变 JSON 状态视图；advance 在共享 lineage 内单调分配版本，旧视图不被覆盖。`state_ref` 可以绑定显式持有的 snapshot（提交时验证 query/state_id/version），也可以通过 `ORDER + state_version` 绑定生产者的 Pending 状态输出（Visible 后、grant 前验证）。显式视图支持前端在消费已可见 IDs 后更新 scored/expanded，避免为版本更新额外执行 QUERY_READY 或收费服务。executor 不替前端计算搜索状态，后续图迁移仍须遵守原更新时点和成本。快照由消费者持有到功能执行/失败排空；未使用的绑定、版本不符及歧义绑定拒绝。
 
-Trusted Adapter 承接原 Runtime 的 grant/start、一次 evaluate、service_done 与 return_done；它必须负责实际服务、传输字节、费用及安全排空，调用者不得以该接口隐藏未计费搜索。Runtime 仅携带空字节的完成门控，真实值留在操作私有槽；返回适配回调不接收这段空门控字节数。尚未实现的六算子只能用测试受信 adapter 做边界探针，不能据此宣称已有真实映射。能力目录全局 execution_supported 仍为 false，JOIN 单项为 true / runtime_async，目录 hash 及样例已同步更新。
+Trusted Adapter 承接原 Runtime 的 grant/start、一次 evaluate、service_done 与 return_done；它必须负责实际服务、传输字节、费用及安全排空，调用者不得以该接口隐藏未计费搜索。Runtime 仅携带空字节的完成门控，真实值留在操作私有槽；返回适配回调不接收这段空门控字节数。V03-2 冻结时其余六算子只能用测试受信 adapter 做边界探针，不能据此宣称已有真实映射。该轮能力目录全局 execution_supported 为 false，JOIN 单项为 true / runtime_async，目录 hash 及样例已同步更新。
 
 `join` 产生 done 令牌并复用 Runtime/EventBridge，不新增目标机器服务，空集合及零时长也经异步 Publish/ContinueSubmit。失败保留 Runtime 根 code/query/task/time/cause；接纳、动态校验和 adapter 异常补充 IR op/producer/时间及 detail。失败消费者不获得 grant，已发出工作沿原 fail_after_drain 规则处理；受信适配器通过 Executor::fail_after_drain 补充 IR 归属，禁止尚有在途服务/返回时调用。无 owner、consumer/waiter pin 及管理回调后删除活动映射；Runtime 继续负责在途 service/return/completion 的最终排空。Executor 与 Runtime 均必须活到全部回调排空。
 
@@ -45,4 +45,4 @@ Trusted Adapter 承接原 Runtime 的 grant/start、一次 evaluate、service_do
 - V03-2 只关闭动态管理层门槛。其余算子映射、真实搜索前端、执行 engine 选择、IR 观测与独立比较器仍待 V03-3～5；direct 默认及搜索行为未变。
 - 当前 Value/状态使用进程内 JSON 与共享不可变视图，没有运行时 DAG 文件回放或设备可读状态。未实现设备输出消费、新位置、可写索引或通用算子。
 - 本轮没有完整 AC、独立原生 oracle、SIFT 四组合/52 条矩阵、真实搜索 Q/RSS 梯度或效率预算测量；2,001 JOIN 是活动元数据回收探针，不能替代 V03-6 的搜索规模与 RSS 验证。不可恢复后端失败仍终止实验，不新增恢复保证。
-- 真实计费与 host/controller 映射保持未实现声明；合成服务时间只是因果探针，硬件参数仍为 configured_unvalidated，不作性能优劣或校准结论。本轮到此停止，不自动开始 V03-3。
+- V03-2 当轮的真实计费与 host/controller 映射保持未实现声明；合成服务时间只是因果探针，硬件参数仍为 configured_unvalidated，不作性能优劣或校准结论。本轮到此停止，不自动开始 V03-3。

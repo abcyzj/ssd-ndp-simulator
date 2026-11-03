@@ -42,6 +42,8 @@ struct Adapter {
     std::function<void(uint64_t)> service;
     std::function<void(uint64_t)> send_return;
     bool needs_return = false;
+    // Optional trusted composite launcher, after whole-batch resolve/validation.
+    std::function<void(uint64_t, const Values&)> launch;
 };
 struct Counts {
     uint64_t submitted = 0, completed = 0, failed = 0;

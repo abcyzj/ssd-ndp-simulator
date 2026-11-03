@@ -188,14 +188,21 @@ ValueRef value(const Json& j) {
         v.reference = StateRef{j["query"], j["state_id"], j["version"]};
     } else {
         require(v.type.name == TypeName::U32 || v.type.name == TypeName::U64 ||
-                    v.type.name == TypeName::Bool || v.type.name == TypeName::IdsU32,
+                    v.type.name == TypeName::Bool || v.type.name == TypeName::IdsU32 ||
+                    v.type.name == TypeName::ScoresIdF64,
                 "/literal",
                 "only small scalar configuration literals are supported",
                 "Unsupported");
         require(j["value"].is_boolean() == (v.type.name == TypeName::Bool),
                 "/literal",
                 "literal type mismatch");
-        if (v.type.name == TypeName::IdsU32) {
+        if (v.type.name == TypeName::ScoresIdF64) {
+            require(j["value"].is_array() && j["value"].empty() && v.type.shape[0].extent == 0 &&
+                        !v.type.shape[0].dynamic,
+                    "/literal",
+                    "only empty initial scores are permitted");
+            v.reference = Literal{std::vector<uint32_t>{}};
+        } else if (v.type.name == TypeName::IdsU32) {
             require(j["value"].is_array() && j["value"].size() == 1 &&
                         v.type.shape[0].extent == 1 && !v.type.shape[0].dynamic,
                     "/literal",
@@ -690,6 +697,10 @@ static Document parse_impl(const Json& j, bool submission) {
                     if (v["slice"].contains("indices_ref"))
                         check_ref(v["slice"]["indices_ref"], "ADDRESS");
                 }
+                if (v["ref"] == "literal" && v["type"]["name"] == "scores_id_f64")
+                    require(op.op == Operator::MergeCandidates && i["port"] == "previous",
+                            "/literal",
+                            "empty scores only initialize MERGE previous");
                 if (v["ref"] == "literal" && v["type"]["name"] == "ids_u32")
                     require(v["value"][0] == m["search"]["entry"],
                             "/literal",

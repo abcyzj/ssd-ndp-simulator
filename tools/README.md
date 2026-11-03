@@ -31,6 +31,7 @@
 | `verify_t5.py` | Q=32/128/512 三次重复、日志等价、回收与预算拒绝；[接口](../docs/observation-lifecycle.md) |
 | `verify_t6.py` | 完整 SIFT1M 准备、固定26次矩阵及严格复用；[入口](../docs/sift1m.md) |
 | `freeze_direct_baseline.py` | V03-0 新 direct 参考运行、身份/独立账本/预算冻结；[证据与复现](../docs/direct-baseline-v0.3.md)，不执行 IR 或完整 AC |
+| `verify_ir_mapping.py` | V03-3 算子映射、真实 MQSim 四组合/边界、继承 CTest、冻结 smoke 锚点和定向 ASan；[接口与证据](../docs/ir-mapping-v0.3.md)，不启动生产 IR 前端或完整矩阵 |
 | `verify_v02.py --all` | V0.2 完整基线复现；[前置准备与命令](../docs/archive/v0.2/delivery.md) |
 
 完整方法见[测试说明](../docs/testing.md)。所有有效测试和断言保留；上述工具通过不能直接声明 V0.3 通过。`verify_t6.py --prepare-only` 与 `--prepared` 分离准备/仿真，`--reuse-runs` 必须逐项验证身份；旧结果不能冒充本轮 direct 冻结或 IR 结果。
@@ -57,4 +58,4 @@ build/delivery/bench_host_cpu
 
 ## V03-1 schema 生成
 
-`generate_ir_schema.py` 从同一声明生成 `schemas/ndpsim-ir-v1.schema.json` 与能力目录；`--check` 只读核对已提交生成物。校验入口为根构建的 `ir_validate`，接口、合法样例及限制见 [V03-1](../docs/ir-schema-v0.3.md)。能力目录的执行映射仍为未实现。
+`generate_ir_schema.py` 从同一声明生成 `schemas/ndpsim-ir-v1.schema.json` 与能力目录；`--check` 只读核对已提交生成物。校验入口为根构建的 `ir_validate`，接口、合法样例及限制见 [V03-1](../docs/ir-schema-v0.3.md)。V03-3 已将七算子声明为有执行映射；完整 engine/生产前端尚未集成，见 [V03-3](../docs/ir-mapping-v0.3.md)。

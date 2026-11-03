@@ -271,6 +271,7 @@ void Controller::fail_open(const std::shared_ptr<Session>& s,
             runtime_.release(h);
         s->batches.clear();
         s->outstanding = 0;
+        notify_drained(s);
         sessions_.erase(s->query);
         --admitted_;
         admit();
@@ -305,6 +306,7 @@ void Controller::fail_chunk(const std::shared_ptr<Session>& s,
         c->result.clear();
         runtime_.fail_after_drain(c->task, c->code, c->detail);
         --s->outstanding;
+        notify_drained(s);
         close_ready(s);
     });
 }
@@ -470,6 +472,7 @@ runtime::Handle Controller::chunk(const std::shared_ptr<Session>& s,
             c->result.clear();
             runtime_.return_done(c->task);
             --s->outstanding;
+            notify_drained(s);
             close_ready(s);
         });
     };
@@ -534,6 +537,25 @@ runtime::Handle Controller::close(uint64_t q) {
         close_ready(s);
     };
     return runtime_.submit(std::move(op));
+}
+void Controller::when_drained(uint64_t q, std::function<void()> done) {
+    if (!done)
+        throw Error(Code::InvalidArgument, "missing drain continuation");
+    auto it = sessions_.find(q);
+    if (it == sessions_.end() || !it->second->outstanding)
+        bridge_.enqueue(
+            now_(), EventBridge::ContinueSubmit, "controller chunks drained", std::move(done));
+    else
+        it->second->drain_waiters.push_back(std::move(done));
+}
+void Controller::notify_drained(const std::shared_ptr<Session>& s) {
+    if (s->outstanding)
+        return;
+    auto waiters = std::move(s->drain_waiters);
+    s->drain_waiters.clear();
+    for (auto& done : waiters)
+        bridge_.enqueue(
+            now_(), EventBridge::ContinueSubmit, "controller chunks drained", std::move(done));
 }
 void Controller::close_ready(const std::shared_ptr<Session>& s) {
     if (!s->close_task || s->outstanding)

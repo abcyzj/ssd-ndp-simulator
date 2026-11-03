@@ -78,6 +78,9 @@ public:
     void fail_after_drain(uint64_t task, Code, std::string detail);
     void require_progress() const;
     std::string diagnostic() const;
+    uint64_t now_ns() const {
+        return now_();
+    }
     size_t live_results() const;
     size_t private_slots() const;
     State state(uint64_t task) const;

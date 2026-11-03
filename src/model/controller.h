@@ -130,6 +130,16 @@ public:
     runtime::Handle open(uint64_t query, uint64_t version, const std::vector<float>&);
     runtime::Handle score(uint64_t query, const std::vector<content::Selection>&);
     runtime::Handle close(uint64_t query);
+    // Trusted composite failure boundary: wait for every issued chunk/reply.
+    // Does not close/upload the session or add target service. Always asynchronous.
+    void when_drained(uint64_t query, std::function<void()>);
+    bool has_session(uint64_t query) const {
+        return sessions_.count(query);
+    }
+    uint64_t pending_chunks(uint64_t query) const {
+        auto it = sessions_.find(query);
+        return it == sessions_.end() ? 0 : it->second->outstanding;
+    }
     const std::vector<StorageRecord>& storage() const {
         return storage_;
     }
@@ -187,6 +197,7 @@ private:
         runtime::Handle opened;
         std::vector<runtime::Handle> batches;
         bool closing = false;
+        std::vector<std::function<void()>> drain_waiters;
     };
     struct Chunk {
         uint64_t query, task = 0, chunk, credit = 0, input, output, scratch;
@@ -217,6 +228,7 @@ private:
     void admit();
     void fail_open(const std::shared_ptr<Session>&, uint64_t, const std::exception&);
     void close_ready(const std::shared_ptr<Session>&);
+    void notify_drained(const std::shared_ptr<Session>&);
     void send(transport::Message, std::function<void(transport::Message)>);
     transport::Message message(transport::Kind, const Session&, uint64_t task) const;
     void stage(content::Context, const std::string&, uint64_t, std::function<void()>);

@@ -8,8 +8,8 @@
       "operator_version": 1,
       "kind": "EXTERNAL",
       "schema_supported": true,
-      "execution_supported": false,
-      "mapping_status": "not_implemented",
+      "execution_supported": true,
+      "mapping_status": "existing_services_v1",
       "placements": [
         "host"
       ],
@@ -52,8 +52,8 @@
       "operator_version": 1,
       "kind": "MEMORY",
       "schema_supported": true,
-      "execution_supported": false,
-      "mapping_status": "not_implemented",
+      "execution_supported": true,
+      "mapping_status": "existing_services_v1",
       "placements": [
         "host"
       ],
@@ -90,8 +90,8 @@
       "operator_version": 1,
       "kind": "COMPUTE",
       "schema_supported": true,
-      "execution_supported": false,
-      "mapping_status": "not_implemented",
+      "execution_supported": true,
+      "mapping_status": "existing_services_v1",
       "placements": [
         "host",
         "controller"
@@ -136,8 +136,8 @@
       "operator_version": 1,
       "kind": "CONTROL",
       "schema_supported": true,
-      "execution_supported": false,
-      "mapping_status": "not_implemented",
+      "execution_supported": true,
+      "mapping_status": "existing_services_v1",
       "placements": [
         "host"
       ],
@@ -181,8 +181,8 @@
       "operator_version": 1,
       "kind": "CONTROL",
       "schema_supported": true,
-      "execution_supported": false,
-      "mapping_status": "not_implemented",
+      "execution_supported": true,
+      "mapping_status": "existing_services_v1",
       "placements": [
         "host"
       ],
@@ -226,8 +226,8 @@
       "operator_version": 1,
       "kind": "CONTROL",
       "schema_supported": true,
-      "execution_supported": false,
-      "mapping_status": "not_implemented",
+      "execution_supported": true,
+      "mapping_status": "existing_services_v1",
       "placements": [
         "host"
       ],

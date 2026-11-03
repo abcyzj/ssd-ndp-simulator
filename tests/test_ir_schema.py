@@ -43,8 +43,20 @@ class Contract(unittest.TestCase):
         h=hashlib.sha256(json.dumps(cat,sort_keys=True,separators=(',',':')).encode()).hexdigest()
         self.assertEqual(subprocess.check_output([str(VALIDATOR),'--catalog-hash'],text=True).strip(),h)
         self.assertEqual(self.doc['manifest']['operator_set']['catalog_sha256'],h)
-        self.assertEqual([op['operator'] for op in cat['operators'] if op['execution_supported']], ['JOIN'])
+        self.assertEqual(len([op for op in cat['operators'] if op['execution_supported']]), 7)
         self.assertEqual(next(op for op in cat['operators'] if op['operator']=='JOIN')['mapping_status'], 'runtime_async')
+
+    def test_empty_initial_merge(self):
+        d=copy.deepcopy(self.doc)
+        d['operations'][2]['inputs'][0]['value']={
+            'ref':'literal','type':{'name':'scores_id_f64','shape':[{'extent':0,'dynamic':False}]},'value':[]}
+        d['operations']=d['operations'][:3]
+        d['operations'][2]['outputs'][0]['type']['shape'][0]['extent']=1
+        self.assertEqual(self.run_doc(d).returncode,0)
+        bad=copy.deepcopy(d);bad['operations'][2]['inputs'][0]['value']['value']=[0]
+        self.reject(bad)
+        bad=copy.deepcopy(d);bad['operations'][2]['inputs'][1]['value']=bad['operations'][2]['inputs'][0]['value']
+        self.reject(bad)
 
     def test_controller_and_optional_metadata(self):
         d=copy.deepcopy(self.doc)
