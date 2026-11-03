@@ -2,7 +2,7 @@
 
 版本：0.3  
 日期：2026-11-02（Asia/Shanghai）  
-状态：需求与设计基线；V03-1 的 schema/能力目录与 V03-2 的动态依赖/值生命周期、V03-3 的算子与 placement 映射已实现；V03-4 的生产动态 GraphSearch 前端及显式 engine 已实现并通过小矩阵；完整 IR 执行尚未验收。本文定义整体目标，开发期默认仍为 direct，V03-5～V03-7 未完成。
+状态：需求与设计基线；V03-1 的 schema/能力目录与 V03-2 的动态依赖/值生命周期、V03-3 的算子与 placement 映射已实现；V03-4 的生产动态 GraphSearch 前端及显式 engine 已实现并通过小矩阵；V03-5 观测与独立比较器已完成并通过statistics/detail及真实SIFT10k对照（[证据](ir-observation-v0.3.md)）；完整 IR 执行尚未验收。本文定义整体目标，开发期默认仍为 direct，V03-6～V03-7 未完成。
 
 ## 1. 产品目标
 

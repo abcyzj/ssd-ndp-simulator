@@ -1,6 +1,6 @@
 # V0.3 可执行实施清单
 
-状态：**V03-0～V03-4 已完成**（2026-11-03），包括生产动态 GraphSearch 前端与显式 direct/ir 选择；V03-5～V03-7 未开始，完整观测/比较器及 V0.3 执行验收尚未完成。实际命令、身份、预算及限制见 [V03-0 收口](direct-baseline-v0.3.md)。
+状态：**V03-0～V03-5 已完成**（2026-11-03），包括生产动态 GraphSearch、显式 direct/ir、流式观测与独立比较器；V03-6～V03-7 未开始，完整 SIFT1M 矩阵、效率门槛及 V0.3 交付验收尚未完成。实际命令、身份、预算及限制见 [V03-0 收口](direct-baseline-v0.3.md)。
 
 ## 规划时仓库复核（历史快照）
 
@@ -46,6 +46,14 @@
 - [实现、旁路审计、实际命令、失败记录与限制](ir-frontend-v0.3.md)；主证据 `results/v0.3/frontend-v034/final2/manifest.json`。首轮final因汇总器写死图文件名失败，修正为manifest路径后完整重跑通过，保留失败证据。
 - 未执行完整AC、原生oracle、完整SIFT1M 52条矩阵、Q/RSS/效率验收或正式statistics/detail对照。V03-5全链路观测和独立比较器未实现，不切换日常默认；停止于V03-4。
 
+## V03-5 本轮收口（2026-11-03）
+
+- 新增必需 observation 身份/决策摘要与七算子累计/活动/峰值统计；detail 在既有预算内流式写 operation/value摘要、Runtime阶段、实际子任务、Controller chunk与Open/Close关联。statistics无隐藏DAG历史，无新增模拟服务或费用；两个子模块未改。
+- 独立 `ndpsim-equivalence/1` 比较器逐字段核对结果、时序、Work、资源、请求/传输、credit及初态；按query/角色/有序元素或块建立语义锚点并连接IR scope，保留ID引用关系，白名单只列确切管理/身份/宿主测量字段。缺关联、错误父操作、未知字段、资源差异及跨engine缓存复用失败关闭；既有独立数值/搜索/账本核对继续执行。
+- 根配置/构建退出0，完整CTest **79/79**；显式合成8次、真实SIFT10k/Q32 8次及冻结direct两放置2次新运行通过。statistics/detail与同placement direct/ir严格等价；两engine独立账本通过；19项比较器对抗检查及2048B真实IR预算拒绝通过；全部IR记录独立JSON Schema检查通过。冻结direct结果/模拟统计相同，events/service.csv hash一致。
+- [接口、规范化白名单、命令、失败记录与限制](ir-observation-v0.3.md)；主证据 `results/v0.3/observation-v035/final2/manifest.json`，10项命令阶段均退出0，1,235项产物hash。V03-0～4依赖成功证据全部复核，代码与依赖在运行期间未变。
+- 未执行完整AC、原生oracle、ASan、完整SIFT1M 52条矩阵、Q/RSS/效率验收。普通NVMe内部transaction ID及共享NAND命令参与集合仍Unsupported；不伪造归因。默认仍direct，停止于V03-5。
+
 ## 可执行任务
 
 每项关闭时保存输入/源码/依赖身份、命令和退出码、断言及产物哈希。实际文件名可随实现调整，但不得降低验收内容。
@@ -57,7 +65,7 @@
 | **V03-2 动态依赖与值生命周期（已完成）** | FR-03-04/06/07、IR §5/7/8、AC-03-04/06/07；依赖：V03-1 | 实现增量 DAG 接纳和 ADDRESS/DATA/CONTROL/ORDER 校验、真实可见值绑定、状态版本/所有权、异步 JOIN、失败传播及活动对象回收；复用 Runtime/EventBridge | 非法前向/自依赖/错误作用域拒绝；零时长异步；延迟扰动不提前恢复；失败无成功后继；完成后 waiter/value/op 映射可回收；同刻资源仲裁不变 | [本轮收口](ir-lifecycle-v0.3.md)；`results/v0.3/dynamic-v032/final3/`：完整 CTest 74/74、定向 ASan 3/3、原生及 SST 四组因果日志、真实值动态后继、状态所有权/失败排空/非法引用、2,001 JOIN 峰值与终态回收、同刻 FIFO 对照；未实现 V03-3 资源映射 |
 | **V03-3 算子与 placement 映射（已完成）** | FR-03-02/03/05、IR §6–7、AC-03-02/05/06；依赖：V03-1、V03-2 | 实现 QUERY_READY、READ_ADJACENCY、SCORE_L2、MERGE_CANDIDATES、SELECT_FRONTIER、DEDUP_NEIGHBORS、JOIN；映射至既有读取、HostCpu、Controller。SCORE_L2 保持 host 原逐块提交/评分及 controller 原 Open/容量 chunk/返回/Close 语义 | 两 placement 的提交与汇合顺序、工作量/服务次数、消息和账本核对；跨页/多 chunk/单块容量/失败用例通过；向量完整 D2H 为零 | [本轮收口](ir-mapping-v0.3.md)；`results/v0.3/mapping-v033/final4/`：七算子真实服务映射、20次真实 MQSim 探针、四组合逐批/时序/Work/全链路字节/credit/资源账本一致、跨页/多chunk/单块容量/同刻竞争/失败及Open排空；根构建和75/75 CTest、定向ASan4/4、冻结smoke两放置新跑结果/事件/服务一致；未启动生产前端迁移 |
 | **V03-4 动态 GraphSearch 前端（已完成）** | FR-03-02/03/09、IR §9、AC-03-02/03/04；依赖：V03-3 | 将现有搜索流程改为只提交 IR 并消费可见输出；保留 scored/expanded 更新时点、搜索批次、计数、同分和终止行为；支持 direct/ir 显式选择，保留可运行 direct 对照 | 源码旁路审计；合成和真实 SIFT 10k 小矩阵 direct/ir × host/controller 逐批一致；固定图下扰动向量改变真实后继读取且两 engine 各自一致；输入/计算/返回延迟因果检查 | [V03-4 收口](ir-frontend-v0.3.md)；`results/v0.3/frontend-v034/final2/`：78/78 CTest、16次合成/12次真实SIFT10k生产运行、四组合逐批/时序/账本一致、固定图向量扰动/三阶段延迟、20次后端探针、冻结smoke两放置新跑及定向ASan2/2；实际engine/contract身份、源码旁路审计与失败记录 |
-| **V03-5 观测与独立比较器** | FR-03-08/09/11、PRD §7、IR §10、AC-03-08；依赖：V03-0、V03-3、V03-4 | 输出 engine/schema/operator/mapping 身份、算子计数、活动/峰值/决策摘要；detail 日志流式关联 IR op/value 与 runtime task/request/transaction/message；实现版本化语义比较键和窄白名单 | statistics/detail 模拟结果一致；比较器逐字段验证第7节；仅允许文档列出的身份、编号、诊断、墙钟/RSS、文件大小差异；跨 engine 结果不得复用 | manifest、日志 schema、关联样例、比较器测试及差异报告 |
+| **V03-5 观测与独立比较器（已完成）** | FR-03-08/09/11、PRD §7、IR §10、AC-03-08；依赖：V03-0、V03-3、V03-4 | 输出 engine/schema/operator/mapping 身份、算子计数、活动/峰值/决策摘要；detail 日志流式关联 IR op/value 与 runtime task/request/transaction/message；实现版本化语义比较键和窄白名单 | statistics/detail 模拟结果一致；比较器逐字段验证第7节；仅允许文档列出的身份、编号、诊断、墙钟/RSS、文件大小差异；跨 engine 结果不得复用 | [V03-5 收口](ir-observation-v0.3.md)；`results/v0.3/observation-v035/final2/`：身份/摘要/七算子统计、诊断schema及实际关联样本、严格版本化比较器、79/79 CTest、19项对抗检查/预算拒绝、合成8次及真实SIFT10k8次statistics/detail/四组合对照与独立账本、冻结direct两放置新跑；不含完整矩阵或效率验收 |
 | **V03-6 完整矩阵与效率门槛** | FR-03-10/11、PRD §8–9、AC-03-09/10；依赖：V03-4、V03-5；进入本项前确认固定数据与磁盘预算可用 | 运行完整 base 的两个 engine 各 26 条；按冻结方案做评价集交替重复、Q 梯度和 detail 样本；不重抽查询、不重建图掩盖差异；仅身份严格匹配时复用本轮产物 | 52 条矩阵齐全；同 placement direct/ir 模拟等价、质量和预算门槛通过；Q 梯度证明非必要活动历史回收；超限明确失败并调查，不缩小矩阵 | 失败关闭的矩阵 manifest、每点命令/退出码/产物 hash、等价/资源/效率报告 |
 | **V03-7 继承回归与交付切换** | FR-03-10/12、AC-03-10/11/12；依赖：V03-6 | 增加 V0.3 总验收入口与适用 AC 映射；旧配置省略 engine 可运行并记录有效模式，显式 direct 可用；全部门槛通过后将日常入口默认改为 ir；更新限制、接口、测试和交付文档 | 根 CMake 构建、全部有效 CTest、完整 V0.1 AC、相关 V0.2 检查、原生 oracle、IR 生命周期 ASan；不接受 quick/缺项/失败/身份不符复用 | 总验收 manifest/AC 矩阵、继承与新增测试日志、交付说明、限制和有效 engine 记录 |
 
@@ -65,7 +73,7 @@
 
 ### 开始核心实现前的阻塞项
 
-1. **V03-0 direct 参考证据门槛已关闭。**本轮冻结源码/输入/配置和新运行结果，详细样本覆盖主要阶段与账本，独立核对通过。后续共享重构须分别对照冻结参考，不能仅靠重构后的direct/ir互比；证据见[收口](direct-baseline-v0.3.md)。V03-1 本轮已复查冻结manifest和全部产物hash；V03-1轮止于schema与能力目录；V03-2已完成管理层实现；V03-3已完成真实算子映射；本轮V03-4复查全部依赖证据并完成生产动态前端，止于V03-4。
+1. **V03-0 direct 参考证据门槛已关闭。**本轮冻结源码/输入/配置和新运行结果，详细样本覆盖主要阶段与账本，独立核对通过。后续共享重构须分别对照冻结参考，不能仅靠重构后的direct/ir互比；证据见[收口](direct-baseline-v0.3.md)。V03-1 本轮已复查冻结manifest和全部产物hash；V03-1轮止于schema与能力目录；V03-2已完成管理层实现；V03-3已完成真实算子映射；V03-4已完成生产动态前端；本轮V03-5复查全部依赖证据并完成观测与独立比较器，止于V03-5。
 2. **V03-6 资源门槛须届时重查。**V03-0已重新核实完整输入、16GiB RAM和当前卷余量，并在完整base参考运行前冻结预算；这不保证未来52条矩阵开跑时资源仍可用。进入V03-6前复核相同身份、预算和空间，缺数据按既有流程恢复，不换数据或缩小矩阵。
 
 当前没有发现需要重新决定 V0.3 产品范围的问题。除届时资源复核门槛外，下列是可依规范采用的实现默认，不阻塞设计或编码：

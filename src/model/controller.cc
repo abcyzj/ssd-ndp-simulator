@@ -514,8 +514,11 @@ runtime::Handle Controller::score(uint64_t q, const std::vector<content::Selecti
         return bytes;
     };
     auto h = runtime_.submit(std::move(op));
-    for (auto c : chunks)
+    for (auto c : chunks) {
+        if (bind_chunk)
+            bind_chunk(h.id(), c.id());
         runtime_.release(c);
+    }
     s->batches.push_back(runtime_.retain(h));
     return h;
 }

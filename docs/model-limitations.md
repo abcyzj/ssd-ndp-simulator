@@ -30,3 +30,7 @@ T8/M4交付轮完整回归、严格矩阵复用和两放置新运行复现已通
 ## V03-4 增量边界
 
 现有 GraphSearch 已支持显式 `execution_engine=direct|ir`，省略仍 direct；本轮仅完成动态前端与小规模四组合验收。完整IR观测/独立比较器、statistics/detail对照、完整SIFT1M矩阵及Q/RSS/效率验收仍待V03-5～V03-7；不据小矩阵宣称完整V0.3交付通过。动态值/状态当前使用进程内JSON与不可变视图，不支持文件回放或任意失败恢复。实际证据及限制见[V03-4](ir-frontend-v0.3.md)。
+
+## V03-5 增量边界
+
+[V03-5](ir-observation-v0.3.md)已完成受预算限制的流式IR观测、操作/值/任务关联、独立严格比较器及statistics/detail小矩阵验证。上节“待V03-5”是V03-4收口时的历史状态。完整SIFT1M矩阵、Q/RSS/效率及完整交付仍未验收。共享NAND命令参与集合和普通NVMe内部transaction ID继续Unsupported；本地request的transaction快照可关联。离线比较器使用SQLite分组，但仍加载统计JSON及ID关系，未证明全规模RSS预算。默认仍direct，硬件仍configured_unvalidated。

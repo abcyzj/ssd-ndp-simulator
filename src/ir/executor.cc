@@ -41,6 +41,8 @@ Executor::Executor(Document contract, runtime::Runtime& runtime, std::function<u
     if (!contract_.operations.empty())
         throw Error("InvalidArgument", "/operations", "executor requires an empty run contract");
     validate(contract_);
+    for (unsigned i = 0; i < capabilities().at("operators").size(); ++i)
+        operator_counts.emplace(static_cast<Operator>(i), Counts{});
 }
 [[noreturn]] void Executor::error(const Operation& op,
                                   std::string code,
@@ -74,6 +76,8 @@ Lease Executor::retain(Lease h) {
 void Executor::collect(uint64_t id) {
     auto it = records_.find(id);
     if (it != records_.end() && !it->second.owners && !it->second.pins) {
+        if (observe)
+            observe(it->second.op, "reclaimed", it->second.completion.id(), {});
         runtime_.release(it->second.completion);
         counts_.active_values -= it->second.op.outputs.size();
         records_.erase(it);
@@ -403,6 +407,9 @@ Lease Executor::submit(Operation op,
         ++records_.at(producer).pins;
     last_id_ = id;
     ++counts_.submitted;
+    ++operator_counts[records_.at(id).op.op].submitted;
+    if (observe)
+        observe(records_.at(id).op, "submitted", records_.at(id).completion.id(), {});
     counts_.active_ops = records_.size();
     counts_.peak_ops = std::max(counts_.peak_ops, counts_.active_ops);
     counts_.active_values += records_.at(id).op.outputs.size();
@@ -411,9 +418,17 @@ Lease Executor::submit(Operation op,
         auto& record = records_.at(id);
         if (outcome.failure) {
             ++counts_.failed;
+            ++operator_counts[record.op.op].failed;
             record.outputs.clear();
-        } else
+        } else {
             ++counts_.completed;
+            ++operator_counts[record.op.op].completed;
+        }
+        if (observe)
+            observe(record.op,
+                    outcome.failure ? "failed" : "visible",
+                    record.completion.id(),
+                    record.outputs);
         for (auto producer : record.producers) {
             --records_.at(producer).pins;
             collect(producer);

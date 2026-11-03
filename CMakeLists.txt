@@ -428,3 +428,9 @@ if(BUILD_TESTING)
     add_test(NAME ir_graph_frontend_causality COMMAND ir_frontend_causal_probe
         "${PROJECT_SOURCE_DIR}/examples/ir/graph-contract.json")
 endif()
+
+if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
+    add_test(NAME ir_observation_comparator COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_ir_observation.py" --build "${PROJECT_BINARY_DIR}")
+    set_tests_properties(ir_observation_comparator PROPERTIES TIMEOUT 240)
+endif()

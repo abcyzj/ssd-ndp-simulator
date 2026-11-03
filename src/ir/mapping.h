@@ -26,6 +26,7 @@ public:
             model::Controller* = nullptr,
             Bind = {});
     // Called at original query admission; controller upload occurs once here.
+    std::function<void(uint64_t, const char*, uint64_t)> session_bind;
     void admit(uint64_t query, std::vector<float>, std::shared_ptr<const StateSnapshot>);
     Lease submit(Operation, std::vector<Lease>, States = {});
     // Drains pending mapping operations, then the original controller Close/Ack.

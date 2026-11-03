@@ -63,6 +63,9 @@ public:
     void release(Lease);
     Value get(Lease, const std::string& port) const; // HostMemory only, after Publish
     void when_all(std::vector<Lease>, uint64_t continuation, std::function<void(runtime::Outcome)>);
+    // Passive streaming observer; never owns operations or values.
+    std::function<void(const Operation&, const char*, uint64_t, const Values&)> observe;
+    std::map<Operator, Counts> operator_counts;
     Counts counts() const {
         return counts_;
     }

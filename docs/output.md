@@ -26,3 +26,7 @@ channel/die 观测复用 M1.4 的被动 MQSim hook，测量窗口裁剪后的半
 
 
 T6新增`resources.initial_state`/同名CSV，记录完整预装载实际完成sectors、origin和后端排空；`sst-measurement.json.python_parent_peak_rss_bytes`为Python父进程RUSAGE_SELF生命周期高水位，单独约束后处理预算，不是分阶段RSS。扫描/质量匹配/复用产物见 [SIFT1M接口](sift1m.md)。
+
+## V03-5 观测增量
+
+新增必需 `observation.json` 与 IR 专属管理统计 `ir_summary`；detail 在 `events.jsonl` 流式关联操作/value、Runtime父子任务、Controller chunk/Open/Close、实际request/transaction/message，继承预算与Unsupported边界。`tools/compare_engines.py` 使用严格版本化白名单和保留引用关系的ID重命名，报告独立保存，不改写运行hash。具体schema、字段、比较范围、失败关闭与实际验证见[V03-5](ir-observation-v0.3.md)。

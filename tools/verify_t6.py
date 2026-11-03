@@ -223,7 +223,14 @@ def verify_cached_run(target, config, prepared, group, build):
     All simulator/model sources, inputs and effective parameters must still match.
     """
     m=load(target/'manifest.json')
-    if load(target/'config.json') != config: raise ValueError('cached effective config mismatch')
+    cached_config=load(target/'config.json')
+    expected_engine=config.get('execution_engine','direct')
+    if expected_engine not in ('direct','ir') or m.get('execution_engine','direct') != expected_engine or cached_config.get('execution_engine','direct') != expected_engine:
+        raise ValueError('cached execution engine mismatch; cross-engine reuse forbidden')
+    if dict(cached_config,execution_engine=expected_engine) != dict(config,execution_engine=expected_engine):
+        raise ValueError('cached effective config mismatch')
+    if expected_engine=='ir' and (not m.get('ir_contract_sha256') or sha(target/'ir-manifest.json')!=m['ir_contract_sha256']):
+        raise ValueError('cached IR contract mismatch')
     if m['element_sha256'] != sha(build/'libndpsim.so'): raise ValueError('cached SST element mismatch')
     identity=m['input_identity']
     if (identity['dataset'],identity['index'],identity['truth']) != (

@@ -245,6 +245,8 @@ QUERY_READY(query, initial_state)
 
 推荐输出`ir-manifest.json`、可选`ir-operations.jsonl`及`ir-bindings.jsonl`；名称在实现阶段冻结。进程内提交不要求先序列化再解析。操作流记录结构、端口、依赖、scope和状态转换；大内容只记录身份/shape/hash或受限样本，不复制base与全部中间值。
 
+V03-5实际将操作/绑定流合并在可选`events.jsonl`中，另写必需`observation.json`和IR管理统计，冻结schema、关联及严格比较器见[观测接口](ir-observation-v0.3.md)。
+
 这些文件用于校验和追踪，首版不保证可回放；缺少完整输入内容或动态前端状态时不能标为“可独立执行IR包”。既有底层事件日志继续使用，bindings连接IR父操作与服务/请求/消息。导出有预算、流式写入和失败诊断，关闭后不保留隐性全历史副本。
 
 比较键推荐`原query ID + iteration + semantic_batch + operator角色 + 块/元素序号`，再关联到资源事件；不要直接比较不同engine的数值op/task ID。规范化规则必须版本化并逐字段说明可排除内容；时间、字节、控制工作量、FIFO仲裁和服务阶段不能被排除。完整要求以 [PRD第7节](prd-v0.3.md#7-等价性的精确定义)为准。

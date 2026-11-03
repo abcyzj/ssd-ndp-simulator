@@ -34,23 +34,10 @@ def normalize(row):
     return row
 
 def compare(direct, ir):
-    assert json.loads((direct/'results.json').read_text())==json.loads((ir/'results.json').read_text()), 'query result/timing/digest mismatch'
-    a,b=(json.loads((p/'statistics.json').read_text()) for p in (direct,ir))
-    for s in (a,b):
-        s.pop('wall_seconds')
-        for key, rows in s['resources'].items():
-            s['resources'][key]=[normalize(r) for r in rows]
-    assert a==b, 'simulated statistics/ledger mismatch'
-    a,b=([normalize(r) for r in events(p) if r['type']!='score_visible'] for p in (direct,ir))
-    # Service completion interleaving with management callbacks may differ; compare
-    # each resource/event stream in its original order, including every time field.
-    for kind in sorted({r['type'] for r in a+b}):
-        assert [r for r in a if r['type']==kind]==[r for r in b if r['type']==kind], 'event stream mismatch: '+kind
-    manifest=json.loads((ir/'manifest.json').read_text())
-    assert manifest['execution_engine']=='ir' and manifest['ir_contract_sha256']
-    assert json.loads((ir/'ir-manifest.json').read_text())['operations']==[]
-    return dict(passed=True, decisions=sum(r['type']=='decision' for r in a),
-                queries=json.loads((direct/'results.json').read_text())['queries'].__len__())
+    from compare_engines import compare as independent
+    report = independent(direct, ir)
+    assert report['passed'], report
+    return report
 
 def run_one(config, build, output, data=None):
     argv=[sys.executable,str(ROOT/'tools/run_config.py'),'--config',str(config),'--build',str(build),'--output',str(output)]

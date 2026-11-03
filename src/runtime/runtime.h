@@ -89,6 +89,9 @@ public:
     }
 
 public:
+    History<Transition>& observations() {
+        return transitions_;
+    }
     void statistics_only() {
         transitions_.enabled = false;
     }

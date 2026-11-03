@@ -37,7 +37,7 @@ def run(config, build, output, data=None, *, paired=False):
     if type(event_log) is not bool:
         raise ValueError('event_log must be boolean')
     # Remove stale artifacts when reusing an output directory.
-    for name in ('events.jsonl', 'results.json', 'statistics.json', 'manifest.json'):
+    for name in ('events.jsonl', 'results.json', 'statistics.json', 'manifest.json', 'ir-manifest.json', 'observation.json'):
         (output/name).unlink(missing_ok=True)
     if not c['parameter_source']:
         raise ValueError('parameter_source is required')
@@ -183,6 +183,15 @@ def run(config, build, output, data=None, *, paired=False):
                       tie_boundary=identity['truth']['tie_boundary'], result_r=s['k'],
                       one_recall_at_r=sum(r['one_recall_at_r'] for r in results)/len(results),
                       recall_definition='mean |returned first k IDs intersect truth first k IDs| / k')
+    observation = dict(schema='ndpsim-observation/1', execution_engine=engine,
+        ir_version='ndpsim-ir/1' if engine == 'ir' else None,
+        operator_set=ir_contract['manifest']['operator_set'] if engine == 'ir' else None,
+        mapping=ir_contract['manifest']['mapping'] if engine == 'ir' else None,
+        diagnostics='detail' if event_log else 'statistics', comparison=dict(status='not_checked'),
+        decisions=[dict(query=r['query'], original_query_id=r.get('original_query_id', r['query']-1),
+                        digest_fnv1a64=r['decision_digest_fnv1a64']) for r in results],
+        ir=next((r for r in events if r['type']=='ir_summary'), None))
+    write_json(output/'observation.json', observation)
     export(output, results, events, wall_seconds)
     (output/'records.jsonl').unlink()
     write_json(output / 'results.json', report)
@@ -198,8 +207,8 @@ def run(config, build, output, data=None, *, paired=False):
     base = json.loads((ROOT/'deps.lock.json').read_text())['dependencies']['MQSim']['commit']
     names = subprocess.check_output(['git','-C',str(mqsim),'ls-files','--cached','--others','--exclude-standard','-z']).decode().split('\0')
     source_files = [ROOT/'CMakeLists.txt', ROOT/'deps.lock.json', *sorted((ROOT/'src').rglob('*.cc')),
-                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ir_frontend.py', ROOT/'schemas/ndpsim-ir-v1.capabilities.json', ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/sst/graph.py', ROOT/'tools/run_pair.py', ROOT/'tools/compare_placements.py', ROOT/'tools/experiment_output.py', ROOT/'tools/run_experiment.py', ROOT/'tools/simulation_input.py', ROOT/'tools/benchmark_data.py', ROOT/'tools/benchmark_artifacts.py', ROOT/'tools/device_profiles.py', ROOT/'tools/verify_m0.py', ROOT/'configs/profiles/devices.json', ROOT/'configs/native/ssdconfig.xml']
-    write_json(output / 'manifest.json', dict(execution_engine=engine, ir_contract_sha256=digest(output/'ir-manifest.json') if engine == 'ir' else None, data=str(data), dataset=m, config_sha256=digest(config),
+                    *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ir_frontend.py', ROOT/'tools/compare_engines.py', ROOT/'schemas/ndpsim-ir-diagnostics-v1.schema.json', ROOT/'schemas/ndpsim-ir-v1.capabilities.json', ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/sst/graph.py', ROOT/'tools/run_pair.py', ROOT/'tools/compare_placements.py', ROOT/'tools/experiment_output.py', ROOT/'tools/run_experiment.py', ROOT/'tools/simulation_input.py', ROOT/'tools/benchmark_data.py', ROOT/'tools/benchmark_artifacts.py', ROOT/'tools/device_profiles.py', ROOT/'tools/verify_m0.py', ROOT/'configs/profiles/devices.json', ROOT/'configs/native/ssdconfig.xml']
+    write_json(output / 'manifest.json', dict(observation_schema='ndpsim-observation/1', execution_engine=engine, ir_contract_sha256=digest(output/'ir-manifest.json') if engine == 'ir' else None, data=str(data), dataset=m, config_sha256=digest(config),
         input_identity=identity, device_preflight=resource_check, content_backend=backend, truth_sha256=digest(Path(identity['directories']['truth'])/'truth.json' if identity else data/'truth.json'), code_commit=git('rev-parse', 'HEAD'),
         source_sha256={str(p.relative_to(ROOT)):digest(p) for p in source_files},
         element_sha256=digest(build/'libndpsim.so'),
@@ -209,7 +218,7 @@ def run(config, build, output, data=None, *, paired=False):
         code_diff_sha256=hashlib.sha256(subprocess.check_output(['git', 'diff', 'HEAD'], cwd=ROOT)).hexdigest(),
         mqsim_commit=git('-C', 'third_party/MQSim', 'rev-parse', 'HEAD'),
         sst_commit=git('-C', 'third_party/sst-core', 'rev-parse', 'HEAD'), parameter_source=c['parameter_source'],
-        artifacts_sha256={name:digest(output/name) for name in ('config.json','layout.json','preflight.json','ssdconfig.xml','results.json','statistics.json','capabilities.json','sst-params.json', 'sst-measurement.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []), *(['ir-manifest.json'] if engine == 'ir' else []))},
+        artifacts_sha256={name:digest(output/name) for name in ('observation.json','config.json','layout.json','preflight.json','ssdconfig.xml','results.json','statistics.json','capabilities.json','sst-params.json', 'sst-measurement.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []), *(['ir-manifest.json'] if engine == 'ir' else []))},
         assumptions=['single SSD/'+c['device_profile']+'/SIMPLE/TURNED_OFF; CMT retained',
                      'deterministic page preload drained before measurement; no cross-query object cache',
                      'all queries offered at measurement origin, FIFO bounded admission; slots retire after CloseAck; host control; distance placement='+c['placement'],

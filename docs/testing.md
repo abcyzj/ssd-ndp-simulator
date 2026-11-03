@@ -70,7 +70,7 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 
 完整 V0.1 AC 仍包含独立锁定原生 oracle 和 ASan；慢功能夹具为 N256/d128/R8/Q8、k10/L16/E16，要求两放置墙钟慢化且全部事件/结果/模拟统计一致。V0.2 AC-02-10=N/A（Deep10M取消），不能混同仍须执行的 V0.1 AC-10。
 
-历史阶段命令、成功与失败证据统一见[V0.2 归档](archive/v0.2/README.md)及[交付记录](releases/v0.2.md)。V0.3 新增 direct/ir 等价、动态依赖、资源回收与52条矩阵等要求见[PRD](prd-v0.3.md)，这些新检查尚未实现或执行。
+历史阶段命令、成功与失败证据统一见[V0.2 归档](archive/v0.2/README.md)及[交付记录](releases/v0.2.md)。V0.3 新增 direct/ir 等价、动态依赖、资源回收与52条矩阵等要求见[PRD](prd-v0.3.md)，其中V03-0～5的实现及实际证据见下节；完整SIFT1M矩阵、效率门槛与交付切换尚未执行。
 
 
 ## V03-0 冻结检查
@@ -99,3 +99,9 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 `ir_graph_frontend` 复用真实 MQSim 探针，但常规/小容量/同刻竞争改用生产 IrGraphSearch；旧边界驱动仍单独保留。`sst_ir_graph_frontend` 运行16次合成生产SST四组合，覆盖真实向量扰动、并发2/B2/chunk2、B>E，以及非法engine/错配contract拒绝。`ir_graph_frontend_causality` 使用受信合成服务门控，验证三阶段100ns延迟、提前get拒绝、独立查询及回收；不冒充真实NAND成本。
 
 锁定Python运行 `tools/verify_ir_frontend.py --output <新目录>`，保存根构建、完整CTest、真实SIFT10k（Q32，原始/固定图向量扰动/B2并发）12次新运行、冻结direct两放置重跑、定向ASan及源码/依赖/hash。V03-4本轮78/78 CTest、ASan2/2通过，详见[收口](ir-frontend-v0.3.md)。测试内的局部比较函数不替代V03-5正式独立比较器；没有完整AC、原生oracle、完整SIFT1M矩阵或效率验收，不切换默认engine。
+
+## V03-5 观测与独立比较器
+
+根CTest新增 `ir_observation_comparator`（跨页d260、B2/chunk2、并发2的两engine/两placement/statistics-detail八次真实SST运行、19项比较器对抗检查及IR日志预算拒绝）。生产前端回归也使用正式比较器；保留既有独立搜索/数值/账本检查。Python schema回归使用本机已有jsonschema 4.26.0及referencing。
+
+锁定Python运行 `tools/verify_ir_observation.py --output <新目录>`，核对V03-0～4依赖hash、根构建/全部CTest、新运行合成及真实SIFT10k八组合、独立账本、冻结direct两放置与源码/依赖稳定性。最终79/79 CTest、各项对照与对抗检查通过；见[V03-5命令、证据、开发失败与限制](ir-observation-v0.3.md)。这不运行V03-6或V03-7，不接受完整矩阵、效率或交付。

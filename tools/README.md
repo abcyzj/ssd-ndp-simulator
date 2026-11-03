@@ -60,3 +60,8 @@ build/delivery/bench_host_cpu
 ## V03-1 schema 生成
 
 `generate_ir_schema.py` 从同一声明生成 `schemas/ndpsim-ir-v1.schema.json` 与能力目录；`--check` 只读核对已提交生成物。校验入口为根构建的 `ir_validate`，接口、合法样例及限制见 [V03-1](../docs/ir-schema-v0.3.md)。V03-3 已将七算子声明为有执行映射；V03-4 已接入生产前端并将顶层 execution_supported 更新为 true，完整版本验收仍待后续，见 [V03-4](../docs/ir-frontend-v0.3.md)。
+
+### V03-5
+
+- `compare_engines.py <left-run> <right-run> --output <report.json>`：独立严格同placement direct/ir或同engine statistics/detail比较；输出 `ndpsim-equivalence/1`、实际比较范围与差异定位，失败退出非0，不改写运行产物。
+- `verify_ir_observation.py --output <新目录>`：锁定Python执行V03-5依赖/构建/79项CTest、合成及真实SIFT10k对照、独立账本与冻结direct核查，失败关闭；不启动完整矩阵或交付切换。字段、白名单、schema和实际证据见[接口](../docs/ir-observation-v0.3.md)。

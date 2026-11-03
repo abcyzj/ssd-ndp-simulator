@@ -91,6 +91,8 @@ void Mapping::admit(uint64_t query,
     (void)operators::fp32(vector); // finite input before any upload
     if (controller_) {
         auto opened = controller_->open(query, object->content_version, vector);
+        if (session_bind)
+            session_bind(query, "open", opened.id());
         runtime_.release(opened); // Controller owns the session's open dependency.
     }
     queries_.emplace(query, Query{std::move(vector), std::move(state), false, false, {}, {}});
@@ -426,6 +428,8 @@ runtime::Handle Mapping::close(uint64_t q) {
                 return;
             }
             auto closed = controller_->close(q);
+            if (session_bind)
+                session_bind(q, "close", closed.id());
             runtime_.when_all({closed}, q, [this, q, parent, closed](auto outcome) {
                 runtime_.release(closed);
                 queries_.erase(q);

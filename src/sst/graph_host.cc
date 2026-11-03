@@ -308,6 +308,43 @@ public:
         }
         if (ir_mode_) {
             executor_ = std::make_unique<ir::Executor>(ir_contract_, *rt_, now);
+            if (log_.is_open()) {
+                executor_->observe = [this](const ir::Operation& op,
+                                            const char* phase,
+                                            uint64_t task,
+                                            const ir::Values& values) {
+                    if (controller_ && op.op == ir::Operator::ScoreL2 &&
+                        std::string(phase) == "visible")
+                        out_ << ir::Json({{"type", "score_visible"},
+                                          {"query", op.scope.query},
+                                          {"time_ns", getCurrentSimTimeNano()},
+                                          {"scores", values.at("scores").data}})
+                                    .dump()
+                             << '\n';
+                    ir::Json summaries = ir::Json::array();
+                    for (const auto& [port, value] : values) {
+                        auto text = value.state ? value.state->data().dump() : value.data.dump();
+                        uint64_t hash = 14695981039346656037ULL;
+                        for (unsigned char b : text) {
+                            hash ^= b;
+                            hash *= 1099511628211ULL;
+                        }
+                        summaries.push_back(
+                            {{"port", port}, {"serialized_bytes", text.size()}, {"fnv1a64", hash}});
+                    }
+                    ir::Document d = ir_contract_;
+                    d.operations = {op};
+                    out_ << ir::Json({{"type", "ir_operation"},
+                                      {"schema", "ndpsim-ir-diagnostics/1"},
+                                      {"phase", phase},
+                                      {"time_ns", getCurrentSimTimeNano()},
+                                      {"task", task},
+                                      {"values", summaries},
+                                      {"operation", ir::encode(d).at("operations").at(0)}})
+                                .dump()
+                         << '\n';
+                };
+            }
             mapping_ = std::make_unique<ir::Mapping>(
                 ir_contract_,
                 *executor_,
@@ -320,8 +357,40 @@ public:
                 },
                 std::vector<ir::Mapping::ObjectBinding>{{"base", 1, 1, content::Kind::Vector},
                                                         {"graph", 1, 1, content::Kind::Adjacency}},
-                controller_.get());
+                controller_.get(),
+                log_.is_open() ? ir::Mapping::Bind([this](auto op, auto task) {
+                    out_ << ir::Json({{"type", "ir_binding"}, {"op", op}, {"task", task}}).dump()
+                         << '\n';
+                })
+                               : ir::Mapping::Bind{});
+            if (log_.is_open())
+                mapping_->session_bind = [this](auto q, const char* role, auto task) {
+                    out_ << ir::Json({{"type", "ir_session"},
+                                      {"query", q},
+                                      {"role", role},
+                                      {"task", task}})
+                                .dump()
+                         << '\n';
+                };
+            if (controller_ && log_.is_open())
+                controller_->bind_chunk = [this](auto parent, auto child) {
+                    out_ << ir::Json({{"type", "ir_task_edge"},
+                                      {"parent_task", parent},
+                                      {"task", child}})
+                                .dump()
+                         << '\n';
+                };
         }
+        if (ir_mode_ && log_.is_open())
+            rt_->observations().sink = [this](const auto& t) {
+                out_ << ir::Json({{"type", "ir_runtime"},
+                                  {"query", t.query},
+                                  {"task", t.task},
+                                  {"time_ns", t.time_ns},
+                                  {"state", static_cast<unsigned>(t.state)}})
+                            .dump()
+                     << '\n';
+            };
         rt_->statistics_only();
         handles_->statistics_only();
         cpu_->observations().sink = [this](const auto& s) {
@@ -386,6 +455,30 @@ public:
         if (executor_ && (executor_->counts().active_ops || executor_->counts().active_values ||
                           mapping_->sessions() || !ir_sessions_.empty()))
             throw std::logic_error("IR graph run leaked active operations/values/sessions");
+        if (executor_) {
+            auto c = executor_->counts();
+            ir::Json counts = ir::Json::array();
+            for (const auto& [op, n] : executor_->operator_counts)
+                counts.push_back({{"operator",
+                                   ir::capabilities()
+                                       .at("operators")
+                                       .at(static_cast<unsigned>(op))
+                                       .at("operator")},
+                                  {"submitted", n.submitted},
+                                  {"completed", n.completed},
+                                  {"failed", n.failed}});
+            records_ << ir::Json({{"type", "ir_summary"},
+                                  {"submitted", c.submitted},
+                                  {"completed", c.completed},
+                                  {"failed", c.failed},
+                                  {"active_ops", c.active_ops},
+                                  {"peak_ops", c.peak_ops},
+                                  {"active_values", c.active_values},
+                                  {"peak_values", c.peak_values},
+                                  {"operators", counts}})
+                            .dump()
+                     << '\n';
+        }
         // Mandatory records are independent of the optional detailed event stream.
         out_.rdbuf(records_.rdbuf());
         observation_->emit = [this](bool stat, const std::string& value) {
