@@ -71,7 +71,7 @@
       "chunk": 2
     },
     "operator_set": {
-      "catalog_sha256": "a8cd3660578d61965a6e2a52e5b07c034830418faf6df79c59f5531ee4fb681d",
+      "catalog_sha256": "d0764e6565104a643a7ad591883a101c99cbb91803fc650ec96ab432300aad1e",
       "operators": [
         {
           "operator": "QUERY_READY",

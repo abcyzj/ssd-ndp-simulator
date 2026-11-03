@@ -271,8 +271,8 @@
       "operator_version": 1,
       "kind": "SYNC",
       "schema_supported": true,
-      "execution_supported": false,
-      "mapping_status": "not_implemented",
+      "execution_supported": true,
+      "mapping_status": "runtime_async",
       "placements": [
         "host"
       ],

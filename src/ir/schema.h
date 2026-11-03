@@ -114,6 +114,7 @@ struct Document {
 struct Error : std::runtime_error {
     std::string code, path;
     uint64_t query, op, producer;
+    std::optional<uint64_t> time_ns;
     Error(std::string code,
           std::string path,
           std::string detail,
@@ -126,7 +127,9 @@ struct Error : std::runtime_error {
 // visibility, ownership, or dependency admission state is created here (V03-2).
 Document parse(const Json&);
 Json encode(const Document&);
-void validate(const Document&);          // same checks for programmatically constructed values
+void validate(const Document&); // same checks for programmatically constructed values
+// context contains only trusted, already admitted active producers.
+void validate_submission(const Document& context, const Operation&);
 Json read_json(const std::string& path); // also rejects duplicate JSON object keys
 const Json& schema();
 const Json& capabilities();

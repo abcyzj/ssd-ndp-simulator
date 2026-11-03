@@ -43,7 +43,8 @@ class Contract(unittest.TestCase):
         h=hashlib.sha256(json.dumps(cat,sort_keys=True,separators=(',',':')).encode()).hexdigest()
         self.assertEqual(subprocess.check_output([str(VALIDATOR),'--catalog-hash'],text=True).strip(),h)
         self.assertEqual(self.doc['manifest']['operator_set']['catalog_sha256'],h)
-        self.assertTrue(all(not op['execution_supported'] for op in cat['operators']))
+        self.assertEqual([op['operator'] for op in cat['operators'] if op['execution_supported']], ['JOIN'])
+        self.assertEqual(next(op for op in cat['operators'] if op['operator']=='JOIN')['mapping_status'], 'runtime_async')
 
     def test_controller_and_optional_metadata(self):
         d=copy.deepcopy(self.doc)

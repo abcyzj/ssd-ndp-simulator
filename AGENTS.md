@@ -3,7 +3,8 @@
 - 当前目标为 V0.3。先读 README.md、docs/prd-v0.3.md、docs/ir-v0.3.md，
   再按任务从 docs/README.md 选择现行规范、接口与测试说明；docs/releases/v0.2.md 用于核对可运行基线和验证证据，不要求通读历史。
   docs/prd-v0.1.md 保留 V0.1 需求基线；docs/archive/v0.1/ 与 docs/archive/v0.2/ 仅供按需追溯，阶段指令和状态不继续生效。
-- V0.3 已完成 direct 参考冻结及 V03-1 schema/能力目录，动态 IR 执行尚未实施或验收；后续按 docs/implementation-plan-v0.3.md 的依赖与冻结证据推进。
+- V0.3 已完成 direct 参考冻结、V03-1 schema/能力目录及 V03-2 动态依赖/值生命周期；
+  真实算子映射与 GraphSearch IR 执行尚未实施或验收；后续按 docs/implementation-plan-v0.3.md 的依赖与冻结证据推进。
   可执行任务、完成证据、阻塞项及默认决策均见该清单；每次按实际产物更新任务状态。
   V0.2 的 T0～T6、T8 已收口（T7/M3 已取消），docs/archive/v0.2/implementation-plan.md 用于追溯，不继续当作新版本任务清单。
   每次以实际产物/证据更新阶段状态，不把规划或历史通过当成本轮完成；局部门槛未满足时继续不依赖它的工作。

@@ -80,3 +80,9 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 ## V03-1 结构契约检查
 
 根 CTest 新增 `ir_schema_catalog`（9组Python检查）和 `ir_schema_memory`（C++强类型/variant及往返），当前本轮69/69通过。独立静态入口、schema生成/导出、实际证据和未执行的后续验收见 [V03-1](ir-schema-v0.3.md)。这些检查不证明IR已经执行搜索。
+
+## V03-2 动态依赖与值生命周期
+
+`ir_dynamic_lifecycle` 使用合成结构夹具及受信测试 adapter，覆盖增量接纳、非法引用、ADDRESS/DATA/CONTROL/ORDER、可见值驱动动态后继、版本化状态所有权、空/零时长 JOIN、失败排空、同刻提交顺序和 2,001 JOIN 回收。`sst_ir_base/input/compute/return` 通过真实 SST SelfLink 验证三阶段延迟与非提前可见，输出逐任务因果状态日志。JOIN 是当前唯一有内置执行实现的算子；其余测试 adapter 不替代 V03-3 的真实资源映射。
+
+根 CTest 已包含这些用例。定向 ASan 通过 `-DNDPSIM_SANITIZE=ON` 独立构建，运行 `ir_dynamic_lifecycle`、`runtime_dependencies_visibility` 和 `ir_schema_memory`；不是完整 SST/LSan 审计。实际命令、74/74 CTest、3/3 ASan、冻结输入证据重查及限制见 [V03-2 收口](ir-lifecycle-v0.3.md)。未运行的完整 AC、真实搜索矩阵和 RSS 梯度不计通过。

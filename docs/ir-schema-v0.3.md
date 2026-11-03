@@ -1,6 +1,6 @@
 # V03-1 schema 与能力目录
 
-2026-11-03（Asia/Shanghai）。V03-1 完成 `ndpsim-ir/1` 的结构契约和静态校验；尚未实现动态 IR 执行、资源映射或 GraphSearch 接入，不代表 V0.3 验收通过。依赖 V03-0 已关闭，本轮重新核对冻结 manifest SHA256 与全部冻结产物 hash；没有重新运行完整 SIFT，也没有用历史通过标记替代本轮检查。
+2026-11-03（Asia/Shanghai）。V03-1 完成 `ndpsim-ir/1` 的结构契约和静态校验；本页记录 V03-1 当轮结果；后续 [V03-2](ir-lifecycle-v0.3.md) 已实现动态依赖/值生命周期和 JOIN，资源映射或 GraphSearch 接入仍未实现，不代表 V0.3 验收通过。依赖 V03-0 已关闭，本轮重新核对冻结 manifest SHA256 与全部冻结产物 hash；没有重新运行完整 SIFT，也没有用历史通过标记替代本轮检查。
 
 ## 产物与使用
 
@@ -25,9 +25,9 @@ ctest --test-dir build/delivery --output-on-failure
 2. 核心字段严格封闭；只有 `extensions={non_semantic:true,metadata:{...}}` 允许未知元信息。未知版本、算子/版本/Kind 组合、位置、依赖及字段直接拒绝，不静默回退。保留类别不赋予 WRITE/PQ/任意分支等执行能力。
 3. `shape` 的每一维为 `{extent:uint64,dynamic:bool}`；本版标量/状态/令牌为零维，集合/向量/得分/邻接为一维，动态 extent 表示上界，实际长度仍须在后续执行阶段检查。邻接 shape 计记录数，每条记录另有 degree 和有效 IDs；逻辑范围按字段元素计，不能携带 LBA/PPA。SCORE/READ 保持地址批次 shape，控制输出声明动态长度，上界和字节算术受检查。
 4. 对象绑定 manifest 中 dataset/index 身份与 artifact shape；查询向量对象也归属 dataset 内容身份，queries artifact 另外记录查询选择及顺序。uint64 描述不解除现有 uint32 节点 ID 限制；整数不得经浮点或布尔转换。大小/索引/范围溢出、记录类型不符、错误内容版本、重复对象/op/端口/依赖均拒绝。
-5. 七个算子都标记 `schema_supported=true,execution_supported=false,mapping_status=not_implemented`。目录声明端口、允许位置、效果、工作量规则、功能/成本版本、输出及 scratch 上界。只有 SCORE_L2 声明 host/controller 两种目标映射；对前端仍只发布 HostMemory，内部 DeviceBuffer 不作为免费可读输出。控制、邻接及 JOIN 仅 host。
+5. V03-1 冻结时七个算子都标记 `schema_supported=true,execution_supported=false,mapping_status=not_implemented`；当前 V03-2 仅 JOIN 更新为 `execution_supported=true,mapping_status=runtime_async`，全局执行能力仍为 false。目录声明端口、允许位置、效果、工作量规则、功能/成本版本、输出及 scratch 上界。只有 SCORE_L2 声明 host/controller 两种目标映射；对前端仍只发布 HostMemory，内部 DeviceBuffer 不作为免费可读输出。控制、邻接及 JOIN 仅 host。
 6. 提交的 workload 只选择冻结规则；真实 counts 由后续受信 evaluate 生成，本版拒绝提交者填写 counts。literal 仅允许小标量配置和一个静态入口 ID，不接受距离、向量或完整后继 trace。现有 SCORE/READ 要求完整逻辑字段；合法局部 range 描述不意味着这些算子支持部分读取。
-7. 诊断文件静态检查已出现的 producer/端口/类型/shape/查询归属、单调 ID、ADDRESS/DATA 绑定及 access 与地址输入一致。它不创建运行期活动表、值所有权、可见性或等待状态；state_ref 的非零版本和本 query 归属仅为结构检查，版本存活/排他规则仍由 V03-2 实现。非空 state_version 仅允许 ORDER/query_state 组合，不代表已经验证运行期状态发布。
+7. 诊断文件静态检查已出现的 producer/端口/类型/shape/查询归属、单调 ID、ADDRESS/DATA 绑定及 access 与地址输入一致。它不创建运行期活动表、值所有权、可见性或等待状态；state_ref 的非零版本和本 query 归属仅为结构检查，运行期版本存活/所有权见 V03-2 接口，不属于该静态校验器职责。非空 state_version 仅允许 ORDER/query_state 组合，不代表已经验证运行期状态发布。
 
 JSON Schema 覆盖结构；跨字段身份、目录 hash、端口与 shape 关系、引用和索引范围等由 C++ 语义检查补齐。独立 JSON Schema 通过不是完整校验通过。校验器仅实现本仓生成 schema 所用关键字，不是通用 JSON Schema 服务；加载整个诊断夹具也不代表未来运行时允许常驻全 DAG。诊断预算执行和流式操作日志属于 V03-5。
 
@@ -48,4 +48,4 @@ JSON Schema 覆盖结构；跨字段身份、目录 hash、端口与 shape 关�
 
 初轮编译因 JSON 到 set 字符串转换歧义失败；初轮样例还发现了算子顺序生成与 shape 元素读取错误。已修正并重跑；早期失败日志保留在 `results/v0.3/schema-v031/`，不计通过。
 
-本轮不修改 direct 搜索、服务、SST/MQSim 时间或计费，不实现 engine 配置开关；未运行完整 V0.1 AC、原生 oracle、ASan、完整 SIFT/52条矩阵。输入文件的实际可信打开、运行期动态长度/状态版本/可见性/回收以及算子功能/服务等价性仍未证明，分别属于后续任务；hardware 参数继续为 `configured_unvalidated`。本任务结束，不启动 V03-2。
+本轮不修改 direct 搜索、服务、SST/MQSim 时间或计费，不实现 engine 配置开关；未运行完整 V0.1 AC、原生 oracle、ASan、完整 SIFT/52条矩阵。输入文件的实际可信打开、运行期动态长度/状态版本/可见性/回收以及算子功能/服务等价性仍未证明，分别属于后续任务；hardware 参数继续为 `configured_unvalidated`。以上为 V03-1 当轮的边界；V03-2 的现行实现、验证与限制见[动态生命周期收口](ir-lifecycle-v0.3.md)。

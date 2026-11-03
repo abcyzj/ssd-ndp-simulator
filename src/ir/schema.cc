@@ -19,8 +19,8 @@ Json Error::diagnostic() const {
             {"query", query},
             {"ir_op", op},
             {"producer", producer},
-            {"time_ns", nullptr},
-            {"cause", "IR schema validation"},
+            {"time_ns", time_ns ? Json(*time_ns) : Json(nullptr)},
+            {"cause", time_ns ? "IR execution" : "IR schema validation"},
             {"detail", what()}};
 }
 namespace {
@@ -249,7 +249,7 @@ Json read_json(const std::string& path) {
         fail(path, e.what());
     }
 }
-Document parse(const Json& j) {
+static Document parse_impl(const Json& j, bool submission) {
     try {
         validate(j, schema(), "");
     } catch (Error& e) {
@@ -361,6 +361,10 @@ Document parse(const Json& j) {
     }
     uint64_t last = 0;
     for (const auto& o : j["operations"]) {
+        // Prior entries are trusted, previously admitted producer descriptors.
+        // Their dependencies may already have been reclaimed.
+        if (submission && &o != &j["operations"].back())
+            continue;
         uint64_t related = 0;
         try {
             require(o["op_id"].get<uint64_t>() > last,
@@ -748,5 +752,13 @@ Document parse(const Json& j) {
         }
     }
     return doc;
+}
+Document parse(const Json& j) {
+    return parse_impl(j, false);
+}
+void validate_submission(const Document& context, const Operation& operation) {
+    auto d = context;
+    d.operations.push_back(operation);
+    (void)parse_impl(encode(d), true);
 }
 } // namespace ndpsim::ir
