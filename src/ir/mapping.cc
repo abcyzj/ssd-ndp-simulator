@@ -1,5 +1,6 @@
 #include "ir/mapping.h"
 #include "search/graph.h"
+#include "search/core.h"
 #include <algorithm>
 #include <cstring>
 #include <set>
@@ -173,69 +174,29 @@ operators::Result Mapping::control(const Operation& op, const Values& in) const 
     const auto count = contract_.manifest.artifacts.at("dataset").at("shape").at(0).get<uint64_t>();
     if (op.op == Operator::MergeCandidates) {
         auto previous = packed(in.at("previous")), batch = packed(in.at("batch"));
-        previous.insert(previous.end(), batch.begin(), batch.end());
-        return operators::candidates(previous, count);
+        return search::core::merge_candidates(std::move(previous), batch, count);
     } else if (op.op == Operator::SelectFrontier) {
         auto all = packed(in.at("scores"));
         auto expanded = state_set(in.at("expanded"), "expanded", count);
         const auto& params = op.params;
-        {
-            auto ranked = operators::scores(all);
-            if (ranked.size() > params.at("L").get<uint64_t>())
-                ranked.resize(params.at("L").get<size_t>());
-            std::vector<uint32_t> chosen;
-            operators::Work w;
-            for (auto s : ranked) {
-                ++w.candidate_checks;
-                if (expanded.size() + chosen.size() < params.at("E").get<uint64_t>() &&
-                    chosen.size() < params.at("B").get<uint64_t>() && !expanded.count(s.id))
-                    chosen.push_back(s.id);
-            }
-            auto bytes = search::ids_bytes(chosen);
-            w.write_bytes = w.output_bytes = bytes.size();
-            return operators::Result{std::move(bytes), w};
-        }
+        return search::core::select_frontier(all,
+                                             expanded,
+                                             params.at("L").get<uint64_t>(),
+                                             params.at("B").get<uint64_t>(),
+                                             params.at("E").get<uint64_t>());
     } else if (op.op == Operator::DedupNeighbors) {
         auto seen = state_set(in.at("scored"), "scored", count);
         const auto& adjacency = in.at("adjacency").data();
-        // Whole batch validation precedes the charged functional service.
+        std::vector<std::vector<uint32_t>> rows;
+        // Preserve adapter validation before conversion to the pure value interface.
         for (const auto& row : adjacency) {
             require(row.at("degree").get<uint64_t>() == row.at("ids").size(),
                     "bad adjacency degree");
             for (const auto& id : row.at("ids"))
                 require(id.get<uint64_t>() < count, "bad neighbor ID");
+            rows.push_back(row.at("ids").get<std::vector<uint32_t>>());
         }
-        {
-            std::vector<uint32_t> fresh;
-            operators::Work w;
-            for (const auto& row : adjacency)
-                for (auto id : row.at("ids").get<std::vector<uint32_t>>()) {
-                    ++w.candidate_checks;
-                    bool found = false;
-                    for (auto s : seen) {
-                        ++w.comparisons;
-                        if (s == id) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found)
-                        continue;
-                    auto it = fresh.begin();
-                    for (; it != fresh.end(); ++it) {
-                        ++w.comparisons;
-                        if (*it >= id)
-                            break;
-                    }
-                    if (it != fresh.end())
-                        ++w.comparisons;
-                    if (it == fresh.end() || *it != id)
-                        fresh.insert(it, id);
-                }
-            auto bytes = search::ids_bytes(fresh);
-            w.write_bytes = w.output_bytes = bytes.size();
-            return operators::Result{std::move(bytes), w};
-        }
+        return search::core::dedup_neighbors(rows, seen, count);
     }
     throw content::Error(content::Code::Unsupported, "unknown control operator");
 }

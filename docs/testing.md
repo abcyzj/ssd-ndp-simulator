@@ -125,3 +125,7 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 ## V04-0 开工门槛
 
 根CTest新增 `v04_start_gates`（`tests/test_v04_start.py`，5组）：拒绝缺失/篡改产物、越界路径、失败/重复命令、失败/缺失断言、错误任务/schema及矩阵/配套重复日程漂移。完整开工入口为 `tools/freeze_v04_start.py`，实际命令、83/83 CTest、完整输入/历史参考核验、四次新direct/默认IR smoke与独立核对见[冻结记录](start-freeze-v0.4.md)。本项不表示原生或CPU精度通过，也不替代完整继承AC。
+
+## V04-1a 纯核心持续回归
+
+根CTest `search_core_oracle` 用独立Python数值/搜索与计数公式核对60组小搜索的逐阶段packed结果、评分分块顺序和全部七字段Work；覆盖重复边/自环/跨批重复、同分、空邻接/断连、不足k、预算、B>E、多chunk及非法输入。接口、实际根构建/84项CTest和四组合冻结smoke证据见[纯核心收口](core-v0.4.md)。不代表V04-1c三路径、完整规模或CPU精度通过。

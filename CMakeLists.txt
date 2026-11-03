@@ -225,6 +225,18 @@ option(NDPSIM_SLOW_FUNCTIONAL "Acceptance-only equivalent L2 implementation with
 if(NDPSIM_SLOW_FUNCTIONAL)
     target_compile_definitions(ndpsim_operators PRIVATE NDPSIM_SLOW_FUNCTIONAL=1)
 endif()
+# Shared pure graph operations; no Runtime, HostCpu, SST or MQSim link dependency.
+add_library(ndpsim_algorithm STATIC src/search/core.cc)
+set_target_properties(ndpsim_algorithm PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(ndpsim_algorithm PUBLIC ndpsim_operators)
+target_compile_options(ndpsim_algorithm PRIVATE -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off)
+if(BUILD_TESTING)
+    add_executable(search_core_probe tests/search_core_probe.cc)
+    target_link_libraries(search_core_probe PRIVATE ndpsim_algorithm)
+    add_test(NAME search_core_oracle COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_search_core.py" --probe "$<TARGET_FILE:search_core_probe>")
+endif()
+
 add_executable(bench_host_cpu EXCLUDE_FROM_ALL tools/bench_host_cpu.cc)
 target_link_libraries(bench_host_cpu PRIVATE ndpsim_operators)
 add_library(ndpsim_host STATIC src/model/host_cpu.cc)
@@ -369,7 +381,7 @@ add_library(ndpsim_ir STATIC src/ir/schema.cc src/ir/encode.cc src/ir/executor.c
 set_target_properties(ndpsim_ir PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(ndpsim_ir PUBLIC src "${PROJECT_SOURCE_DIR}/third_party/sst-core/external"
     PRIVATE "${PROJECT_BINARY_DIR}/generated")
-target_link_libraries(ndpsim_ir PUBLIC ndpsim_runtime ndpsim_host ndpsim_controller ndpsim_search)
+target_link_libraries(ndpsim_ir PUBLIC ndpsim_algorithm ndpsim_runtime ndpsim_host ndpsim_controller ndpsim_search)
 target_compile_options(ndpsim_ir PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(ir_validate src/ir/validate.cc)
 target_link_libraries(ir_validate PRIVATE ndpsim_ir)
