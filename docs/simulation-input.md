@@ -35,3 +35,6 @@ v2 results.json 和 queries.csv 增加 original_query_id、one_recall_at_r、res
 验证原始真实 10k SIFT、32 条预留诊断 query，再交换两个实际参与首轮评分的 base 向量。扰动保留图、查询、ID 和资源参数，更新数据/索引绑定并重算精确真值；该索引显式标记 counterfactual，不声称为扰动后重新构建的 NSG。两份输入分别跑两放置，验证初始扩展相同、后续扩展和实际读取改变。失败时 manifest 保持 passed=false，不能作为成功缓存。
 
 该验证覆盖 AC-02-05 的小规模闭环，不代替完整规模验收。现行流式观测和回收机制见[观测与生命周期](observation-lifecycle.md)；详细独立对照器仍有随事件数增长的内存成本。wait4 为子进程峰值，不是进程树同时驻留监控，RSS 超限在完成后判断；磁盘仅产物快照。硬件参数仍 configured_unvalidated，不承诺绝对性能或盘控更快。
+
+
+V03-7 交付接口：`execution_engine` 省略时有效值为 `ir`，显式 `direct` 保留，无效值拒绝。有效值写入config/manifest/observation；IR另写ir-manifest。旧自动化参考显式固定direct。总验收和本轮状态见[V0.3交付记录](releases/v0.3.md)。

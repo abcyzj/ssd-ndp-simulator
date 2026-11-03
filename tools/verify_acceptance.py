@@ -41,6 +41,7 @@ def main():
     def passed(ac, assertion, evidence):
         matrix.setdefault(ac,[]).append(dict(assertion=assertion,evidence=evidence,status='passed'))
     def graph(name, config, target=build, data=None):
+        config=dict(config, execution_engine='direct')
         path=out/(name+'-config.json');write_json(path,config)
         argv=[sys.executable,ROOT/'tools/run_config.py','--config',path,'--build',target,'--output',out/name]
         if data:argv+=['--data',data]

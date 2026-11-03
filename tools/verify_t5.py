@@ -21,7 +21,7 @@ def main():
         r=measure(list(map(str,argv)),out/(name+'.json'),3600,4*1024**3)
         commands.append(r)
         assert r['passed'],name
-    base=load(ROOT/'configs/experiments/host.json')
+    base=load(ROOT/'configs/experiments/host.json');base['execution_engine']='direct'
     base['generate'].update(n=256,d=128,degree=8,queries=512)
     base['search'].update(k=10,width=16,budget=8)
     base.update(max_inflight=4)

@@ -76,7 +76,9 @@ def main():
         checks['real-sift-batched']=matrix(c,build,out/'sift10k-batched',prepared/'small-data')
         for placement in ('host','controller'):
             frozen=ROOT/'results/v0.3/direct-baseline-final'/('small-'+placement)
-            command('frozen-'+placement,[sys.executable,ROOT/'tools/run_config.py','--config',frozen.parent/('small-'+placement+'-config.json'),
+            cfg=out/('frozen-'+placement+'-config.json')
+            write_json(cfg,dict(json.loads((frozen/'config.json').read_text()),execution_engine='direct'))
+            command('frozen-'+placement,[sys.executable,ROOT/'tools/run_config.py','--config',cfg,
                 '--data',frozen/'data','--build',build,'--output',out/('frozen-'+placement)])
             new=out/('frozen-'+placement)
             assert json.loads((new/'results.json').read_text())==json.loads((frozen/'results.json').read_text())

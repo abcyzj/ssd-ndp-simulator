@@ -2,7 +2,7 @@
 
 日期：2026-11-02（Asia/Shanghai）  
 契约标识：`ndpsim-ir/1`  
-状态：设计规范；V03-1 的 [C++ 类型、schema 与静态校验](ir-schema-v0.3.md)已实现，V03-2 的[动态依赖、值生命周期与异步 JOIN](ir-lifecycle-v0.3.md)已实现，V03-3 的[算子与 placement 映射](ir-mapping-v0.3.md)已实现；生产图前端和 engine 集成尚未实现。诊断格式不是可独立执行文件。产品范围与验收见 [V0.3 PRD](prd-v0.3.md)。
+状态：设计规范；V03-1 的 [C++ 类型、schema 与静态校验](ir-schema-v0.3.md)已实现，V03-2 的[动态依赖、值生命周期与异步 JOIN](ir-lifecycle-v0.3.md)已实现，V03-3 的[算子与 placement 映射](ir-mapping-v0.3.md)已实现；[生产图前端与 engine](ir-frontend-v0.3.md)、[观测与独立比较器](ir-observation-v0.3.md)、[完整矩阵](ir-matrix-v0.3.md)和[总交付/默认 IR](releases/v0.3.md)均已完成。诊断格式不是可独立执行文件。产品范围与验收见 [V0.3 PRD](prd-v0.3.md)。
 
 ## 1. 目的与设计取舍
 

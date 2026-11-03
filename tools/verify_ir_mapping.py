@@ -52,7 +52,8 @@ def main():
         command('baseline-tests',[sys.executable,ROOT/'tests/test_direct_baseline.py'])
         for mode in ('host','controller'):
             baseline=ROOT/'results/v0.3/direct-baseline-final'/('small-'+mode)
-            cfg=baseline.parent/('small-'+mode+'-config.json')
+            cfg=out/('frozen-'+mode+'-config.json')
+            write_json(cfg,dict(json.loads((baseline/'config.json').read_text()),execution_engine='direct'))
             command('frozen-'+mode,[sys.executable,ROOT/'tools/run_config.py','--config',cfg,
                 '--data',baseline/'data','--build',build,'--output',out/('frozen-'+mode)])
             new=out/('frozen-'+mode)

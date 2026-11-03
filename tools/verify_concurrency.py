@@ -83,7 +83,7 @@ def main():
             cmake=json.loads((ROOT/'deps.lock.json').read_text())['tools']['cmake']['path']
             command('configure',[cmake,'-S',ROOT,'-B',a.build]);command('build',[cmake,'--build',a.build,'-j4'])
             command('ctest',[Path(cmake).with_name('ctest'),'--test-dir',a.build,'--output-on-failure'])
-        base=json.loads((ROOT/'configs/experiments/host.json').read_text())
+        base=json.loads((ROOT/'configs/experiments/host.json').read_text());base['execution_engine']='direct'
         if a.quick:
             base['generate'].update(n=32,d=32,degree=5,queries=5)
             base['search'].update(k=3,width=8,budget=4)

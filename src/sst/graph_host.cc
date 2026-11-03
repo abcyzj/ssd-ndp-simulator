@@ -57,7 +57,7 @@ public:
                                SST_ELI_ELEMENT_VERSION(0, 1, 0),
                                "Deterministic host graph search",
                                COMPONENT_CATEGORY_UNCATEGORIZED)
-    SST_ELI_DOCUMENT_PARAMS({"execution_engine", "direct/ir", "direct"},
+    SST_ELI_DOCUMENT_PARAMS({"execution_engine", "direct/ir", "ir"},
                             {"ir_contract", "validated run contract", ""},
                             {"placement", "host/controller", "host"},
                             {"content_backend", "mmap/memory", "mmap"},
@@ -101,7 +101,7 @@ public:
     GraphHost(SST::ComponentId_t id, SST::Params& p) : SST::Component(id) {
         if (getNumRanks().rank != 1 || getNumRanks().thread != 1)
             throw std::invalid_argument("graph requires one rank/thread");
-        auto engine = p.find<std::string>("execution_engine", "direct");
+        auto engine = p.find<std::string>("execution_engine", "ir");
         if (engine != "direct" && engine != "ir")
             throw std::invalid_argument("Unsupported execution_engine");
         ir_mode_ = engine == "ir";

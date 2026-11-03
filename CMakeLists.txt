@@ -439,3 +439,10 @@ if(BUILD_TESTING)
     add_test(NAME ir_matrix_gates COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_ir_matrix.py")
 endif()
+
+if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
+    add_test(NAME v03_delivery_gates COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_v03_delivery.py")
+    add_test(NAME v02_delivery_gates COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_v02_delivery.py")
+endif()

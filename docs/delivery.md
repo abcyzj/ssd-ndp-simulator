@@ -6,7 +6,7 @@
 
 日常构建与实验使用下述入口。完整 V0.1 AC、有效 V0.2 分层验证与固定 SIFT 矩阵继续维护，见[测试说明](testing.md)。V0.2 专用总入口 `tools/verify_v02.py --all` 及前置准备、严格复用规则见[V0.2 交付复现](archive/v0.2/delivery.md)，历史结果见[交付记录](releases/v0.2.md)。
 
-V0.3 总入口尚未实现。历史成功记录不能替代 V0.3 direct 参考冻结或 direct/ir 等价验证。
+V0.3 总入口为 `tools/verify_v03.py --all`，方法及本轮状态见[V03-7交付记录](releases/v0.3.md)。历史成功记录不能替代 V0.3 direct 参考冻结或 direct/ir 等价验证。
 
 ## 复建与运行
 

@@ -1,6 +1,6 @@
 # 工具入口
 
-从仓库根目录执行。V03-4 已支持显式 direct/ir，默认仍 direct；以下包含数据准备、IR阶段验证及继承回归工具；阶段编号保留兼容，不表示当前开发任务。
+从仓库根目录执行。V03-7 已完成总交付，支持显式 direct/ir，日常默认 ir，旧自动化参考显式 direct；以下包含数据准备、IR阶段验证及继承回归工具；阶段编号保留兼容，不表示当前开发任务。
 
 | 日常与准备工具 | 用途 |
 | --- | --- |
@@ -71,4 +71,9 @@ build/delivery/bench_host_cpu
 
 - `verify_ir_matrix.py --output <新目录>`：锁定Python运行完整52条SIFT1M direct/IR矩阵、三组交替效率补测、Q32/128/512两placement各3次；预检V03-0～5冻结证据/相同输入/资源，根构建/全CTest/定向ASan；不接受历史仿真复用或缩小矩阵。默认 `--build build/delivery --asan-build build/v036-asan`，受限沙箱用 `--ram-evidence` 保存本轮实测stdout。实际结果/命令见[收口](../docs/ir-matrix-v0.3.md)。
 - `stream_statistics.py`：严格比较器内部使用的资源JSON流式读取/SQLite暂存；保留嵌套字段及原顺序，拒绝重复key、截断与尾随数据。不是新运行入口。
-- 本轮仅V03-6：默认仍direct，V03-7总验收与切换未开始。
+- V03-6当轮默认仍direct；后续V03-7总验收已通过并切换日常默认ir，见[交付记录](../docs/releases/v0.3.md)。
+
+
+## V03-7 总交付入口
+
+锁定 Python 运行 `tools/verify_v03.py --all --ram-evidence <本轮sysctl stdout> --output <新目录>`。完整重跑根构建/全部CTest、52条矩阵/效率/Q梯度、完整继承AC/原生oracle、T3/T4/T5、IR ASan和默认入口复现。无quick选项；可选矩阵复用须全执行/验证源码、构建库、输入、配置、依赖与产物身份匹配，缺项/失败/篡改不得通过。`v03_delivery_gates` 和 `v02_delivery_gates` 已注册CTest。日常默认ir；继承自动化基线显式direct。AC映射、实际命令和限制见[V03-7](../docs/releases/v0.3.md)。

@@ -24,7 +24,7 @@ run 内所有查询共享单调 op ID 分配器，拒绝溢出；scope 带运行
 
 ## 配置与产物
 
-在现有 JSON 配置增加 `"execution_engine": "ir"`，继续使用 `tools/run_config.py` 或日常实验入口。不支持的 engine 在生成输入/启动 SST 前拒绝；不静默回退。旧配置省略 engine 时写入有效 `direct`。
+在现有 JSON 配置增加 `"execution_engine": "ir"`，继续使用 `tools/run_config.py` 或日常实验入口。不支持的 engine 在生成输入/启动 SST 前拒绝；不静默回退。V03-4当时旧配置省略 engine 时写入有效 `direct`；[V03-7](releases/v0.3.md)完整交付通过后省略值已切为 `ir`，显式 `direct` 仍可复现。
 
 [ir_frontend.py](../tools/ir_frontend.py) 从已验证输入构造空操作 contract，写入 `ir-manifest.json`。内容包含实际集合/文件身份、shape、搜索参数、前端源码、目录 hash、mapping/config 身份、依赖身份、scope 与诊断设置；dataset 对象身份绑定 base+query 内容组合。content_ref 是受信 provider 名称，不是绕过驻留的文件读取权限。生产前端运行时构造类型化操作，不读样例或回放文件。
 

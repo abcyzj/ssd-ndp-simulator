@@ -26,7 +26,7 @@ def main():
             x.pop('wall_seconds',None);y.pop('wall_seconds',None)
             assert x==y,(name,left,right)
         assert (left/'events.jsonl').read_bytes()==(right/'events.jsonl').read_bytes()
-    c=load(ROOT/'configs/experiments/host.json');c['event_log']=True
+    c=load(ROOT/'configs/experiments/host.json');c.update(event_log=True,execution_engine='direct')
     try:
         for profile in ('native-small','ann-2g-v1','ann-16g-v1'):
             command('capacity-'+profile,[a.build.resolve()/'profile_probe',profile])

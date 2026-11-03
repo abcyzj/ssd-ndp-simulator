@@ -36,8 +36,13 @@ T8/M4交付轮完整回归、严格矩阵复用和两放置新运行复现已通
 [V03-5](ir-observation-v0.3.md)已完成受预算限制的流式IR观测、操作/值/任务关联、独立严格比较器及statistics/detail小矩阵验证。上节“待V03-5”是V03-4收口时的历史状态。完整SIFT1M矩阵、Q/RSS/效率及完整交付仍未验收。共享NAND命令参与集合和普通NVMe内部transaction ID继续Unsupported；本地request的transaction快照可关联。离线比较器使用SQLite分组，但仍加载统计JSON及ID关系，未证明全规模RSS预算。默认仍direct，硬件仍configured_unvalidated。
 
 
-## V03-6 增量边界
+## V03-6 收口时的增量边界
 
 [完整SIFT1M矩阵与效率证据](ir-matrix-v0.3.md)已通过：两个engine各26条、三组交替、Q梯度和冻结资源门槛。本轮不是V0.3总交付；完整继承AC/原生oracle和日常默认切换仍待V03-7，默认继续direct。
 
 Value的评分payload采用共享不可变packed FP64记录，JSON为延迟诊断视图；静态contract/目录缓存及活动producer描述不构成历史DAG。比较器流式处理资源JSON，必要ID关联仍随离线样本量增长；512MiB只对本轮实际矩阵/详细样本证明。Q梯度单列查询输入/结果文件大小，不声称私有堆归因；RSS仍为整进程高水位，磁盘仍为采样，未获得分阶段/同时进程树/硬隔离能力。硬件configured_unvalidated、官方有限top100并列边界unresolved及128条查询/p99限制继续有效。
+
+
+## V03-7 交付边界
+
+V03-7完整总验收已通过，日常默认IR，显式direct保留。继承硬件未校准、Unsupported、查询子集、官方并列边界、RSS/磁盘采样及ASan范围全部保留。总入口/失败关闭规则和实际结果见[V03-7](releases/v0.3.md)。

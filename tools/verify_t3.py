@@ -30,7 +30,7 @@ def main():
         if not r['passed']: raise RuntimeError('failed stage: '+label)
     c=json.loads((ROOT/'configs/experiments/host.json').read_text())
     x=json.loads((prepared/'index/index.json').read_text())
-    c.update(format='ndpsim-experiment-v2',index=str(prepared/'index'),truth=str(prepared/'exact'),event_log=True)
+    c.update(execution_engine='direct',format='ndpsim-experiment-v2',index=str(prepared/'index'),truth=str(prepared/'exact'),event_log=True)
     c['search']['entry']=x['entry']
     write_json(out/'real-config.json',c)
     run('real-pair',[ROOT/'tools/run_pair.py','--pair','--config',out/'real-config.json','--data',prepared/'small-data','--build',a.build,'--output',out/'real'])

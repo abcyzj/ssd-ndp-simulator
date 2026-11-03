@@ -272,7 +272,7 @@ def run_matrix(out, prepared, build, reuse_runs=None):
     for point in points():
         name = point['name']; group = point['group']; target = out/name
         c = copy.deepcopy(base)
-        c.update(placement=point['placement'], index=str(prepared/'index'), truth=str(prepared/(group+'-truth')),
+        c.update(execution_engine='direct',placement=point['placement'], index=str(prepared/'index'), truth=str(prepared/(group+'-truth')),
                  max_inflight=point['concurrency'], event_log=point['detail'])
         c['search'].update(entry=x['entry'], width=point['L'], budget=point['E'])
         config = out/(name+'-config.json'); write_json(config,c)

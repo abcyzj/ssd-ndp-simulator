@@ -66,11 +66,11 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 | SIFT矩阵与复用 | `sift1m_matrix`、`tools/verify_t6.py`；冻结26点、百万行按需读取、仅排除墙钟的统计比较、配置/输入/模型/元素/产物篡改拒绝、流式日志及因果错误拒绝；[完整矩阵](sift1m.md) |
 | V0.2 总验收 | `tools/verify_v02.py --all`；根构建、完整V0.1 AC、T3/T4/T5、26次SIFT及主配置两放置新复现；[命令与前置准备](archive/v0.2/delivery.md) |
 
-`tests/test_v02_delivery.py` 的三类失败关闭回归由 V0.2 总入口执行，覆盖完整适用 AC/N/A、缺项/失败/quick 拒绝、产物篡改/缺失拒绝；也可单独运行，不能因不在 CTest 中而遗漏。
+`tests/test_v02_delivery.py` 的三类失败关闭回归由 V0.2 总入口执行，覆盖完整适用 AC/N/A、缺项/失败/quick 拒绝、产物篡改/缺失拒绝；也可单独运行；V03-7现已将其注册为 `v02_delivery_gates`，与新增 `v03_delivery_gates` 一并持续执行。
 
 完整 V0.1 AC 仍包含独立锁定原生 oracle 和 ASan；慢功能夹具为 N256/d128/R8/Q8、k10/L16/E16，要求两放置墙钟慢化且全部事件/结果/模拟统计一致。V0.2 AC-02-10=N/A（Deep10M取消），不能混同仍须执行的 V0.1 AC-10。
 
-历史阶段命令、成功与失败证据统一见[V0.2 归档](archive/v0.2/README.md)及[交付记录](releases/v0.2.md)。V0.3 新增 direct/ir 等价、动态依赖、资源回收与52条矩阵等要求见[PRD](prd-v0.3.md)，其中V03-0～5的实现及实际证据见下节；完整SIFT1M矩阵、效率门槛与交付切换尚未执行。
+历史阶段命令、成功与失败证据统一见[V0.2 归档](archive/v0.2/README.md)及[交付记录](releases/v0.2.md)。V0.3 新增 direct/ir 等价、动态依赖、资源回收与52条矩阵等要求见[PRD](prd-v0.3.md)，V03-0～6的分阶段证据见下节；V03-7已完成完整总交付与默认切换，见[交付记录](releases/v0.3.md)。
 
 
 ## V03-0 冻结检查
@@ -112,3 +112,10 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 锁定Python运行 `tools/verify_ir_matrix.py --output <新目录>`；RAM在受限沙箱下可用 `--ram-evidence <本轮sysctl stdout>`。入口预检冻结输入/依赖/资源，根构建和全CTest、定向IR ASan后新跑52条完整SIFT1M矩阵、补足两placement各三组交替和18次Q梯度。无历史仿真复用/quick选项，失败或缺项不能通过。实际命令、全部样本、质量、独立账本、资源口径和失败记录见[V03-6](ir-matrix-v0.3.md)。
 
 本轮80/80 CTest、定向ASan4/4、52/52及效率/Q门槛通过。新增 `ir_matrix_gates` 五组失败关闭检查；原有比较器19项对抗、预算拒绝、schema、因果与资源回归保留。此次不是V03-7总交付：不运行完整继承AC/独立原生oracle，不切换默认engine。
+
+
+## V03-7 总交付入口
+
+锁定 Python 运行 `tools/verify_v03.py --all --ram-evidence <本轮sysctl stdout> --output <新目录>`。完整重跑根构建/全部CTest、52条矩阵/效率/Q梯度、完整继承AC/原生oracle、T3/T4/T5、IR ASan和默认入口复现。无quick选项；可选矩阵复用须全执行/验证源码、构建库、输入、配置、依赖与产物身份匹配，缺项/失败/篡改不得通过。`v03_delivery_gates` 和 `v02_delivery_gates` 已注册CTest。日常默认ir；继承自动化基线显式direct。AC映射、实际命令和限制见[V03-7](releases/v0.3.md)。
+
+本轮 V03-7 实际根 CTest **82/82**、完整 V0.1 AC **11/11**（含原生 oracle、慢功能、继承 ASan **17/17**）、V0.2 T3/T4/T5、矩阵 **52/52** 和三组效率/18次Q梯度均通过；定向IR ASan额外 **5/5**。V0.2 T6覆盖由本轮52条矩阵及保留的 `sift1m_matrix`/`ir_matrix_gates`、严格复用校验和独立账本提供；未将旧V0.2的26条或473条断言冒充本轮独立重跑。

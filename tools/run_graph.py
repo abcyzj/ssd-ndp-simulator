@@ -22,7 +22,7 @@ def run(config, build, output, data=None, *, paired=False):
         if key in c: c[key] = str((config.parent/c[key]).resolve())
     if c['placement'] not in (('host', 'controller') if paired else ('host',)):
         raise ValueError('Unsupported: requires supported placement')
-    engine = c.get('execution_engine', 'direct')
+    engine = c.get('execution_engine', 'ir')
     if engine not in ('direct', 'ir'):
         raise ValueError('Unsupported execution_engine')
     c['execution_engine'] = engine
