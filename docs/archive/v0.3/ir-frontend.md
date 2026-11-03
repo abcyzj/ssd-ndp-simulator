@@ -4,7 +4,7 @@
 
 ## 实现及旁路核查
 
-[IrGraphSearch](../src/search/ir_graph.h) 接收 IR Submit 能力、Executor 可见输出/等待/lease 接口、配置与不可变初始状态。它没有 ContentStore、读取、HostCpu 或 Controller 实例，不调用距离计算、候选排序或邻居去重函数；这些功能和成本全部来自 V03-3 Mapping。原 [GraphSearch](../src/search/graph.cc) 文件未改，继续提供可运行 direct 对照。
+[IrGraphSearch](../../../src/search/ir_graph.h) 接收 IR Submit 能力、Executor 可见输出/等待/lease 接口、配置与不可变初始状态。它没有 ContentStore、读取、HostCpu 或 Controller 实例，不调用距离计算、候选排序或邻居去重函数；这些功能和成本全部来自 V03-3 Mapping。原 [GraphSearch](../../../src/search/graph.cc) 文件未改，继续提供可运行 direct 对照。
 
 | 核查项 | 实际路径 |
 | --- | --- |
@@ -20,13 +20,13 @@
 
 run 内所有查询共享单调 op ID 分配器，拒绝溢出；scope 带运行身份、查询运行 ID/ordinal、迭代和语义批次。原始 query ID/顺序继续由既有输入身份和结果输出绑定，不把 Runtime 查询编号当作原始数据集 ID。输出 shape 随输入上界收紧：MERGE 不超过两输入之和/节点数，DEDUP 不超过本批邻接边上界/节点数，SELECT/READ 不超过 min(B,E)。
 
-[GraphHost](../src/sst/graph_host.cc) 在原接纳时刻执行 Mapping::admit（controller 一次 Open），结束时 Mapping::close 排空后继承 Close/Ack 及接纳规则。IR contract 的 search、shape、placement 和空操作列表在创建后端前与 SST 参数核对；不接受通过 contract 偷换实际配置。
+[GraphHost](../../../src/sst/graph_host.cc) 在原接纳时刻执行 Mapping::admit（controller 一次 Open），结束时 Mapping::close 排空后继承 Close/Ack 及接纳规则。IR contract 的 search、shape、placement 和空操作列表在创建后端前与 SST 参数核对；不接受通过 contract 偷换实际配置。
 
 ## 配置与产物
 
-在现有 JSON 配置增加 `"execution_engine": "ir"`，继续使用 `tools/run_config.py` 或日常实验入口。不支持的 engine 在生成输入/启动 SST 前拒绝；不静默回退。V03-4当时旧配置省略 engine 时写入有效 `direct`；[V03-7](releases/v0.3.md)完整交付通过后省略值已切为 `ir`，显式 `direct` 仍可复现。
+在现有 JSON 配置增加 `"execution_engine": "ir"`，继续使用 `tools/run_config.py` 或日常实验入口。不支持的 engine 在生成输入/启动 SST 前拒绝；不静默回退。V03-4当时旧配置省略 engine 时写入有效 `direct`；[V03-7](../../releases/v0.3.md)完整交付通过后省略值已切为 `ir`，显式 `direct` 仍可复现。
 
-[ir_frontend.py](../tools/ir_frontend.py) 从已验证输入构造空操作 contract，写入 `ir-manifest.json`。内容包含实际集合/文件身份、shape、搜索参数、前端源码、目录 hash、mapping/config 身份、依赖身份、scope 与诊断设置；dataset 对象身份绑定 base+query 内容组合。content_ref 是受信 provider 名称，不是绕过驻留的文件读取权限。生产前端运行时构造类型化操作，不读样例或回放文件。
+[ir_frontend.py](../../../tools/ir_frontend.py) 从已验证输入构造空操作 contract，写入 `ir-manifest.json`。内容包含实际集合/文件身份、shape、搜索参数、前端源码、目录 hash、mapping/config 身份、依赖身份、scope 与诊断设置；dataset 对象身份绑定 base+query 内容组合。content_ref 是受信 provider 名称，不是绕过驻留的文件读取权限。生产前端运行时构造类型化操作，不读样例或回放文件。
 
 现有 manifest 新增有效 engine 和 IR contract hash，记录新增源码/目录，IR contract 也进入登记产物 hash。能力目录顶层现为 execution_supported=true，表示生产动态 engine 已接入，**不表示 V0.3 全部验收通过**；生成器、样例 hash 和静态验证器输出保持同步。request/transaction/message 的完整 IR 关联、流式操作日志、正式比较白名单及 statistics/detail 等价属于 V03-5，本轮不提前宣称完成。
 

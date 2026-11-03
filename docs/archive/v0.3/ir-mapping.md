@@ -1,10 +1,10 @@
 # V03-3 算子与 placement 映射
 
-2026-11-03（Asia/Shanghai）。V03-1、V03-2 的成功 manifest 与全部登记产物 hash 本轮重新核对通过。**本页记录 V03-3 当轮结果；后续 [V03-4](ir-frontend-v0.3.md) 已完成生产前端。**本轮提供真实算子后端和小规模测试驱动，不接入生产 GraphSearch、不增加 engine 配置、不切换 direct 默认，也不代表 V0.3 总验收通过。
+2026-11-03（Asia/Shanghai）。V03-1、V03-2 的成功 manifest 与全部登记产物 hash 本轮重新核对通过。**本页记录 V03-3 当轮结果；后续 [V03-4](ir-frontend.md) 已完成生产前端。**本轮提供真实算子后端和小规模测试驱动，不接入生产 GraphSearch、不增加 engine 配置、不切换 direct 默认，也不代表 V0.3 总验收通过。
 
 ## 接口与映射
 
-[Mapping](../src/ir/mapping.h) 是受信后端边界，持有 Executor、Runtime、HostCpu、ContentStore、Layout、普通读取能力和可选 Controller。构造时校验空 run contract、placement/backend 和逻辑集合绑定的 kind/version；实际输入文件及集合内容身份仍由现有受信输入准备/打开流程负责。前端只能提交类型化 Operation 并消费 lease 的可见输出，不获得 ContentStore 或这些服务能力。
+[Mapping](../../../src/ir/mapping.h) 是受信后端边界，持有 Executor、Runtime、HostCpu、ContentStore、Layout、普通读取能力和可选 Controller。构造时校验空 run contract、placement/backend 和逻辑集合绑定的 kind/version；实际输入文件及集合内容身份仍由现有受信输入准备/打开流程负责。前端只能提交类型化 Operation 并消费 lease 的可见输出，不获得 ContentStore 或这些服务能力。
 
 `admit(query, fp32_vector, initial_snapshot)` 在原接纳时刻登记初始主机 query/state；controller placement 在此调用一次原 Open，并由 Controller 持有其依赖。`submit(op, producers, snapshots)` 复用 Executor 的增量依赖、作用域、实际地址和 shape 校验。未知/关闭的 query、重复 QUERY_READY 或尚未 QUERY_READY 的操作明确拒绝；提交错误关联 query/op/time。`close(query)` 禁止新操作，独立持有当前活动 lease 并逐项等待，随后执行原 Controller Close/Ack；Open 失败已清理会话时保留失败根因并清理映射会话。操作完成即释放活动关联，不积累完整查询历史。
 

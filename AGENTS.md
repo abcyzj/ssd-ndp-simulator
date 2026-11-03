@@ -15,3 +15,5 @@
 - 常规验证：`cmake -S . -B build/delivery -DBUILD_TESTING=ON`、`cmake --build build/delivery -j2`、`ctest --test-dir build/delivery --output-on-failure`。完整AC用锁定Python运行 tools/verify_acceptance.py；完整继承与V0.4出口见 docs/testing.md 和实施清单。保持 tests/、configs/regression/ 及有效独立断言，不因归档或版本名弱化回归。
 - 完整规模采集前重新核验输入、RAM/磁盘/输出预算和超时；保留失败样本，新目录重跑。CPU精度只适用于记录条件；SSD/PCIe/Controller仍 configured_unvalidated，Unsupported 明示，不预设下沉更快。
 - docs/releases/v0.2.md 用于继承证据；docs/prd-v0.1.md 保留需求基线。docs/archive/v0.1/、v0.2/ 和旧阶段计划按需追溯，阶段指令不继续生效；configs/benchmarks/、configs/experiments/v0.2/、tools/verify_t2.py～verify_t6.py仍是有效继承基线。需求、现行文档与代码冲突时说明差异及影响，不用历史方案覆盖现状。
+
+- V0.3 阶段文档与继承工具/配置说明统一从 docs/archive/v0.3/README.md 追溯；PRD/IR总规范及有效接口、工具、配置和测试继续约束继承行为。本机结果实体在 results/archive/v0.3，results/v0.3 保留兼容链接；不得把归档或历史通过计为V0.4完成。

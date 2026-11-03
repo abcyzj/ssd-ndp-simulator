@@ -1,12 +1,12 @@
 # V03-5 观测与独立比较器
 
-2026-11-03（Asia/Shanghai）。本任务只收口 V03-5，不启动 V03-6，不切换默认 engine。范围与判据为 [PRD §7](prd-v0.3.md#7-等价性的精确定义)、[IR §10](ir-v0.3.md#10-诊断文件与比较)及[实施清单](implementation-plan-v0.3.md)。
+2026-11-03（Asia/Shanghai）。本任务只收口 V03-5，不启动 V03-6，不切换默认 engine。范围与判据为 [PRD §7](../../prd-v0.3.md#7-等价性的精确定义)、[IR §10](../../ir-v0.3.md#10-诊断文件与比较)及[实施清单](implementation-plan.md)。
 
 ## 输出与接口
 
 - 必需 `observation.json`（`ndpsim-observation/1`）记录有效 engine、实际 IR/schema/operator catalog/mapping 身份、statistics/detail、逐查询决策摘要及初始比较状态 `not_checked`。direct 的 IR 专属字段为 null，不伪造 IR 执行。源/依赖/配置/数据/图/真值/查询身份继续在 manifest 中；新产物登记 hash。
 - IR 的 `statistics.json.resources.ir_summary` / `ir_summary.csv` 记录七算子（含未使用算子的零值）的 submitted/completed/failed、活动/峰值 op/value；这是管理统计，不是额外目标服务。终态活动数必须为零。原结果、Recall、时间、资源、初态、Unsupported、测量口径保留。
-- detail 在原 `events.jsonl` 内输出版本化 IR 记录，不另建一份 DAG 或张量文件。闭合 envelope 定义在 [诊断 schema](../schemas/ndpsim-ir-diagnostics-v1.schema.json)，operation 直接复用 `urn:ndpsim:ir:1` 的 Operation schema。JSON Schema 检查使用 jsonschema 4.26.0 / referencing（本机锁定 Python 环境已有），不安装或升级软件。
+- detail 在原 `events.jsonl` 内输出版本化 IR 记录，不另建一份 DAG 或张量文件。闭合 envelope 定义在 [诊断 schema](../../../schemas/ndpsim-ir-diagnostics-v1.schema.json)，operation 直接复用 `urn:ndpsim:ir:1` 的 Operation schema。JSON Schema 检查使用 jsonschema 4.26.0 / referencing（本机锁定 Python 环境已有），不安装或升级软件。
 - `ir_operation` 在 submitted / visible / failed / reclaimed 写出操作结构、端口、依赖、scope、实际 Runtime 父 task 和模拟时间。Visible 时每端口只有序列化长度与 FNV-1a64 摘要，不复制完整状态/张量；FNV 仅为诊断摘要，不是密码学身份。Runtime 阶段由 `ir_runtime` 的原状态枚举 0～7 说明。
 - `ir_binding(op, task)` 连接真实读取、CPU 或 Controller 评分批；`ir_task_edge(parent_task, task)` 连接 Controller 评分批与实际 chunk；`ir_session(query, open|close, task)` 连接一次 Open/Close。经 read_submit/read_complete 的 request、local_request 的 transaction、message 的 task/id 以及 link 的 platform_id 继续追踪。value 由 `(producer_op, port)` 标识，state_ref 保留 query/state_id/version。
 - scope.query 为现有运行期 query ID，query_ordinal 为输入行序号；原始 benchmark ID 由 results/observation 的 original_query_id 显式关联，固定输入身份和顺序参与比较，不把运行序号冒充原始 SIFT ID。
@@ -44,7 +44,7 @@
 3. `lifecycle.runtime_peak_tasks`、`lifecycle_sample.runtime_tasks/waiters`：含 IR 管理任务/continuation 的总数。最终资源清零仍检查；IR 累计/活动/峰值和每算子完成守恒单独验证。同 engine 的 ir_summary 仍必须一致。
 4. 仅跨 engine 排除 IR 专属 ir_summary；detail 仅枚举 `ir_operation/ir_binding/ir_task_edge/ir_session/ir_runtime/ir_summary` 六类管理记录。它们先检查 envelope、生命周期、提交计数、父操作存在、Runtime 可见、资源 task 覆盖及 query/operator 归属，不能因被排除而缺失或伪造关联。
 
-不排除“所有时间”“所有 task”“所有资源”或任意 `ir_*` 前缀。delta 管理差异未作为目标费用；原可比较物理时间、资源流顺序和发布因果保留。事件和 IR 历史在比较器的临时 SQLite 中分组；V03-6已将statistics资源数组也改为流式SQLite，仅保留必要ID关联；全规模实测预算见[V03-6](ir-matrix-v0.3.md)，不宣称任意输入下RSS常量。
+不排除“所有时间”“所有 task”“所有资源”或任意 `ir_*` 前缀。delta 管理差异未作为目标费用；原可比较物理时间、资源流顺序和发布因果保留。事件和 IR 历史在比较器的临时 SQLite 中分组；V03-6已将statistics资源数组也改为流式SQLite，仅保留必要ID关联；全规模实测预算见[V03-6](ir-matrix.md)，不宣称任意输入下RSS常量。
 
 既有 `compare_placements.py` 继续从真实向量/查询/图独立重算搜索与 FP64 数值，并核对协议、chunk、SQ/CQ/DMA/link、普通/本地流量和向量零 D2H；不是两个共享实现互比的替代。该独立核对器的既有跨工具链容差不替代本机 direct/ir 的严格比较。
 

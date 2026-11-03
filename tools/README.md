@@ -32,9 +32,9 @@ V0.4常规验收规划为 [14个模拟配置](../docs/validation-matrix-v0.4.md)
 | `verify_t4.py` | memory/mmap、2/16GiB profile、跨页与 credit；[接口](../docs/content-profiles.md) |
 | `verify_t5.py` | Q=32/128/512 三次重复、日志等价、回收与预算拒绝；[接口](../docs/observation-lifecycle.md) |
 | `verify_t6.py` | 完整 SIFT1M 准备、固定26次矩阵及严格复用；[入口](../docs/sift1m.md) |
-| `freeze_direct_baseline.py` | V03-0 新 direct 参考运行、身份/独立账本/预算冻结；[证据与复现](../docs/direct-baseline-v0.3.md)，不执行 IR 或完整 AC |
-| `verify_ir_frontend.py` | V03-4 生产前端/engine、合成与真实SIFT10k四组合、扰动/因果、冻结direct和定向ASan；[接口与证据](../docs/ir-frontend-v0.3.md)，不启动V03-5或完整矩阵 |
-| `verify_ir_mapping.py` | V03-3 算子映射、真实 MQSim 四组合/边界、继承 CTest、冻结 smoke 锚点和定向 ASan；[接口与证据](../docs/ir-mapping-v0.3.md)，不启动生产 IR 前端或完整矩阵 |
+| `freeze_direct_baseline.py` | V03-0 新 direct 参考运行、身份/独立账本/预算冻结；[证据与复现](../docs/archive/v0.3/direct-baseline.md)，不执行 IR 或完整 AC |
+| `verify_ir_frontend.py` | V03-4 生产前端/engine、合成与真实SIFT10k四组合、扰动/因果、冻结direct和定向ASan；[接口与证据](../docs/archive/v0.3/ir-frontend.md)，不启动V03-5或完整矩阵 |
+| `verify_ir_mapping.py` | V03-3 算子映射、真实 MQSim 四组合/边界、继承 CTest、冻结 smoke 锚点和定向 ASan；[接口与证据](../docs/archive/v0.3/ir-mapping.md)，不启动生产 IR 前端或完整矩阵 |
 | `verify_v02.py --all` | V0.2 完整基线复现；[前置准备与命令](../docs/archive/v0.2/delivery.md) |
 
 完整方法见[测试说明](../docs/testing.md)。所有有效测试和断言保留；上述工具通过不能直接声明 V0.3 通过。`verify_t6.py --prepare-only` 与 `--prepared` 分离准备/仿真，`--reuse-runs` 必须逐项验证身份；旧结果不能冒充本轮 direct 冻结或 IR 结果。
@@ -59,23 +59,8 @@ build/delivery/bench_host_cpu
 
 这是单线程、重复访问相同输入的缓存热场景，包含解码、分配、ID检查、打包及测量循环开销；不是 SIMD 上限、随机冷内存、SST查询端到端或完整AC验收。请使用优化构建且关闭 NDPSIM_SLOW_FUNCTIONAL；记录机器型号、编译器、构建选项和负载状态再比较，不自动回填或宣称硬件参数已校准。
 
-## V03-1 schema 生成
+## IR 工具与 V0.3 深度回归
 
-`generate_ir_schema.py` 从同一声明生成 `schemas/ndpsim-ir-v1.schema.json` 与能力目录；`--check` 只读核对已提交生成物。校验入口为根构建的 `ir_validate`，接口、合法样例及限制见 [V03-1](../docs/ir-schema-v0.3.md)。V03-3 已将七算子声明为有执行映射；V03-4 已接入生产前端并将顶层 execution_supported 更新为 true，完整版本验收仍待后续，见 [V03-4](../docs/ir-frontend-v0.3.md)。
+`generate_ir_schema.py --check` 核对 schema/能力目录；`compare_engines.py` 独立比较同 placement 的 direct/ir 或 statistics/detail；`ir_frontend.py`、`stream_statistics.py` 是现行共用模块。
 
-### V03-5
-
-- `compare_engines.py <left-run> <right-run> --output <report.json>`：独立严格同placement direct/ir或同engine statistics/detail比较；输出 `ndpsim-equivalence/1`、实际比较范围与差异定位，失败退出非0，不改写运行产物。
-- `verify_ir_observation.py --output <新目录>`：锁定Python执行V03-5依赖/构建/79项CTest、合成及真实SIFT10k对照、独立账本与冻结direct核查，失败关闭；不启动完整矩阵或交付切换。字段、白名单、schema和实际证据见[接口](../docs/ir-observation-v0.3.md)。
-
-
-### V03-6
-
-- `verify_ir_matrix.py --output <新目录>`：锁定Python运行完整52条SIFT1M direct/IR矩阵、三组交替效率补测、Q32/128/512两placement各3次；预检V03-0～5冻结证据/相同输入/资源，根构建/全CTest/定向ASan；不接受历史仿真复用或缩小矩阵。默认 `--build build/delivery --asan-build build/v036-asan`，受限沙箱用 `--ram-evidence` 保存本轮实测stdout。实际结果/命令见[收口](../docs/ir-matrix-v0.3.md)。
-- `stream_statistics.py`：严格比较器内部使用的资源JSON流式读取/SQLite暂存；保留嵌套字段及原顺序，拒绝重复key、截断与尾随数据。不是新运行入口。
-- V03-6当轮默认仍direct；后续V03-7总验收已通过并切换日常默认ir，见[交付记录](../docs/releases/v0.3.md)。
-
-
-## V03-7 总交付入口
-
-锁定 Python 运行 `tools/verify_v03.py --all --ram-evidence <本轮sysctl stdout> --output <新目录>`。完整重跑根构建/全部CTest、52条矩阵/效率/Q梯度、完整继承AC/原生oracle、T3/T4/T5、IR ASan和默认入口复现。无quick选项；可选矩阵复用须全执行/验证源码、构建库、输入、配置、依赖与产物身份匹配，缺项/失败/篡改不得通过。`v03_delivery_gates` 和 `v02_delivery_gates` 已注册CTest。日常默认ir；继承自动化基线显式direct。AC映射、实际命令和限制见[V03-7](../docs/releases/v0.3.md)。
+V0.3 阶段工具的职责、完整52条门槛和复现入口统一见 [V0.3 工具索引](archive/v0.3/README.md)。这些工具仍在原路径供 CTest、导入和 V0.4 继承回归调用；不按版本名迁移有效实现。新 V0.4 验收入口尚待实现。

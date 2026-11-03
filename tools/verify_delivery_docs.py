@@ -8,7 +8,7 @@ def verify():
     files=[ROOT/'README.md',ROOT/'AGENTS.md',ROOT/'tools/README.md',
         *(ROOT/'docs'/name for name in ('README.md','prd-v0.3.md','ir-v0.3.md','testing.md',
           'delivery.md','model-limitations.md','simulation-input.md','output.md',
-          'implementation-plan-v0.3.md','releases/v0.3.md'))]
+          'archive/v0.3/implementation-plan.md','releases/v0.3.md'))]
     count=0
     for path in files:
         text=path.read_text()

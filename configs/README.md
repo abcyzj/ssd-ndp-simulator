@@ -1,6 +1,6 @@
 # 配置入口
 
-V0.3 继承现有模型、数据和查询身份，当前配置尚未增加 IR 执行引擎。版本名标识冻结来源，不表示已失效；不为归档重排查询、改参数或重算锁。
+当前可运行基线 V0.3 继承现有模型、数据和查询身份；省略 `execution_engine` 默认 IR，显式 `direct` 保留对照。V0.4 新 Profile/驻留配置尚待实现。版本名标识冻结来源，不表示已失效；不为归档重排查询、改参数或重算锁。
 
 | 分类 | 现行用途 |
 | --- | --- |
@@ -13,7 +13,7 @@ V0.3 继承现有模型、数据和查询身份，当前配置尚未增加 IR �
 | [查询锁](benchmarks/v0.2-query-selection.json)、[预算](benchmarks/v0.2-budgets.json) | V0.3 继承的查询分割、搜索与资源基线；路径/内容保持冻结 |
 | [experiments/v0.2/sift1m.json](experiments/v0.2/sift1m.json) | `verify_t6.py` 使用的固定矩阵，外层含实验模板，不能直接作为 run_config 单点配置 |
 
-内容后端与容量见[内容/profile](../docs/content-profiles.md)，完整准备与26次基线矩阵见[SIFT1M](../docs/sift1m.md)。V0.3 的双引擎矩阵与预算增量以[PRD](../docs/prd-v0.3.md)为目标，尚未由当前配置实现。
+内容后端与容量见[内容/profile](../docs/content-profiles.md)，完整准备与26次基线矩阵见[SIFT1M](../docs/sift1m.md)。V0.3 已完成双引擎矩阵，证据见[交付记录](../docs/releases/v0.3.md)；冻结配置与继承用途见[V0.3 配置索引](archive/v0.3/README.md)。
 
 ## 历史配置
 

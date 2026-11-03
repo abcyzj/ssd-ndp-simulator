@@ -77,41 +77,41 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 
 ## V03-0 冻结检查
 
-`tools/freeze_direct_baseline.py` 对锁定准备输入运行新的 direct 小规模、完整base评价128和详细8查询两放置，保存源码/输入/配置/产物身份、命令/退出码、独立核对和预冻结预算；不复用历史运行结果。方法、实测及限制见 [V03-0](direct-baseline-v0.3.md)。`tests/test_direct_baseline.py` 单独执行，覆盖证据缺失/篡改/失败、非法清单及资源冻结拒绝；本轮3/3通过，未注册到原67项CTest中。它们不代替完整AC或IR验收。
+`tools/freeze_direct_baseline.py` 对锁定准备输入运行新的 direct 小规模、完整base评价128和详细8查询两放置，保存源码/输入/配置/产物身份、命令/退出码、独立核对和预冻结预算；不复用历史运行结果。方法、实测及限制见 [V03-0](archive/v0.3/direct-baseline.md)。`tests/test_direct_baseline.py` 单独执行，覆盖证据缺失/篡改/失败、非法清单及资源冻结拒绝；本轮3/3通过，未注册到原67项CTest中。它们不代替完整AC或IR验收。
 
 ## V03-1 结构契约检查
 
-根 CTest 新增 `ir_schema_catalog`（9组Python检查）和 `ir_schema_memory`（C++强类型/variant及往返），当前本轮69/69通过。独立静态入口、schema生成/导出、实际证据和未执行的后续验收见 [V03-1](ir-schema-v0.3.md)。这些检查不证明IR已经执行搜索。
+根 CTest 新增 `ir_schema_catalog`（9组Python检查）和 `ir_schema_memory`（C++强类型/variant及往返），当前本轮69/69通过。独立静态入口、schema生成/导出、实际证据和未执行的后续验收见 [V03-1](archive/v0.3/ir-schema.md)。这些检查不证明IR已经执行搜索。
 
 ## V03-2 动态依赖与值生命周期
 
 `ir_dynamic_lifecycle` 使用合成结构夹具及受信测试 adapter，覆盖增量接纳、非法引用、ADDRESS/DATA/CONTROL/ORDER、可见值驱动动态后继、版本化状态所有权、空/零时长 JOIN、失败排空、同刻提交顺序和 2,001 JOIN 回收。`sst_ir_base/input/compute/return` 通过真实 SST SelfLink 验证三阶段延迟与非提前可见，输出逐任务因果状态日志。V03-2 当轮仅 JOIN 有内置执行实现；其余测试 adapter 不替代后续 V03-3 的真实资源映射。
 
-根 CTest 已包含这些用例。定向 ASan 通过 `-DNDPSIM_SANITIZE=ON` 独立构建，运行 `ir_dynamic_lifecycle`、`runtime_dependencies_visibility` 和 `ir_schema_memory`；不是完整 SST/LSan 审计。实际命令、74/74 CTest、3/3 ASan、冻结输入证据重查及限制见 [V03-2 收口](ir-lifecycle-v0.3.md)。未运行的完整 AC、真实搜索矩阵和 RSS 梯度不计通过。
+根 CTest 已包含这些用例。定向 ASan 通过 `-DNDPSIM_SANITIZE=ON` 独立构建，运行 `ir_dynamic_lifecycle`、`runtime_dependencies_visibility` 和 `ir_schema_memory`；不是完整 SST/LSan 审计。实际命令、74/74 CTest、3/3 ASan、冻结输入证据重查及限制见 [V03-2 收口](archive/v0.3/ir-lifecycle.md)。未运行的完整 AC、真实搜索矩阵和 RSS 梯度不计通过。
 
 
 ## V03-3 算子与 placement 映射
 
 `ir_operator_placements` 运行测试专用动态 Driver 与原 GraphSearch 的真实 MQSim 四组合；20次独立进程覆盖跨页 d260、多chunk、单块容量、同刻 CPU 竞争、提前 Close、原子拒绝、部分提交和 Controller/Open 失败排空。逐字段比较结果/批次/时刻/Work/普通与本地读取/消息/link wire/credit/资源服务，失败也要求终态清零。
 
-`tools/verify_ir_mapping.py --output <新目录>` 使用锁定 Python 运行根构建、完整 CTest、映射/schema/证据检查、冻结 direct smoke 新运行与独立 ASan 4项；保存失败关闭的 manifest、输入/源码/依赖身份及命令/log/hash。本轮最终75/75 CTest、4/4 ASan、10组 schema、3组冻结证据测试通过；方法、失败记录与限制见 [V03-3](ir-mapping-v0.3.md)。不包含完整 AC、原生 oracle、生产 IR engine 或完整 SIFT 矩阵验收。
+`tools/verify_ir_mapping.py --output <新目录>` 使用锁定 Python 运行根构建、完整 CTest、映射/schema/证据检查、冻结 direct smoke 新运行与独立 ASan 4项；保存失败关闭的 manifest、输入/源码/依赖身份及命令/log/hash。本轮最终75/75 CTest、4/4 ASan、10组 schema、3组冻结证据测试通过；方法、失败记录与限制见 [V03-3](archive/v0.3/ir-mapping.md)。不包含完整 AC、原生 oracle、生产 IR engine 或完整 SIFT 矩阵验收。
 
 ## V03-4 动态 GraphSearch 前端
 
 `ir_graph_frontend` 复用真实 MQSim 探针，但常规/小容量/同刻竞争改用生产 IrGraphSearch；旧边界驱动仍单独保留。`sst_ir_graph_frontend` 运行16次合成生产SST四组合，覆盖真实向量扰动、并发2/B2/chunk2、B>E，以及非法engine/错配contract拒绝。`ir_graph_frontend_causality` 使用受信合成服务门控，验证三阶段100ns延迟、提前get拒绝、独立查询及回收；不冒充真实NAND成本。
 
-锁定Python运行 `tools/verify_ir_frontend.py --output <新目录>`，保存根构建、完整CTest、真实SIFT10k（Q32，原始/固定图向量扰动/B2并发）12次新运行、冻结direct两放置重跑、定向ASan及源码/依赖/hash。V03-4本轮78/78 CTest、ASan2/2通过，详见[收口](ir-frontend-v0.3.md)。测试内的局部比较函数不替代V03-5正式独立比较器；没有完整AC、原生oracle、完整SIFT1M矩阵或效率验收，不切换默认engine。
+锁定Python运行 `tools/verify_ir_frontend.py --output <新目录>`，保存根构建、完整CTest、真实SIFT10k（Q32，原始/固定图向量扰动/B2并发）12次新运行、冻结direct两放置重跑、定向ASan及源码/依赖/hash。V03-4本轮78/78 CTest、ASan2/2通过，详见[收口](archive/v0.3/ir-frontend.md)。测试内的局部比较函数不替代V03-5正式独立比较器；没有完整AC、原生oracle、完整SIFT1M矩阵或效率验收，不切换默认engine。
 
 ## V03-5 观测与独立比较器
 
 根CTest新增 `ir_observation_comparator`（跨页d260、B2/chunk2、并发2的两engine/两placement/statistics-detail八次真实SST运行、19项比较器对抗检查及IR日志预算拒绝）。生产前端回归也使用正式比较器；保留既有独立搜索/数值/账本检查。Python schema回归使用本机已有jsonschema 4.26.0及referencing。
 
-锁定Python运行 `tools/verify_ir_observation.py --output <新目录>`，核对V03-0～4依赖hash、根构建/全部CTest、新运行合成及真实SIFT10k八组合、独立账本、冻结direct两放置与源码/依赖稳定性。最终79/79 CTest、各项对照与对抗检查通过；见[V03-5命令、证据、开发失败与限制](ir-observation-v0.3.md)。这不运行V03-6或V03-7，不接受完整矩阵、效率或交付。
+锁定Python运行 `tools/verify_ir_observation.py --output <新目录>`，核对V03-0～4依赖hash、根构建/全部CTest、新运行合成及真实SIFT10k八组合、独立账本、冻结direct两放置与源码/依赖稳定性。最终79/79 CTest、各项对照与对抗检查通过；见[V03-5命令、证据、开发失败与限制](archive/v0.3/ir-observation.md)。这不运行V03-6或V03-7，不接受完整矩阵、效率或交付。
 
 
 ## V03-6 完整矩阵与效率门槛
 
-锁定Python运行 `tools/verify_ir_matrix.py --output <新目录>`；RAM在受限沙箱下可用 `--ram-evidence <本轮sysctl stdout>`。入口预检冻结输入/依赖/资源，根构建和全CTest、定向IR ASan后新跑52条完整SIFT1M矩阵、补足两placement各三组交替和18次Q梯度。无历史仿真复用/quick选项，失败或缺项不能通过。实际命令、全部样本、质量、独立账本、资源口径和失败记录见[V03-6](ir-matrix-v0.3.md)。
+锁定Python运行 `tools/verify_ir_matrix.py --output <新目录>`；RAM在受限沙箱下可用 `--ram-evidence <本轮sysctl stdout>`。入口预检冻结输入/依赖/资源，根构建和全CTest、定向IR ASan后新跑52条完整SIFT1M矩阵、补足两placement各三组交替和18次Q梯度。无历史仿真复用/quick选项，失败或缺项不能通过。实际命令、全部样本、质量、独立账本、资源口径和失败记录见[V03-6](archive/v0.3/ir-matrix.md)。
 
 本轮80/80 CTest、定向ASan4/4、52/52及效率/Q门槛通过。新增 `ir_matrix_gates` 五组失败关闭检查；原有比较器19项对抗、预算拒绝、schema、因果与资源回归保留。此次不是V03-7总交付：不运行完整继承AC/独立原生oracle，不切换默认engine。
 

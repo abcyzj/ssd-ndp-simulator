@@ -29,7 +29,7 @@ T6新增`resources.initial_state`/同名CSV，记录完整预装载实际完成s
 
 ## V03-5 观测增量
 
-新增必需 `observation.json` 与 IR 专属管理统计 `ir_summary`；detail 在 `events.jsonl` 流式关联操作/value、Runtime父子任务、Controller chunk/Open/Close、实际request/transaction/message，继承预算与Unsupported边界。`tools/compare_engines.py` 使用严格版本化白名单和保留引用关系的ID重命名，报告独立保存，不改写运行hash。具体schema、字段、比较范围、失败关闭与实际验证见[V03-5](ir-observation-v0.3.md)。
+新增必需 `observation.json` 与 IR 专属管理统计 `ir_summary`；detail 在 `events.jsonl` 流式关联操作/value、Runtime父子任务、Controller chunk/Open/Close、实际request/transaction/message，继承预算与Unsupported边界。`tools/compare_engines.py` 使用严格版本化白名单和保留引用关系的ID重命名，报告独立保存，不改写运行hash。具体schema、字段、比较范围、失败关闭与实际验证见[V03-5](archive/v0.3/ir-observation.md)。
 
 
 V03-7 交付接口：`execution_engine` 省略时有效值为 `ir`，显式 `direct` 保留，无效值拒绝。有效值写入config/manifest/observation；IR另写ir-manifest。旧自动化参考显式固定direct。总验收和本轮状态见[V0.3交付记录](releases/v0.3.md)。

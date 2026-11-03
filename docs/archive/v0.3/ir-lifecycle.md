@@ -1,12 +1,12 @@
 # V03-2 动态依赖与值生命周期
 
-2026-11-03（Asia/Shanghai）。依赖 V03-1 已完成；本轮新增进程内增量接纳、可见值绑定、不可变状态快照、异步 JOIN、失败传播与活动对象回收。**本页记录 V03-2 当轮仅 JOIN 可执行的收口。**后续 [V03-3](ir-mapping-v0.3.md) 已实现其余六算子映射；生产 GraphSearch IR 前端及 engine 配置尚未实现，不代表 V0.3 验收通过。
+2026-11-03（Asia/Shanghai）。依赖 V03-1 已完成；本轮新增进程内增量接纳、可见值绑定、不可变状态快照、异步 JOIN、失败传播与活动对象回收。**本页记录 V03-2 当轮仅 JOIN 可执行的收口。**后续 [V03-3](ir-mapping.md) 已实现其余六算子映射；生产 GraphSearch IR 前端及 engine 配置尚未实现，不代表 V0.3 验收通过。
 
 ## 接口与边界
 
-[Executor](../src/ir/executor.h) 每个 run 建立一个实例，使用无 operations 的已验证 Document 作为 contract。`submit(operation, producer_leases, trusted_adapter, snapshots)` 按 run 内递增非零 uint64 ID 接纳；ID 不复用，最大值作为溢出保护拒绝。引用只能指向此前已接纳且调用者持有有效 lease 的生产者，可以 Pending；不接受自引用、前向引用、跨 run/query/ordinal、错误端口/类型/shape、未知内容版本、缺失 ADDRESS/DATA 边或缺失逻辑读取 CONTROL 许可。ORDER 也等待实际完成；四类边为 AND，不额外产生传输或收费。重复语义边不重复执行生产者。
+[Executor](../../../src/ir/executor.h) 每个 run 建立一个实例，使用无 operations 的已验证 Document 作为 contract。`submit(operation, producer_leases, trusted_adapter, snapshots)` 按 run 内递增非零 uint64 ID 接纳；ID 不复用，最大值作为溢出保护拒绝。引用只能指向此前已接纳且调用者持有有效 lease 的生产者，可以 Pending；不接受自引用、前向引用、跨 run/query/ordinal、错误端口/类型/shape、未知内容版本、缺失 ADDRESS/DATA 边或缺失逻辑读取 CONTROL 许可。ORDER 也等待实际完成；四类边为 AND，不额外产生传输或收费。重复语义边不重复执行生产者。
 
-静态校验复用 [schema](../src/ir/schema.cc) 的相同结构与语义检查。增量入口只重查新操作及提供的活动生产者描述，不递归要求此前已回收的祖先；诊断文件的完整有序校验保持原规则。接纳前失败不分配 Runtime 任务或 pin。全量动态地址、实际输入 shape 和状态绑定在任何 adapter grant/真实请求/credit 前校验；输出在受信 evaluate 后检查端口、实际类型/动态上界、读取/评分的实际批次长度及有限得分，失败不发布。
+静态校验复用 [schema](../../../src/ir/schema.cc) 的相同结构与语义检查。增量入口只重查新操作及提供的活动生产者描述，不递归要求此前已回收的祖先；诊断文件的完整有序校验保持原规则。接纳前失败不分配 Runtime 任务或 pin。全量动态地址、实际输入 shape 和状态绑定在任何 adapter grant/真实请求/credit 前校验；输出在受信 evaluate 后检查端口、实际类型/动态上界、读取/评分的实际批次长度及有限得分，失败不发布。
 
 `Lease` 复制共享同一个释放位；独立 ownership 必须 `retain`，每个 lease 只 `release` 一次。消费者与 waiter 在提交时独立 pin 生产者，前端提前释放不影响已接纳消费者；回收后不能凭历史 op ID 建立新消费。`get` 只通过 Runtime 的 HostMemory 可见性门控，私有计算结果直到服务及必要返回完成才可读。操作及值的活动/峰值计数包括 Pending 的输出端口；累计 submitted/completed/failed 计数不保留历史图。`diagnostic/require_progress` 关联 query、IR op、Runtime task、依赖、owner/pin 和等待资源。
 
@@ -43,6 +43,6 @@ Trusted Adapter 承接原 Runtime 的 grant/start、一次 evaluate、service_do
 ## 限制与后续依赖
 
 - V03-2 只关闭动态管理层门槛。其余算子映射、真实搜索前端、执行 engine 选择、IR 观测与独立比较器仍待 V03-3～5；direct 默认及搜索行为未变。
-- V03-6起Value使用共享不可变payload，评分保留原packed FP64记录，`data()`提供延迟JSON诊断视图；状态仍使用进程内JSON与共享不可变视图（[证据](ir-matrix-v0.3.md)），没有运行时 DAG 文件回放或设备可读状态。未实现设备输出消费、新位置、可写索引或通用算子。
+- V03-6起Value使用共享不可变payload，评分保留原packed FP64记录，`data()`提供延迟JSON诊断视图；状态仍使用进程内JSON与共享不可变视图（[证据](ir-matrix.md)），没有运行时 DAG 文件回放或设备可读状态。未实现设备输出消费、新位置、可写索引或通用算子。
 - 本轮没有完整 AC、独立原生 oracle、SIFT 四组合/52 条矩阵、真实搜索 Q/RSS 梯度或效率预算测量；2,001 JOIN 是活动元数据回收探针，不能替代 V03-6 的搜索规模与 RSS 验证。不可恢复后端失败仍终止实验，不新增恢复保证。
 - V03-2 当轮的真实计费与 host/controller 映射保持未实现声明；合成服务时间只是因果探针，硬件参数仍为 configured_unvalidated，不作性能优劣或校准结论。本轮到此停止，不自动开始 V03-3。

@@ -2,7 +2,7 @@
 
 日期：2026-11-02（Asia/Shanghai）  
 契约标识：`ndpsim-ir/1`  
-状态：设计规范；V03-1 的 [C++ 类型、schema 与静态校验](ir-schema-v0.3.md)已实现，V03-2 的[动态依赖、值生命周期与异步 JOIN](ir-lifecycle-v0.3.md)已实现，V03-3 的[算子与 placement 映射](ir-mapping-v0.3.md)已实现；[生产图前端与 engine](ir-frontend-v0.3.md)、[观测与独立比较器](ir-observation-v0.3.md)、[完整矩阵](ir-matrix-v0.3.md)和[总交付/默认 IR](releases/v0.3.md)均已完成。诊断格式不是可独立执行文件。产品范围与验收见 [V0.3 PRD](prd-v0.3.md)。
+状态：设计规范；V03-1 的 [C++ 类型、schema 与静态校验](archive/v0.3/ir-schema.md)已实现，V03-2 的[动态依赖、值生命周期与异步 JOIN](archive/v0.3/ir-lifecycle.md)已实现，V03-3 的[算子与 placement 映射](archive/v0.3/ir-mapping.md)已实现；[生产图前端与 engine](archive/v0.3/ir-frontend.md)、[观测与独立比较器](archive/v0.3/ir-observation.md)、[完整矩阵](archive/v0.3/ir-matrix.md)和[总交付/默认 IR](releases/v0.3.md)均已完成。诊断格式不是可独立执行文件。产品范围与验收见 [V0.3 PRD](prd-v0.3.md)。
 
 ## 1. 目的与设计取舍
 
@@ -245,7 +245,7 @@ QUERY_READY(query, initial_state)
 
 推荐输出`ir-manifest.json`、可选`ir-operations.jsonl`及`ir-bindings.jsonl`；名称在实现阶段冻结。进程内提交不要求先序列化再解析。操作流记录结构、端口、依赖、scope和状态转换；大内容只记录身份/shape/hash或受限样本，不复制base与全部中间值。
 
-V03-5实际将操作/绑定流合并在可选`events.jsonl`中，另写必需`observation.json`和IR管理统计，冻结schema、关联及严格比较器见[观测接口](ir-observation-v0.3.md)。
+V03-5实际将操作/绑定流合并在可选`events.jsonl`中，另写必需`observation.json`和IR管理统计，冻结schema、关联及严格比较器见[观测接口](archive/v0.3/ir-observation.md)。
 
 这些文件用于校验和追踪，首版不保证可回放；缺少完整输入内容或动态前端状态时不能标为“可独立执行IR包”。既有底层事件日志继续使用，bindings连接IR父操作与服务/请求/消息。导出有预算、流式写入和失败诊断，关闭后不保留隐性全历史副本。
 
