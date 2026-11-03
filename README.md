@@ -4,7 +4,7 @@
 
 ## V0.4 开发入口
 
-V0.4 需求与实施清单已整理，功能和精度验收均待实施。先读 [V0.4 PRD](docs/prd-v0.4.md)、[可执行任务清单](docs/implementation-plan-v0.4.md)和[源码定向复核](docs/source-audit-v0.4.md)。范围为现有图搜索的独立原生程序、Profiler、CPU Profile、内存驻留单线程精度验证及现有L2下沉条件预测；2/4 worker为诊断，SSD/PCIe/Controller仍未校准。新增Profile和驻留路径须显式启用，不改变下述V0.3日常默认。常规验收采用 [14个模拟配置](docs/validation-matrix-v0.4.md)，重复/采集和定向/继承测试另计，原52条保留为按需深度回归；新V0.4验收入口尚待实现。
+V0.4 的 [V04-0开工冻结](docs/start-freeze-v0.4.md)已完成，其余功能和精度验收待实施。先读 [V0.4 PRD](docs/prd-v0.4.md)、[可执行任务清单](docs/implementation-plan-v0.4.md)和[源码定向复核](docs/source-audit-v0.4.md)。范围为现有图搜索的独立原生程序、Profiler、CPU Profile、内存驻留单线程精度验证及现有L2下沉条件预测；2/4 worker为诊断，SSD/PCIe/Controller仍未校准。新增Profile和驻留路径须显式启用，不改变下述V0.3日常默认。常规验收采用 [14个模拟配置](docs/validation-matrix-v0.4.md)，重复/采集和定向/继承测试另计，原52条保留为按需深度回归；新V0.4验收入口尚待实现。
 
 ## V0.3 可运行基线
 

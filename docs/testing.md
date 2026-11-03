@@ -121,3 +121,7 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 锁定 Python 运行 `tools/verify_v03.py --all --ram-evidence <本轮sysctl stdout> --output <新目录>`。完整重跑根构建/全部CTest、52条矩阵/效率/Q梯度、完整继承AC/原生oracle、T3/T4/T5、IR ASan和默认入口复现。无quick选项；可选矩阵复用须全执行/验证源码、构建库、输入、配置、依赖与产物身份匹配，缺项/失败/篡改不得通过。`v03_delivery_gates` 和 `v02_delivery_gates` 已注册CTest。日常默认ir；继承自动化基线显式direct。AC映射、实际命令和限制见[V03-7](releases/v0.3.md)。
 
 本轮 V03-7 实际根 CTest **82/82**、完整 V0.1 AC **11/11**（含原生 oracle、慢功能、继承 ASan **17/17**）、V0.2 T3/T4/T5、矩阵 **52/52** 和三组效率/18次Q梯度均通过；定向IR ASan额外 **5/5**。V0.2 T6覆盖由本轮52条矩阵及保留的 `sift1m_matrix`/`ir_matrix_gates`、严格复用校验和独立账本提供；未将旧V0.2的26条或473条断言冒充本轮独立重跑。
+
+## V04-0 开工门槛
+
+根CTest新增 `v04_start_gates`（`tests/test_v04_start.py`，5组）：拒绝缺失/篡改产物、越界路径、失败/重复命令、失败/缺失断言、错误任务/schema及矩阵/配套重复日程漂移。完整开工入口为 `tools/freeze_v04_start.py`，实际命令、83/83 CTest、完整输入/历史参考核验、四次新direct/默认IR smoke与独立核对见[冻结记录](start-freeze-v0.4.md)。本项不表示原生或CPU精度通过，也不替代完整继承AC。

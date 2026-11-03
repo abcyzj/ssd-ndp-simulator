@@ -6,6 +6,7 @@ V0.4常规验收规划为 [14个模拟配置](../docs/validation-matrix-v0.4.md)
 
 | 日常与准备工具 | 用途 |
 | --- | --- |
+| `freeze_v04_start.py` | V04-0完整输入/历史参考身份核验、预算和14配置计划冻结、四组合新smoke；[命令与限制](../docs/start-freeze-v0.4.md)，不启动下一任务或完整验收 |
 | `run_experiment.py` | 复用已有构建，只运行实验；见[README](../README.md) |
 | `run.py` | 根构建、CTest、两放置运行 |
 | `prepare_sst.py` | 根 CMake 调用的锁定 SST 准备/缓存 |
