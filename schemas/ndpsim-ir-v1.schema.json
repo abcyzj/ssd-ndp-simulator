@@ -1,0 +1,1802 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ndpsim:ir:1",
+  "type": "object",
+  "properties": {
+    "manifest": {
+      "$ref": "#/$defs/manifest"
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/object"
+      },
+      "minItems": 1
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/operation"
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "manifest",
+    "objects",
+    "operations"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "extensions": {
+      "type": "object",
+      "properties": {
+        "non_semantic": {
+          "const": true
+        },
+        "metadata": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "non_semantic",
+        "metadata"
+      ],
+      "additionalProperties": false
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "artifact": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 18446744073709551615
+          },
+          "minItems": 1
+        },
+        "id_mapping_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "order_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "identity",
+        "shape",
+        "id_mapping_sha256",
+        "order_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "type": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "enum": [
+            "u32",
+            "u64",
+            "bool",
+            "ids_u32",
+            "fp32",
+            "scores_id_f64",
+            "adjacency",
+            "query_state",
+            "token"
+          ]
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "extent": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 18446744073709551615
+              },
+              "dynamic": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "extent",
+              "dynamic"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "name",
+        "shape"
+      ],
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "run": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "query": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "query_ordinal": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "iteration": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "semantic_batch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "chunk": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "stage": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        }
+      },
+      "required": [
+        "run",
+        "query",
+        "query_ordinal",
+        "iteration",
+        "semantic_batch"
+      ],
+      "additionalProperties": false
+    },
+    "port": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "type": {
+          "$ref": "#/$defs/type"
+        },
+        "location": {
+          "enum": [
+            "HostMemory",
+            "DeviceBuffer",
+            "SSDStorage"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "location"
+      ],
+      "additionalProperties": false
+    },
+    "object": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "object_type": {
+          "enum": [
+            "query_vectors",
+            "base_vectors",
+            "adjacency"
+          ]
+        },
+        "content_identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "content_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "element_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "element_type": {
+          "enum": [
+            "fp32",
+            "u32"
+          ]
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 18446744073709551615
+          },
+          "minItems": 1
+        },
+        "byte_order": {
+          "const": "little"
+        },
+        "record_schema": {
+          "enum": [
+            "fp32-vector-v1",
+            "degree-ids-u32-v1"
+          ]
+        },
+        "logical_layout": {
+          "const": "element-field-v1"
+        },
+        "mutability": {
+          "const": "readonly"
+        },
+        "content_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      },
+      "required": [
+        "object_id",
+        "object_type",
+        "content_identity",
+        "content_version",
+        "element_count",
+        "element_type",
+        "shape",
+        "byte_order",
+        "record_schema",
+        "logical_layout",
+        "mutability",
+        "content_ref"
+      ],
+      "additionalProperties": false
+    },
+    "output_ref": {
+      "type": "object",
+      "properties": {
+        "producer_op": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "port": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "type": {
+          "$ref": "#/$defs/type"
+        }
+      },
+      "required": [
+        "producer_op",
+        "port",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "slice": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "content_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "minItems": 0
+        },
+        "indices_ref": {
+          "$ref": "#/$defs/output_ref"
+        },
+        "field": {
+          "enum": [
+            "vector",
+            "neighbors"
+          ]
+        },
+        "range": {
+          "type": "object",
+          "properties": {
+            "offset": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            "length": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            }
+          },
+          "required": [
+            "offset",
+            "length"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "object_id",
+        "content_version",
+        "field"
+      ],
+      "additionalProperties": false
+    },
+    "value": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "const": "object_slice"
+            },
+            "type": {
+              "$ref": "#/$defs/type"
+            },
+            "slice": {
+              "$ref": "#/$defs/slice"
+            }
+          },
+          "required": [
+            "ref",
+            "type",
+            "slice"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "const": "op_output"
+            },
+            "type": {
+              "$ref": "#/$defs/type"
+            },
+            "output": {
+              "$ref": "#/$defs/output_ref"
+            }
+          },
+          "required": [
+            "ref",
+            "type",
+            "output"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "const": "literal"
+            },
+            "type": {
+              "$ref": "#/$defs/type"
+            },
+            "value": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4294967295
+                  },
+                  "minItems": 1,
+                  "maxItems": 1
+                }
+              ]
+            }
+          },
+          "required": [
+            "ref",
+            "type",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "const": "state_ref"
+            },
+            "type": {
+              "$ref": "#/$defs/type"
+            },
+            "query": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            "state_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            }
+          },
+          "required": [
+            "ref",
+            "type",
+            "query",
+            "state_id",
+            "version"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "input": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "value": {
+          "$ref": "#/$defs/value"
+        }
+      },
+      "required": [
+        "port",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "dependency": {
+      "type": "object",
+      "properties": {
+        "producer_op": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "kind": {
+          "enum": [
+            "ADDRESS",
+            "DATA",
+            "CONTROL",
+            "ORDER"
+          ]
+        },
+        "port": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "state_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        }
+      },
+      "required": [
+        "producer_op",
+        "kind",
+        "port"
+      ],
+      "additionalProperties": false
+    },
+    "access": {
+      "type": "object",
+      "properties": {
+        "slice": {
+          "$ref": "#/$defs/slice"
+        },
+        "mode": {
+          "const": "readonly"
+        },
+        "order": {
+          "const": "input-order"
+        }
+      },
+      "required": [
+        "slice",
+        "mode",
+        "order"
+      ],
+      "additionalProperties": false
+    },
+    "workload": {
+      "type": "object",
+      "properties": {
+        "rule": {
+          "enum": [
+            "none",
+            "ordered-fp64-l2-v1",
+            "candidates-v1",
+            "select-frontier-v1",
+            "dedup-neighbors-v1"
+          ]
+        },
+        "counts": {
+          "type": "object",
+          "properties": {
+            "elements": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            "flops": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            "read_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            "write_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            "output_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            "candidate_checks": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            "comparisons": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            }
+          },
+          "required": [
+            "elements",
+            "flops",
+            "read_bytes",
+            "write_bytes",
+            "output_bytes",
+            "candidate_checks",
+            "comparisons"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "rule"
+      ],
+      "additionalProperties": false
+    },
+    "operation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "op_id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "scope": {
+              "$ref": "#/$defs/scope"
+            },
+            "kind": {
+              "const": "EXTERNAL"
+            },
+            "operator": {
+              "const": "QUERY_READY"
+            },
+            "operator_version": {
+              "const": 1,
+              "type": "integer"
+            },
+            "placement": {
+              "enum": [
+                "host"
+              ]
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/input"
+              },
+              "minItems": 0
+            },
+            "outputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/port"
+              },
+              "minItems": 0
+            },
+            "deps": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/dependency"
+              },
+              "minItems": 0
+            },
+            "access": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/access"
+              },
+              "minItems": 0
+            },
+            "params": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            },
+            "workload": {
+              "$ref": "#/$defs/workload"
+            },
+            "effects": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "pure_value"
+                ]
+              },
+              "minItems": 1
+            },
+            "schedule": {
+              "type": "object",
+              "properties": {
+                "parallel_group": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                }
+              },
+              "required": [
+                "parallel_group"
+              ],
+              "additionalProperties": false
+            },
+            "provenance": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "record_offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                }
+              },
+              "required": [
+                "source",
+                "record_offset"
+              ],
+              "additionalProperties": false
+            },
+            "extensions": {
+              "$ref": "#/$defs/extensions"
+            }
+          },
+          "required": [
+            "op_id",
+            "scope",
+            "kind",
+            "operator",
+            "operator_version",
+            "placement",
+            "inputs",
+            "outputs",
+            "deps",
+            "access",
+            "params",
+            "workload",
+            "effects"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op_id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "scope": {
+              "$ref": "#/$defs/scope"
+            },
+            "kind": {
+              "const": "MEMORY"
+            },
+            "operator": {
+              "const": "READ_ADJACENCY"
+            },
+            "operator_version": {
+              "const": 1,
+              "type": "integer"
+            },
+            "placement": {
+              "enum": [
+                "host"
+              ]
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/input"
+              },
+              "minItems": 0
+            },
+            "outputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/port"
+              },
+              "minItems": 0
+            },
+            "deps": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/dependency"
+              },
+              "minItems": 0
+            },
+            "access": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/access"
+              },
+              "minItems": 0
+            },
+            "params": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            },
+            "workload": {
+              "$ref": "#/$defs/workload"
+            },
+            "effects": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "logical_read"
+                ]
+              },
+              "minItems": 1
+            },
+            "schedule": {
+              "type": "object",
+              "properties": {
+                "parallel_group": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                }
+              },
+              "required": [
+                "parallel_group"
+              ],
+              "additionalProperties": false
+            },
+            "provenance": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "record_offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                }
+              },
+              "required": [
+                "source",
+                "record_offset"
+              ],
+              "additionalProperties": false
+            },
+            "extensions": {
+              "$ref": "#/$defs/extensions"
+            }
+          },
+          "required": [
+            "op_id",
+            "scope",
+            "kind",
+            "operator",
+            "operator_version",
+            "placement",
+            "inputs",
+            "outputs",
+            "deps",
+            "access",
+            "params",
+            "workload",
+            "effects"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op_id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "scope": {
+              "$ref": "#/$defs/scope"
+            },
+            "kind": {
+              "const": "COMPUTE"
+            },
+            "operator": {
+              "const": "SCORE_L2"
+            },
+            "operator_version": {
+              "const": 1,
+              "type": "integer"
+            },
+            "placement": {
+              "enum": [
+                "host",
+                "controller"
+              ]
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/input"
+              },
+              "minItems": 0
+            },
+            "outputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/port"
+              },
+              "minItems": 0
+            },
+            "deps": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/dependency"
+              },
+              "minItems": 0
+            },
+            "access": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/access"
+              },
+              "minItems": 0
+            },
+            "params": {
+              "type": "object",
+              "properties": {
+                "dimensions": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 18446744073709551615
+                },
+                "chunk": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 18446744073709551615
+                }
+              },
+              "required": [
+                "dimensions",
+                "chunk"
+              ],
+              "additionalProperties": false
+            },
+            "workload": {
+              "$ref": "#/$defs/workload"
+            },
+            "effects": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "logical_read"
+                ]
+              },
+              "minItems": 1
+            },
+            "schedule": {
+              "type": "object",
+              "properties": {
+                "parallel_group": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                }
+              },
+              "required": [
+                "parallel_group"
+              ],
+              "additionalProperties": false
+            },
+            "provenance": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "record_offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                }
+              },
+              "required": [
+                "source",
+                "record_offset"
+              ],
+              "additionalProperties": false
+            },
+            "extensions": {
+              "$ref": "#/$defs/extensions"
+            }
+          },
+          "required": [
+            "op_id",
+            "scope",
+            "kind",
+            "operator",
+            "operator_version",
+            "placement",
+            "inputs",
+            "outputs",
+            "deps",
+            "access",
+            "params",
+            "workload",
+            "effects"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op_id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "scope": {
+              "$ref": "#/$defs/scope"
+            },
+            "kind": {
+              "const": "CONTROL"
+            },
+            "operator": {
+              "const": "MERGE_CANDIDATES"
+            },
+            "operator_version": {
+              "const": 1,
+              "type": "integer"
+            },
+            "placement": {
+              "enum": [
+                "host"
+              ]
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/input"
+              },
+              "minItems": 0
+            },
+            "outputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/port"
+              },
+              "minItems": 0
+            },
+            "deps": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/dependency"
+              },
+              "minItems": 0
+            },
+            "access": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/access"
+              },
+              "minItems": 0
+            },
+            "params": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            },
+            "workload": {
+              "$ref": "#/$defs/workload"
+            },
+            "effects": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "query_state_transition"
+                ]
+              },
+              "minItems": 1
+            },
+            "schedule": {
+              "type": "object",
+              "properties": {
+                "parallel_group": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                }
+              },
+              "required": [
+                "parallel_group"
+              ],
+              "additionalProperties": false
+            },
+            "provenance": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "record_offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                }
+              },
+              "required": [
+                "source",
+                "record_offset"
+              ],
+              "additionalProperties": false
+            },
+            "extensions": {
+              "$ref": "#/$defs/extensions"
+            }
+          },
+          "required": [
+            "op_id",
+            "scope",
+            "kind",
+            "operator",
+            "operator_version",
+            "placement",
+            "inputs",
+            "outputs",
+            "deps",
+            "access",
+            "params",
+            "workload",
+            "effects"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op_id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "scope": {
+              "$ref": "#/$defs/scope"
+            },
+            "kind": {
+              "const": "CONTROL"
+            },
+            "operator": {
+              "const": "SELECT_FRONTIER"
+            },
+            "operator_version": {
+              "const": 1,
+              "type": "integer"
+            },
+            "placement": {
+              "enum": [
+                "host"
+              ]
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/input"
+              },
+              "minItems": 0
+            },
+            "outputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/port"
+              },
+              "minItems": 0
+            },
+            "deps": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/dependency"
+              },
+              "minItems": 0
+            },
+            "access": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/access"
+              },
+              "minItems": 0
+            },
+            "params": {
+              "type": "object",
+              "properties": {
+                "L": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 18446744073709551615
+                },
+                "B": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 18446744073709551615
+                },
+                "E": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 18446744073709551615
+                }
+              },
+              "required": [
+                "L",
+                "B",
+                "E"
+              ],
+              "additionalProperties": false
+            },
+            "workload": {
+              "$ref": "#/$defs/workload"
+            },
+            "effects": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "query_state_transition"
+                ]
+              },
+              "minItems": 1
+            },
+            "schedule": {
+              "type": "object",
+              "properties": {
+                "parallel_group": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                }
+              },
+              "required": [
+                "parallel_group"
+              ],
+              "additionalProperties": false
+            },
+            "provenance": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "record_offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                }
+              },
+              "required": [
+                "source",
+                "record_offset"
+              ],
+              "additionalProperties": false
+            },
+            "extensions": {
+              "$ref": "#/$defs/extensions"
+            }
+          },
+          "required": [
+            "op_id",
+            "scope",
+            "kind",
+            "operator",
+            "operator_version",
+            "placement",
+            "inputs",
+            "outputs",
+            "deps",
+            "access",
+            "params",
+            "workload",
+            "effects"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op_id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "scope": {
+              "$ref": "#/$defs/scope"
+            },
+            "kind": {
+              "const": "CONTROL"
+            },
+            "operator": {
+              "const": "DEDUP_NEIGHBORS"
+            },
+            "operator_version": {
+              "const": 1,
+              "type": "integer"
+            },
+            "placement": {
+              "enum": [
+                "host"
+              ]
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/input"
+              },
+              "minItems": 0
+            },
+            "outputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/port"
+              },
+              "minItems": 0
+            },
+            "deps": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/dependency"
+              },
+              "minItems": 0
+            },
+            "access": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/access"
+              },
+              "minItems": 0
+            },
+            "params": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            },
+            "workload": {
+              "$ref": "#/$defs/workload"
+            },
+            "effects": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "pure_value"
+                ]
+              },
+              "minItems": 1
+            },
+            "schedule": {
+              "type": "object",
+              "properties": {
+                "parallel_group": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                }
+              },
+              "required": [
+                "parallel_group"
+              ],
+              "additionalProperties": false
+            },
+            "provenance": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "record_offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                }
+              },
+              "required": [
+                "source",
+                "record_offset"
+              ],
+              "additionalProperties": false
+            },
+            "extensions": {
+              "$ref": "#/$defs/extensions"
+            }
+          },
+          "required": [
+            "op_id",
+            "scope",
+            "kind",
+            "operator",
+            "operator_version",
+            "placement",
+            "inputs",
+            "outputs",
+            "deps",
+            "access",
+            "params",
+            "workload",
+            "effects"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op_id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "scope": {
+              "$ref": "#/$defs/scope"
+            },
+            "kind": {
+              "const": "SYNC"
+            },
+            "operator": {
+              "const": "JOIN"
+            },
+            "operator_version": {
+              "const": 1,
+              "type": "integer"
+            },
+            "placement": {
+              "enum": [
+                "host"
+              ]
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/input"
+              },
+              "minItems": 0
+            },
+            "outputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/port"
+              },
+              "minItems": 0
+            },
+            "deps": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/dependency"
+              },
+              "minItems": 0
+            },
+            "access": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/access"
+              },
+              "minItems": 0
+            },
+            "params": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            },
+            "workload": {
+              "$ref": "#/$defs/workload"
+            },
+            "effects": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "pure_value"
+                ]
+              },
+              "minItems": 1
+            },
+            "schedule": {
+              "type": "object",
+              "properties": {
+                "parallel_group": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                }
+              },
+              "required": [
+                "parallel_group"
+              ],
+              "additionalProperties": false
+            },
+            "provenance": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "record_offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                }
+              },
+              "required": [
+                "source",
+                "record_offset"
+              ],
+              "additionalProperties": false
+            },
+            "extensions": {
+              "$ref": "#/$defs/extensions"
+            }
+          },
+          "required": [
+            "op_id",
+            "scope",
+            "kind",
+            "operator",
+            "operator_version",
+            "placement",
+            "inputs",
+            "outputs",
+            "deps",
+            "access",
+            "params",
+            "workload",
+            "effects"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "manifest": {
+      "type": "object",
+      "properties": {
+        "ir_version": {
+          "const": "ndpsim-ir/1"
+        },
+        "execution_engine": {
+          "const": "ir"
+        },
+        "execution_mode": {
+          "const": "dynamic"
+        },
+        "workload_type": {
+          "const": "graph_ann"
+        },
+        "frontend": {
+          "$ref": "#/$defs/identity"
+        },
+        "dataset": {
+          "$ref": "#/$defs/artifact"
+        },
+        "index": {
+          "$ref": "#/$defs/artifact"
+        },
+        "truth": {
+          "$ref": "#/$defs/artifact"
+        },
+        "queries": {
+          "$ref": "#/$defs/artifact"
+        },
+        "search": {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "const": "ndpsim-ranked-expansion-v1"
+            },
+            "entry": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4294967295
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "L": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "B": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "E": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            },
+            "chunk": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            }
+          },
+          "required": [
+            "strategy",
+            "entry",
+            "k",
+            "L",
+            "B",
+            "E",
+            "chunk"
+          ],
+          "additionalProperties": false
+        },
+        "operator_set": {
+          "type": "object",
+          "properties": {
+            "catalog_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "operators": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "operator": {
+                    "enum": [
+                      "QUERY_READY",
+                      "READ_ADJACENCY",
+                      "SCORE_L2",
+                      "MERGE_CANDIDATES",
+                      "SELECT_FRONTIER",
+                      "DEDUP_NEIGHBORS",
+                      "JOIN"
+                    ]
+                  },
+                  "version": {
+                    "const": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "operator",
+                  "version"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "catalog_sha256",
+            "operators"
+          ],
+          "additionalProperties": false
+        },
+        "mapping": {
+          "type": "object",
+          "properties": {
+            "placement": {
+              "enum": [
+                "host",
+                "controller"
+              ]
+            },
+            "policy": {
+              "$ref": "#/$defs/identity"
+            },
+            "layout": {
+              "$ref": "#/$defs/identity"
+            },
+            "profile": {
+              "$ref": "#/$defs/identity"
+            },
+            "initial_state": {
+              "$ref": "#/$defs/identity"
+            },
+            "cost": {
+              "$ref": "#/$defs/identity"
+            }
+          },
+          "required": [
+            "placement",
+            "policy",
+            "layout",
+            "profile",
+            "initial_state",
+            "cost"
+          ],
+          "additionalProperties": false
+        },
+        "execution_scope": {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+            },
+            "query_identity": {
+              "const": "original-id-and-run-ordinal"
+            },
+            "batch_rule": {
+              "const": "query-iteration-semantic-batch-v1"
+            }
+          },
+          "required": [
+            "run",
+            "query_identity",
+            "batch_rule"
+          ],
+          "additionalProperties": false
+        },
+        "source": {
+          "$ref": "#/$defs/identity"
+        },
+        "dependencies": {
+          "type": "object",
+          "properties": {
+            "mqsim": {
+              "$ref": "#/$defs/identity"
+            },
+            "sst": {
+              "$ref": "#/$defs/identity"
+            },
+            "toolchain": {
+              "$ref": "#/$defs/identity"
+            },
+            "working_tree": {
+              "$ref": "#/$defs/identity"
+            }
+          },
+          "required": [
+            "mqsim",
+            "sst",
+            "toolchain",
+            "working_tree"
+          ],
+          "additionalProperties": false
+        },
+        "diagnostics": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "enum": [
+                "statistics",
+                "detail"
+              ]
+            },
+            "schema": {
+              "const": "ndpsim-ir-diagnostics/1"
+            },
+            "budget_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18446744073709551615
+            }
+          },
+          "required": [
+            "mode",
+            "schema",
+            "budget_bytes"
+          ],
+          "additionalProperties": false
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      },
+      "required": [
+        "ir_version",
+        "execution_engine",
+        "execution_mode",
+        "workload_type",
+        "frontend",
+        "dataset",
+        "index",
+        "truth",
+        "queries",
+        "search",
+        "operator_set",
+        "mapping",
+        "execution_scope",
+        "source",
+        "dependencies",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,894 @@
+{
+  "manifest": {
+    "ir_version": "ndpsim-ir/1",
+    "execution_engine": "ir",
+    "execution_mode": "dynamic",
+    "workload_type": "graph_ann",
+    "frontend": {
+      "name": "synthetic-example",
+      "version": "1",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "dataset": {
+      "identity": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "shape": [
+        4,
+        4
+      ],
+      "id_mapping_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "order_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "index": {
+      "identity": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "shape": [
+        4,
+        4
+      ],
+      "id_mapping_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "order_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "truth": {
+      "identity": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "shape": [
+        4,
+        4
+      ],
+      "id_mapping_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "order_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "queries": {
+      "identity": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "shape": [
+        4,
+        4
+      ],
+      "id_mapping_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "order_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "search": {
+      "strategy": "ndpsim-ranked-expansion-v1",
+      "entry": 0,
+      "k": 1,
+      "L": 2,
+      "B": 1,
+      "E": 2,
+      "chunk": 2
+    },
+    "operator_set": {
+      "catalog_sha256": "a8cd3660578d61965a6e2a52e5b07c034830418faf6df79c59f5531ee4fb681d",
+      "operators": [
+        {
+          "operator": "QUERY_READY",
+          "version": 1
+        },
+        {
+          "operator": "READ_ADJACENCY",
+          "version": 1
+        },
+        {
+          "operator": "SCORE_L2",
+          "version": 1
+        },
+        {
+          "operator": "MERGE_CANDIDATES",
+          "version": 1
+        },
+        {
+          "operator": "SELECT_FRONTIER",
+          "version": 1
+        },
+        {
+          "operator": "DEDUP_NEIGHBORS",
+          "version": 1
+        },
+        {
+          "operator": "JOIN",
+          "version": 1
+        }
+      ]
+    },
+    "mapping": {
+      "placement": "host",
+      "policy": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "layout": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "profile": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "initial_state": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "cost": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    "execution_scope": {
+      "run": "example",
+      "query_identity": "original-id-and-run-ordinal",
+      "batch_rule": "query-iteration-semantic-batch-v1"
+    },
+    "source": {
+      "name": "synthetic-example",
+      "version": "1",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "dependencies": {
+      "mqsim": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "sst": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "toolchain": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "working_tree": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    "diagnostics": {
+      "mode": "statistics",
+      "schema": "ndpsim-ir-diagnostics/1",
+      "budget_bytes": 1048576
+    },
+    "extensions": {
+      "non_semantic": true,
+      "metadata": {
+        "purpose": "Schema-only synthetic fixture; not a simulation run or replay package"
+      }
+    }
+  },
+  "objects": [
+    {
+      "object_id": "queries",
+      "object_type": "query_vectors",
+      "content_identity": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "content_version": 1,
+      "element_count": 4,
+      "element_type": "fp32",
+      "shape": [
+        4
+      ],
+      "byte_order": "little",
+      "record_schema": "fp32-vector-v1",
+      "logical_layout": "element-field-v1",
+      "mutability": "readonly",
+      "content_ref": "queries-trusted-provider"
+    },
+    {
+      "object_id": "base",
+      "object_type": "base_vectors",
+      "content_identity": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "content_version": 1,
+      "element_count": 4,
+      "element_type": "fp32",
+      "shape": [
+        4
+      ],
+      "byte_order": "little",
+      "record_schema": "fp32-vector-v1",
+      "logical_layout": "element-field-v1",
+      "mutability": "readonly",
+      "content_ref": "base-trusted-provider"
+    },
+    {
+      "object_id": "graph",
+      "object_type": "adjacency",
+      "content_identity": {
+        "name": "synthetic-example",
+        "version": "1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "content_version": 1,
+      "element_count": 4,
+      "element_type": "u32",
+      "shape": [
+        4
+      ],
+      "byte_order": "little",
+      "record_schema": "degree-ids-u32-v1",
+      "logical_layout": "element-field-v1",
+      "mutability": "readonly",
+      "content_ref": "graph-trusted-provider"
+    }
+  ],
+  "operations": [
+    {
+      "op_id": 1,
+      "scope": {
+        "run": "example",
+        "query": 7,
+        "query_ordinal": 0,
+        "iteration": 0,
+        "semantic_batch": 0
+      },
+      "kind": "EXTERNAL",
+      "operator": "QUERY_READY",
+      "operator_version": 1,
+      "placement": "host",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "query",
+          "type": {
+            "name": "fp32",
+            "shape": [
+              {
+                "extent": 4,
+                "dynamic": false
+              }
+            ]
+          },
+          "location": "HostMemory"
+        },
+        {
+          "name": "state",
+          "type": {
+            "name": "query_state",
+            "shape": []
+          },
+          "location": "HostMemory"
+        },
+        {
+          "name": "ready",
+          "type": {
+            "name": "token",
+            "shape": []
+          },
+          "location": "HostMemory"
+        }
+      ],
+      "deps": [],
+      "access": [],
+      "params": {},
+      "workload": {
+        "rule": "none"
+      },
+      "effects": [
+        "pure_value"
+      ]
+    },
+    {
+      "op_id": 2,
+      "scope": {
+        "run": "example",
+        "query": 7,
+        "query_ordinal": 0,
+        "iteration": 0,
+        "semantic_batch": 0
+      },
+      "kind": "COMPUTE",
+      "operator": "SCORE_L2",
+      "operator_version": 1,
+      "placement": "host",
+      "inputs": [
+        {
+          "port": "query",
+          "value": {
+            "ref": "op_output",
+            "type": {
+              "name": "fp32",
+              "shape": [
+                {
+                  "extent": 4,
+                  "dynamic": false
+                }
+              ]
+            },
+            "output": {
+              "producer_op": 1,
+              "port": "query",
+              "type": {
+                "name": "fp32",
+                "shape": [
+                  {
+                    "extent": 4,
+                    "dynamic": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "ids",
+          "value": {
+            "ref": "literal",
+            "type": {
+              "name": "ids_u32",
+              "shape": [
+                {
+                  "extent": 1,
+                  "dynamic": false
+                }
+              ]
+            },
+            "value": [
+              0
+            ]
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "scores",
+          "type": {
+            "name": "scores_id_f64",
+            "shape": [
+              {
+                "extent": 1,
+                "dynamic": false
+              }
+            ]
+          },
+          "location": "HostMemory"
+        }
+      ],
+      "deps": [
+        {
+          "producer_op": 1,
+          "port": "query",
+          "kind": "DATA"
+        },
+        {
+          "producer_op": 1,
+          "port": "ready",
+          "kind": "CONTROL"
+        }
+      ],
+      "access": [
+        {
+          "slice": {
+            "object_id": "base",
+            "content_version": 1,
+            "indices": [
+              0
+            ],
+            "field": "vector"
+          },
+          "mode": "readonly",
+          "order": "input-order"
+        }
+      ],
+      "params": {
+        "dimensions": 4,
+        "chunk": 2
+      },
+      "workload": {
+        "rule": "ordered-fp64-l2-v1"
+      },
+      "effects": [
+        "logical_read"
+      ]
+    },
+    {
+      "op_id": 3,
+      "scope": {
+        "run": "example",
+        "query": 7,
+        "query_ordinal": 0,
+        "iteration": 0,
+        "semantic_batch": 0
+      },
+      "kind": "CONTROL",
+      "operator": "MERGE_CANDIDATES",
+      "operator_version": 1,
+      "placement": "host",
+      "inputs": [
+        {
+          "port": "previous",
+          "value": {
+            "ref": "op_output",
+            "type": {
+              "name": "scores_id_f64",
+              "shape": [
+                {
+                  "extent": 1,
+                  "dynamic": false
+                }
+              ]
+            },
+            "output": {
+              "producer_op": 2,
+              "port": "scores",
+              "type": {
+                "name": "scores_id_f64",
+                "shape": [
+                  {
+                    "extent": 1,
+                    "dynamic": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "batch",
+          "value": {
+            "ref": "op_output",
+            "type": {
+              "name": "scores_id_f64",
+              "shape": [
+                {
+                  "extent": 1,
+                  "dynamic": false
+                }
+              ]
+            },
+            "output": {
+              "producer_op": 2,
+              "port": "scores",
+              "type": {
+                "name": "scores_id_f64",
+                "shape": [
+                  {
+                    "extent": 1,
+                    "dynamic": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "scores",
+          "type": {
+            "name": "scores_id_f64",
+            "shape": [
+              {
+                "extent": 2,
+                "dynamic": true
+              }
+            ]
+          },
+          "location": "HostMemory"
+        }
+      ],
+      "deps": [
+        {
+          "producer_op": 2,
+          "port": "scores",
+          "kind": "DATA"
+        }
+      ],
+      "access": [],
+      "params": {},
+      "workload": {
+        "rule": "candidates-v1"
+      },
+      "effects": [
+        "query_state_transition"
+      ]
+    },
+    {
+      "op_id": 4,
+      "scope": {
+        "run": "example",
+        "query": 7,
+        "query_ordinal": 0,
+        "iteration": 0,
+        "semantic_batch": 0
+      },
+      "kind": "CONTROL",
+      "operator": "SELECT_FRONTIER",
+      "operator_version": 1,
+      "placement": "host",
+      "inputs": [
+        {
+          "port": "scores",
+          "value": {
+            "ref": "op_output",
+            "type": {
+              "name": "scores_id_f64",
+              "shape": [
+                {
+                  "extent": 2,
+                  "dynamic": true
+                }
+              ]
+            },
+            "output": {
+              "producer_op": 3,
+              "port": "scores",
+              "type": {
+                "name": "scores_id_f64",
+                "shape": [
+                  {
+                    "extent": 2,
+                    "dynamic": true
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "expanded",
+          "value": {
+            "ref": "state_ref",
+            "type": {
+              "name": "query_state",
+              "shape": []
+            },
+            "query": 7,
+            "state_id": "search-state",
+            "version": 1
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "ids",
+          "type": {
+            "name": "ids_u32",
+            "shape": [
+              {
+                "extent": 1,
+                "dynamic": true
+              }
+            ]
+          },
+          "location": "HostMemory"
+        }
+      ],
+      "deps": [
+        {
+          "producer_op": 3,
+          "port": "scores",
+          "kind": "DATA"
+        }
+      ],
+      "access": [],
+      "params": {
+        "L": 2,
+        "B": 1,
+        "E": 2
+      },
+      "workload": {
+        "rule": "select-frontier-v1"
+      },
+      "effects": [
+        "query_state_transition"
+      ]
+    },
+    {
+      "op_id": 5,
+      "scope": {
+        "run": "example",
+        "query": 7,
+        "query_ordinal": 0,
+        "iteration": 0,
+        "semantic_batch": 0
+      },
+      "kind": "MEMORY",
+      "operator": "READ_ADJACENCY",
+      "operator_version": 1,
+      "placement": "host",
+      "inputs": [
+        {
+          "port": "ids",
+          "value": {
+            "ref": "op_output",
+            "type": {
+              "name": "ids_u32",
+              "shape": [
+                {
+                  "extent": 1,
+                  "dynamic": true
+                }
+              ]
+            },
+            "output": {
+              "producer_op": 4,
+              "port": "ids",
+              "type": {
+                "name": "ids_u32",
+                "shape": [
+                  {
+                    "extent": 1,
+                    "dynamic": true
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "adjacency",
+          "type": {
+            "name": "adjacency",
+            "shape": [
+              {
+                "extent": 1,
+                "dynamic": true
+              }
+            ]
+          },
+          "location": "HostMemory"
+        }
+      ],
+      "deps": [
+        {
+          "producer_op": 4,
+          "port": "ids",
+          "kind": "ADDRESS"
+        },
+        {
+          "producer_op": 4,
+          "port": "ids",
+          "kind": "CONTROL"
+        }
+      ],
+      "access": [
+        {
+          "slice": {
+            "object_id": "graph",
+            "content_version": 1,
+            "indices_ref": {
+              "producer_op": 4,
+              "port": "ids",
+              "type": {
+                "name": "ids_u32",
+                "shape": [
+                  {
+                    "extent": 1,
+                    "dynamic": true
+                  }
+                ]
+              }
+            },
+            "field": "neighbors"
+          },
+          "mode": "readonly",
+          "order": "input-order"
+        }
+      ],
+      "params": {},
+      "workload": {
+        "rule": "none"
+      },
+      "effects": [
+        "logical_read"
+      ]
+    },
+    {
+      "op_id": 6,
+      "scope": {
+        "run": "example",
+        "query": 7,
+        "query_ordinal": 0,
+        "iteration": 0,
+        "semantic_batch": 0
+      },
+      "kind": "CONTROL",
+      "operator": "DEDUP_NEIGHBORS",
+      "operator_version": 1,
+      "placement": "host",
+      "inputs": [
+        {
+          "port": "adjacency",
+          "value": {
+            "ref": "op_output",
+            "type": {
+              "name": "adjacency",
+              "shape": [
+                {
+                  "extent": 1,
+                  "dynamic": true
+                }
+              ]
+            },
+            "output": {
+              "producer_op": 5,
+              "port": "adjacency",
+              "type": {
+                "name": "adjacency",
+                "shape": [
+                  {
+                    "extent": 1,
+                    "dynamic": true
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "scored",
+          "value": {
+            "ref": "state_ref",
+            "type": {
+              "name": "query_state",
+              "shape": []
+            },
+            "query": 7,
+            "state_id": "search-state",
+            "version": 1
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "ids",
+          "type": {
+            "name": "ids_u32",
+            "shape": [
+              {
+                "extent": 4,
+                "dynamic": true
+              }
+            ]
+          },
+          "location": "HostMemory"
+        }
+      ],
+      "deps": [
+        {
+          "producer_op": 5,
+          "port": "adjacency",
+          "kind": "DATA"
+        }
+      ],
+      "access": [],
+      "params": {},
+      "workload": {
+        "rule": "dedup-neighbors-v1"
+      },
+      "effects": [
+        "pure_value"
+      ]
+    },
+    {
+      "op_id": 7,
+      "scope": {
+        "run": "example",
+        "query": 7,
+        "query_ordinal": 0,
+        "iteration": 0,
+        "semantic_batch": 0
+      },
+      "kind": "SYNC",
+      "operator": "JOIN",
+      "operator_version": 1,
+      "placement": "host",
+      "inputs": [
+        {
+          "port": "scores",
+          "value": {
+            "ref": "op_output",
+            "type": {
+              "name": "scores_id_f64",
+              "shape": [
+                {
+                  "extent": 1,
+                  "dynamic": false
+                }
+              ]
+            },
+            "output": {
+              "producer_op": 2,
+              "port": "scores",
+              "type": {
+                "name": "scores_id_f64",
+                "shape": [
+                  {
+                    "extent": 1,
+                    "dynamic": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "fresh",
+          "value": {
+            "ref": "op_output",
+            "type": {
+              "name": "ids_u32",
+              "shape": [
+                {
+                  "extent": 4,
+                  "dynamic": true
+                }
+              ]
+            },
+            "output": {
+              "producer_op": 6,
+              "port": "ids",
+              "type": {
+                "name": "ids_u32",
+                "shape": [
+                  {
+                    "extent": 4,
+                    "dynamic": true
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "done",
+          "type": {
+            "name": "token",
+            "shape": []
+          },
+          "location": "HostMemory"
+        }
+      ],
+      "deps": [
+        {
+          "producer_op": 2,
+          "port": "scores",
+          "kind": "DATA"
+        },
+        {
+          "producer_op": 6,
+          "port": "ids",
+          "kind": "DATA"
+        }
+      ],
+      "access": [],
+      "params": {},
+      "workload": {
+        "rule": "none"
+      },
+      "effects": [
+        "pure_value"
+      ]
+    }
+  ]
+}

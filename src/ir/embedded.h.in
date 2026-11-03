@@ -1,0 +1,5 @@
+#pragma once
+namespace ndpsim::ir::embedded {
+inline constexpr const char* schema = R"IRSCHEMA(@IR_SCHEMA@)IRSCHEMA";
+inline constexpr const char* catalog = R"IRCATALOG(@IR_CATALOG@)IRCATALOG";
+}

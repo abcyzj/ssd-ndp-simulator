@@ -1,0 +1,300 @@
+{
+  "ir_version": "ndpsim-ir/1",
+  "catalog_version": 1,
+  "execution_supported": false,
+  "operators": [
+    {
+      "operator": "QUERY_READY",
+      "operator_version": 1,
+      "kind": "EXTERNAL",
+      "schema_supported": true,
+      "execution_supported": false,
+      "mapping_status": "not_implemented",
+      "placements": [
+        "host"
+      ],
+      "inputs": [],
+      "outputs": [
+        {
+          "port": "query",
+          "type": "fp32",
+          "locations": [
+            "HostMemory"
+          ]
+        },
+        {
+          "port": "state",
+          "type": "query_state",
+          "locations": [
+            "HostMemory"
+          ]
+        },
+        {
+          "port": "ready",
+          "type": "token",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "effects": [
+        "pure_value"
+      ],
+      "workload_rule": "none",
+      "functional_version": "query_ready-v1",
+      "cost_version": "none",
+      "output_bound": "typed metadata/token; no wire payload",
+      "scratch_bound": "Host-only temporary storage bounded by input/output shapes; no device scratch credit",
+      "notes": "logical slices do not grant residency; controller SCORE_L2 uses internal DeviceBuffer and publishes HostMemory only"
+    },
+    {
+      "operator": "READ_ADJACENCY",
+      "operator_version": 1,
+      "kind": "MEMORY",
+      "schema_supported": true,
+      "execution_supported": false,
+      "mapping_status": "not_implemented",
+      "placements": [
+        "host"
+      ],
+      "inputs": [
+        {
+          "port": "ids",
+          "type": "ids_u32",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "port": "adjacency",
+          "type": "adjacency",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "effects": [
+        "logical_read"
+      ],
+      "workload_rule": "none",
+      "functional_version": "read_adjacency-v1",
+      "cost_version": "none",
+      "output_bound": "ids.extent records, each <= 4 + 4 * max_degree bytes; degree and valid IDs only",
+      "scratch_bound": "Host-only temporary storage bounded by input/output shapes; no device scratch credit",
+      "notes": "logical slices do not grant residency; controller SCORE_L2 uses internal DeviceBuffer and publishes HostMemory only"
+    },
+    {
+      "operator": "SCORE_L2",
+      "operator_version": 1,
+      "kind": "COMPUTE",
+      "schema_supported": true,
+      "execution_supported": false,
+      "mapping_status": "not_implemented",
+      "placements": [
+        "host",
+        "controller"
+      ],
+      "inputs": [
+        {
+          "port": "query",
+          "type": "fp32",
+          "locations": [
+            "HostMemory"
+          ]
+        },
+        {
+          "port": "ids",
+          "type": "ids_u32",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "port": "scores",
+          "type": "scores_id_f64",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "effects": [
+        "logical_read"
+      ],
+      "workload_rule": "ordered-fp64-l2-v1",
+      "functional_version": "ordered-fp64-squared-l2-v1",
+      "cost_version": "ordered-fp64-l2-v1",
+      "output_bound": "12 * ids.extent bytes; fixed-order FP32 input / FP64 accumulation; 3*b*d FLOP",
+      "scratch_bound": "controller per chunk b: 64 + 4*b + configured scratch_bytes; separate input sector coverage + 12*b output + 4*d resident query credit; host temporary storage bounded by declared batch shapes",
+      "notes": "logical slices do not grant residency; controller SCORE_L2 uses internal DeviceBuffer and publishes HostMemory only"
+    },
+    {
+      "operator": "MERGE_CANDIDATES",
+      "operator_version": 1,
+      "kind": "CONTROL",
+      "schema_supported": true,
+      "execution_supported": false,
+      "mapping_status": "not_implemented",
+      "placements": [
+        "host"
+      ],
+      "inputs": [
+        {
+          "port": "previous",
+          "type": "scores_id_f64",
+          "locations": [
+            "HostMemory"
+          ]
+        },
+        {
+          "port": "batch",
+          "type": "scores_id_f64",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "port": "scores",
+          "type": "scores_id_f64",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "effects": [
+        "query_state_transition"
+      ],
+      "workload_rule": "candidates-v1",
+      "functional_version": "ndpsim-candidates-v1",
+      "cost_version": "candidates-v1",
+      "output_bound": "12 * (previous.extent + batch.extent) bytes",
+      "scratch_bound": "Host-only temporary storage bounded by input/output shapes; no device scratch credit",
+      "notes": "logical slices do not grant residency; controller SCORE_L2 uses internal DeviceBuffer and publishes HostMemory only"
+    },
+    {
+      "operator": "SELECT_FRONTIER",
+      "operator_version": 1,
+      "kind": "CONTROL",
+      "schema_supported": true,
+      "execution_supported": false,
+      "mapping_status": "not_implemented",
+      "placements": [
+        "host"
+      ],
+      "inputs": [
+        {
+          "port": "scores",
+          "type": "scores_id_f64",
+          "locations": [
+            "HostMemory"
+          ]
+        },
+        {
+          "port": "expanded",
+          "type": "query_state",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "port": "ids",
+          "type": "ids_u32",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "effects": [
+        "query_state_transition"
+      ],
+      "workload_rule": "select-frontier-v1",
+      "functional_version": "ranked-frontier-v1",
+      "cost_version": "select-frontier-v1",
+      "output_bound": "4 * min(B,E) bytes",
+      "scratch_bound": "Host-only temporary storage bounded by input/output shapes; no device scratch credit",
+      "notes": "logical slices do not grant residency; controller SCORE_L2 uses internal DeviceBuffer and publishes HostMemory only"
+    },
+    {
+      "operator": "DEDUP_NEIGHBORS",
+      "operator_version": 1,
+      "kind": "CONTROL",
+      "schema_supported": true,
+      "execution_supported": false,
+      "mapping_status": "not_implemented",
+      "placements": [
+        "host"
+      ],
+      "inputs": [
+        {
+          "port": "adjacency",
+          "type": "adjacency",
+          "locations": [
+            "HostMemory"
+          ]
+        },
+        {
+          "port": "scored",
+          "type": "query_state",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "port": "ids",
+          "type": "ids_u32",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "effects": [
+        "pure_value"
+      ],
+      "workload_rule": "dedup-neighbors-v1",
+      "functional_version": "linear-dedup-v1",
+      "cost_version": "dedup-neighbors-v1",
+      "output_bound": "4 * adjacency.valid_ids bytes",
+      "scratch_bound": "Host-only temporary storage bounded by input/output shapes; no device scratch credit",
+      "notes": "logical slices do not grant residency; controller SCORE_L2 uses internal DeviceBuffer and publishes HostMemory only"
+    },
+    {
+      "operator": "JOIN",
+      "operator_version": 1,
+      "kind": "SYNC",
+      "schema_supported": true,
+      "execution_supported": false,
+      "mapping_status": "not_implemented",
+      "placements": [
+        "host"
+      ],
+      "inputs": [],
+      "outputs": [
+        {
+          "port": "done",
+          "type": "token",
+          "locations": [
+            "HostMemory"
+          ]
+        }
+      ],
+      "effects": [
+        "pure_value"
+      ],
+      "workload_rule": "none",
+      "functional_version": "join-v1",
+      "cost_version": "none",
+      "output_bound": "typed metadata/token; no wire payload",
+      "scratch_bound": "Host-only temporary storage bounded by input/output shapes; no device scratch credit",
+      "notes": "logical slices do not grant residency; controller SCORE_L2 uses internal DeviceBuffer and publishes HostMemory only"
+    }
+  ]
+}

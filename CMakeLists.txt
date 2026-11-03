@@ -358,3 +358,27 @@ if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
     add_test(NAME sift1m_matrix COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/test_t6_matrix.py")
     add_test(NAME streaming_output COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/test_streaming_output.py")
 endif()
+
+# V03-1: declarative IR contract only; no search/runtime mapping or target costs.
+file(READ "${PROJECT_SOURCE_DIR}/schemas/ndpsim-ir-v1.schema.json" IR_SCHEMA)
+file(READ "${PROJECT_SOURCE_DIR}/schemas/ndpsim-ir-v1.capabilities.json" IR_CATALOG)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    schemas/ndpsim-ir-v1.schema.json schemas/ndpsim-ir-v1.capabilities.json)
+configure_file(src/ir/embedded.h.in generated/ir/embedded.h @ONLY)
+add_library(ndpsim_ir STATIC src/ir/schema.cc src/ir/encode.cc)
+set_target_properties(ndpsim_ir PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(ndpsim_ir PUBLIC src "${PROJECT_SOURCE_DIR}/third_party/sst-core/external"
+    PRIVATE "${PROJECT_BINARY_DIR}/generated")
+target_link_libraries(ndpsim_ir PUBLIC ndpsim_content)
+target_compile_options(ndpsim_ir PRIVATE -Wall -Wextra -Wpedantic)
+add_executable(ir_validate src/ir/validate.cc)
+target_link_libraries(ir_validate PRIVATE ndpsim_ir)
+if(BUILD_TESTING)
+    add_test(NAME ir_schema_catalog COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_ir_schema.py" --validator "$<TARGET_FILE:ir_validate>")
+endif()
+if(BUILD_TESTING)
+    add_executable(ir_schema_probe tests/ir_schema_probe.cc)
+    target_link_libraries(ir_schema_probe PRIVATE ndpsim_ir)
+    add_test(NAME ir_schema_memory COMMAND ir_schema_probe "${PROJECT_SOURCE_DIR}/examples/ir/graph-contract.json")
+endif()

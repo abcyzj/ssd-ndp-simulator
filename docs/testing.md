@@ -76,3 +76,7 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 ## V03-0 冻结检查
 
 `tools/freeze_direct_baseline.py` 对锁定准备输入运行新的 direct 小规模、完整base评价128和详细8查询两放置，保存源码/输入/配置/产物身份、命令/退出码、独立核对和预冻结预算；不复用历史运行结果。方法、实测及限制见 [V03-0](direct-baseline-v0.3.md)。`tests/test_direct_baseline.py` 单独执行，覆盖证据缺失/篡改/失败、非法清单及资源冻结拒绝；本轮3/3通过，未注册到原67项CTest中。它们不代替完整AC或IR验收。
+
+## V03-1 结构契约检查
+
+根 CTest 新增 `ir_schema_catalog`（9组Python检查）和 `ir_schema_memory`（C++强类型/variant及往返），当前本轮69/69通过。独立静态入口、schema生成/导出、实际证据和未执行的后续验收见 [V03-1](ir-schema-v0.3.md)。这些检查不证明IR已经执行搜索。

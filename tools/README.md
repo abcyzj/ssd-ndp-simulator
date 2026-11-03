@@ -54,3 +54,7 @@ build/delivery/bench_host_cpu
 固定随机种子 42、128 维 FP32、batch=1/16/32/128；直接运行现有距离和 candidates 算子，控制保留 top-10。每项预热 100 次后测 7 组、每组至少 20 ms，输出每调用耗时中位数及默认模型预测（距离 setup=3/rate=4，控制 setup=1/rate=1、两种权重均为1）。`measured_over_model` 大于1表示本机实现慢于模型。校验和防止结果被消除。
 
 这是单线程、重复访问相同输入的缓存热场景，包含解码、分配、ID检查、打包及测量循环开销；不是 SIMD 上限、随机冷内存、SST查询端到端或完整AC验收。请使用优化构建且关闭 NDPSIM_SLOW_FUNCTIONAL；记录机器型号、编译器、构建选项和负载状态再比较，不自动回填或宣称硬件参数已校准。
+
+## V03-1 schema 生成
+
+`generate_ir_schema.py` 从同一声明生成 `schemas/ndpsim-ir-v1.schema.json` 与能力目录；`--check` 只读核对已提交生成物。校验入口为根构建的 `ir_validate`，接口、合法样例及限制见 [V03-1](../docs/ir-schema-v0.3.md)。能力目录的执行映射仍为未实现。
