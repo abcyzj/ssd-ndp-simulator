@@ -30,6 +30,7 @@
 | `verify_t4.py` | memory/mmap、2/16GiB profile、跨页与 credit；[接口](../docs/content-profiles.md) |
 | `verify_t5.py` | Q=32/128/512 三次重复、日志等价、回收与预算拒绝；[接口](../docs/observation-lifecycle.md) |
 | `verify_t6.py` | 完整 SIFT1M 准备、固定26次矩阵及严格复用；[入口](../docs/sift1m.md) |
+| `freeze_direct_baseline.py` | V03-0 新 direct 参考运行、身份/独立账本/预算冻结；[证据与复现](../docs/direct-baseline-v0.3.md)，不执行 IR 或完整 AC |
 | `verify_v02.py --all` | V0.2 完整基线复现；[前置准备与命令](../docs/archive/v0.2/delivery.md) |
 
 完整方法见[测试说明](../docs/testing.md)。所有有效测试和断言保留；上述工具通过不能直接声明 V0.3 通过。`verify_t6.py --prepare-only` 与 `--prepared` 分离准备/仿真，`--reuse-runs` 必须逐项验证身份；旧结果不能冒充本轮 direct 冻结或 IR 结果。

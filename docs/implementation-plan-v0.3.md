@@ -1,13 +1,21 @@
 # V0.3 可执行实施清单
 
-状态：计划已整理，所有实施任务未开始；本轮仅静态核查文档与源码，不代表任何验收通过。
+状态：**V03-0 基线冻结已完成**（2026-11-03）；V03-1～V03-7 未开始，IR 尚未实现或验收。实际命令、身份、预算及限制见 [V03-0 收口](direct-baseline-v0.3.md)。
 
-## 当前仓库复核
+## 规划时仓库复核（历史快照）
 
 - PRD记录的源码基线为 `fb2ded2097fd07fb93bfc9258f02122fad50ed73`；当前主仓 HEAD 为 `1d5e0404db9ccf543c68febf6d6c6c99d97b51de`（2026-11-02，`chore: archive v0.2 development materials for v0.3`）。两者之间 `src/`、`CMakeLists.txt`、`tests/` 未变化；差异限于归档配置/工具和相应说明。
 - 工作区核查时干净。子模块仍为 MQSim `8f7ddf6d8cafdb7c783b3fcfd4693f15c6c5854b`、SST Core `ffd71527bc26a1f2a4fb685fdeb2ca0799997d78`，与 V0.3 PRD 记录一致。此项仅为 Git 身份核对，不是本轮源码哈希、构建或运行验证。
 - 当前直接路径仍在 `src/search/graph.cc` 与 `src/sst/graph_host.cc`：`GraphSearch` 通过读取/评分回调和 `HostCpu` 执行；`GraphHost` 按 placement 接入普通读取或 `Controller::open/score/close`。`src/runtime/`、`src/backend/event_bridge.h` 提供可复用的异步可见性及 SST 时间机制。
 - 当前配置、运行器、源码和测试中没有 `execution_engine=direct|ir`、IR schema/校验器或动态 IR 执行实现。V0.2 证据不是 V0.3 direct 冻结运行；本轮也未执行 direct 参考运行、构建或测试。
+
+## 本轮复核（2026-11-03）
+
+- 主仓 HEAD 为 `88a1d81f87da4504890add3139bea09b61cef82c`；MQSim/SST 完整提交与上列一致且未修改。相对规划快照，搜索、根 CMake、原测试和实际运行器未变。
+- 锁定完整 SIFT1M 准备产物、原始四文件、图/真值/固定查询及 builder 身份重新核验通过；严格复用准备输入，本轮新跑6次 direct，不复用历史运行结果。
+- 根配置/构建退出0，CTest 67/67；新增证据校验测试3/3；完整评价128查询两放置结果/决策摘要一致，detail8的1,066批及资源账本独立核对通过。12项冻结断言全通过。
+- RAM实测16GiB；完整base运行前已冻结PRD §9默认门槛。磁盘采样峰值3,514,770,629B，最小卷余量93,319,942,144B。主证据 `results/v0.3/direct-baseline-final/manifest.json`，hash及复现步骤见收口文档。
+- 没有实现engine选择、IR/schema或比较器，没有运行完整AC、原生oracle、ASan或52条矩阵；不将本任务通过视为V0.3验收通过。
 
 ## 可执行任务
 
@@ -15,7 +23,7 @@
 
 | ID | 需求来源 / 依赖 | 实现范围 | 验收方法 | 完成证据 |
 |---|---|---|---|---|
-| **V03-0 基线冻结** | PRD §3、§7.1、§9、§12(1)；依赖：当前 direct 入口和固定 SIFT1M 准备产物 | 记录工作区源码及未提交 diff、MQSim/SST 完整 commit、工具链、输入/图/真值/查询身份和配置；对固定 direct 配置运行并保存结果及足以独立核对决策、资源账本的详细样本；核实机器 RAM/卷余量与 IR 预算 | 输入身份复核；direct 运行成功；结果可由现有独立核对器重查；记录实际资源与建议效率门槛的冻结值 | `direct-baseline` manifest、命令/日志、配置与输入 hash、结果/统计/详细核对报告、预算决策记录 |
+| **V03-0 基线冻结（已完成）** | PRD §3、§7.1、§9、§12(1)；依赖：当前 direct 入口和固定 SIFT1M 准备产物 | 记录工作区源码及未提交 diff、MQSim/SST 完整 commit、工具链、输入/图/真值/查询身份和配置；对固定 direct 配置运行并保存结果及足以独立核对决策、资源账本的详细样本；核实机器 RAM/卷余量与 IR 预算 | 输入身份复核；direct 运行成功；结果可由现有独立核对器重查；记录实际资源与建议效率门槛的冻结值 | [本轮收口](direct-baseline-v0.3.md)；`results/v0.3/direct-baseline-final/` 的 manifest、12项断言、命令/log、源码/输入/产物hash、6次新运行、独立1,066批核对与预冻结预算；67项CTest及3项证据测试通过 |
 | **V03-1 schema 与能力目录** | FR-03-01/06/12、IR §3–4、AC-03-01；依赖：V03-0 | 建立 `ndpsim-ir/1` 内存类型、对象/ValueRef/Operation/作用域、端口和能力目录；提供与内存定义一致的机器可读 schema/合法样例；拒绝未知必需语义 | 合法样例通过；版本、算子、位置、字段、类型、shape、身份及重复 ID 等非法输入被明确拒绝 | schema、能力目录、样例、校验器测试及诊断输出；manifest 记录 IR/算子版本 |
 | **V03-2 动态依赖与值生命周期** | FR-03-04/06/07、IR §5/7/8、AC-03-04/06/07；依赖：V03-1 | 实现增量 DAG 接纳和 ADDRESS/DATA/CONTROL/ORDER 校验、真实可见值绑定、状态版本/所有权、异步 JOIN、失败传播及活动对象回收；复用 Runtime/EventBridge | 非法前向/自依赖/错误作用域拒绝；零时长异步；延迟扰动不提前恢复；失败无成功后继；完成后 waiter/value/op 映射可回收；同刻资源仲裁不变 | 微型 IR probes、生命周期/ASan 证据、SST 因果日志、活动/峰值及终态计数 |
 | **V03-3 算子与 placement 映射** | FR-03-02/03/05、IR §6–7、AC-03-02/05/06；依赖：V03-1、V03-2 | 实现 QUERY_READY、READ_ADJACENCY、SCORE_L2、MERGE_CANDIDATES、SELECT_FRONTIER、DEDUP_NEIGHBORS、JOIN；映射至既有读取、HostCpu、Controller。SCORE_L2 保持 host 原逐块提交/评分及 controller 原 Open/容量 chunk/返回/Close 语义 | 两 placement 的提交与汇合顺序、工作量/服务次数、消息和账本核对；跨页/多 chunk/单块容量/失败用例通过；向量完整 D2H 为零 | 算子映射表与能力声明、探针及四组合小规模逐批/资源账本报告 |
@@ -28,10 +36,10 @@
 
 ### 开始核心实现前的阻塞项
 
-1. **V03-0 direct 参考证据尚缺。**PRD 要求冻结当前直接路径，并防止共享重构后两路径一起偏离。完成源码/输入身份记录和至少覆盖主要阶段与账本的成功 direct 参考运行前，不进入会改变搜索或资源映射的实现。V0.2 历史结果不能替代。
-2. **完整矩阵资源可用性尚未本轮核实。**进入 V03-6 前确认锁定的完整 SIFT1M、图/真值、机器 RAM/卷余量和预算；缺数据时按既有准备流程恢复，不能换数据或缩小验收范围。
+1. **V03-0 direct 参考证据门槛已关闭。**本轮冻结源码/输入/配置和新运行结果，详细样本覆盖主要阶段与账本，独立核对通过。后续共享重构须分别对照冻结参考，不能仅靠重构后的direct/ir互比；证据见[收口](direct-baseline-v0.3.md)。本任务止于此，不自动开始V03-1。
+2. **V03-6 资源门槛须届时重查。**V03-0已重新核实完整输入、16GiB RAM和当前卷余量，并在完整base参考运行前冻结预算；这不保证未来52条矩阵开跑时资源仍可用。进入V03-6前复核相同身份、预算和空间，缺数据按既有流程恢复，不换数据或缩小矩阵。
 
-当前没有发现需要重新决定 V0.3 产品范围的问题。除上述证据门槛外，下列是可依规范采用的实现默认，不阻塞设计或编码：
+当前没有发现需要重新决定 V0.3 产品范围的问题。除届时资源复核门槛外，下列是可依规范采用的实现默认，不阻塞设计或编码：
 
 | 决策 | 建议默认 | 依据 / 约束 |
 |---|---|---|
@@ -42,6 +50,6 @@
 | SCORE_L2 映射 | 沿用 IR §6.2：host 按原 chunk 逐块提交读与 HostCpu；controller 复用现有会话、容量 chunk、本地读和真实返回 | 不改算法批次、计费、消息或结果可见边界；若探针发现原语义不匹配，先修映射而非放宽等价标准 |
 | 对照与规范化 | 保留同构建 direct；以冻结 direct 产物作为独立锚点；用 query/iteration/semantic_batch/角色/块建立语义关联，白名单只排除 PRD §7.1 允许项 | 不能泛化排除时间、资源、工作量或所有 task ID |
 | 诊断产物 | 采用 manifest + 可选流式 operations/bindings JSONL；大值只记类型、shape、身份/hash，不存完整 DAG/张量 | IR §10，按输出预算失败关闭；诊断不可回放 |
-| 效率阈值 | PRD §9 数值作为待冻结建议；先用小规模测量核实并在完整 SIFT 前记入 M0 决策，不能看完全规模结果再倒填 | 正确性阈值不随效率预算调整；所有 hardware 参数仍 `configured_unvalidated` |
+| 效率阈值 | 已按PRD §9默认值冻结；小规模测量及完整SIFT运行前决策见 [V03-0](direct-baseline-v0.3.md)，IR开销及三组/Q梯度补测仍待V03-6 | 正确性阈值不随效率预算调整；所有 hardware 参数仍 `configured_unvalidated` |
 
 本计划不授权扩大负载/设备/计算位置，不要求修改 SST Core 或引入第二条时间、存储、PCIe 计费路径；不提交、推送、升级或初始化依赖。
