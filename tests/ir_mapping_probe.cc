@@ -154,10 +154,10 @@ struct Driver {
         snapshot(s, "expanded");
         auto selected = submit(s, {all.lease}, {{"expanded", state}});
         await(selected, [this, selected] {
-            auto ids = ex.get(selected.lease, "ids").data.get<std::vector<uint32_t>>();
-            decision({{"scores", ex.get(all.lease, "scores").data}, {"ids", ids}});
+            auto ids = ex.get(selected.lease, "ids").data().get<std::vector<uint32_t>>();
+            decision({{"scores", ex.get(all.lease, "scores").data()}, {"ids", ids}});
             if (ids.empty()) {
-                done(ex.get(all.lease, "scores").data);
+                done(ex.get(all.lease, "scores").data());
                 ex.release(selected.lease);
                 ex.release(all.lease);
                 ex.release(ready.lease);
@@ -178,7 +178,7 @@ struct Driver {
             auto fresh = submit(d, {read.lease}, {{"scored", state}});
             ex.release(read.lease);
             await(fresh, [this, fresh] {
-                auto ids = ex.get(fresh.lease, "ids").data.get<std::vector<uint32_t>>();
+                auto ids = ex.get(fresh.lease, "ids").data().get<std::vector<uint32_t>>();
                 if (ids.empty()) {
                     ex.release(fresh.lease);
                     select();
@@ -497,7 +497,7 @@ struct Scenario {
                       "failure lost IR context");
                 report["failure"] = o.failure->detail;
             } else {
-                auto scores = executor->get(scored.lease, "scores").data;
+                auto scores = executor->get(scored.lease, "scores").data();
                 check(scores.size() == 4 && scores[3]["id"] == 3u, "ordered batch missing chunk");
                 report["scores"] = scores;
             }

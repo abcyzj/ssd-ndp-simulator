@@ -36,7 +36,7 @@ void run(Document contract, uint64_t input, uint64_t compute, uint64_t ret) {
         7, "search-state", {{"scored", Json::array()}, {"expanded", Json::array()}});
     auto values = [](const Value& v) {
         std::vector<operators::Score> out;
-        for (const auto& s : v.data)
+        for (const auto& s : v.data())
             out.push_back({s.at("id").get<uint32_t>(), s.at("distance").get<double>()});
         return out;
     };
@@ -57,7 +57,7 @@ void run(Document contract, uint64_t input, uint64_t compute, uint64_t ret) {
             case Operator::ScoreL2: {
                 Json scores = Json::array();
                 const float vectors[] = {10, 1, 3, 2};
-                for (uint32_t id : in.at("ids").data.get<std::vector<uint32_t>>()) {
+                for (uint32_t id : in.at("ids").data().get<std::vector<uint32_t>>()) {
                     auto r = operators::squared_l2(operators::fp32({0, 0, 0, 0}),
                                                    {operators::fp32({vectors[id], 0, 0, 0})},
                                                    {id});
@@ -91,7 +91,7 @@ void run(Document contract, uint64_t input, uint64_t compute, uint64_t ret) {
             case Operator::ReadAdjacency: {
                 first_read = std::min(first_read, now);
                 Json out = Json::array();
-                for (uint32_t id : in.at("ids").data.get<std::vector<uint32_t>>()) {
+                for (uint32_t id : in.at("ids").data().get<std::vector<uint32_t>>()) {
                     std::vector<uint32_t> edges =
                         id == 0 ? std::vector<uint32_t>{1, 2} : std::vector<uint32_t>{3};
                     out.push_back({{"degree", edges.size()}, {"ids", edges}});
@@ -102,7 +102,7 @@ void run(Document contract, uint64_t input, uint64_t compute, uint64_t ret) {
                 auto scored =
                     in.at("scored").state->data().at("scored").get<std::vector<uint32_t>>();
                 std::set<uint32_t> fresh;
-                for (const auto& row : in.at("adjacency").data)
+                for (const auto& row : in.at("adjacency").data())
                     for (uint32_t id : row.at("ids").get<std::vector<uint32_t>>())
                         if (std::find(scored.begin(), scored.end(), id) == scored.end())
                             fresh.insert(id);

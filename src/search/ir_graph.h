@@ -56,7 +56,9 @@ private:
     std::vector<operators::Score> scores() {
         std::vector<operators::Score> out;
         auto value = ex.get(all.lease, "scores");
-        for (const auto& v : value.data)
+        if (auto bytes = value.packed_scores())
+            return operators::scores(*bytes);
+        for (const auto& v : value.data())
             out.push_back({v.at("id").get<uint32_t>(), v.at("distance").get<double>()});
         return out;
     }
@@ -218,7 +220,7 @@ private:
         snapshot(s, "expanded");
         auto selected = submit(s, {all.lease}, {{"expanded", state}});
         await(selected, [this, selected] {
-            auto ids = ex.get(selected.lease, "ids").data.get<std::vector<uint32_t>>();
+            auto ids = ex.get(selected.lease, "ids").data().get<std::vector<uint32_t>>();
             auto ranked = scores();
             if (ranked.size() > cfg.width)
                 ranked.resize(cfg.width);
@@ -249,7 +251,7 @@ private:
             auto fresh = submit(d, {read.lease}, {{"scored", state}});
             ex.release(read.lease);
             await(fresh, [this, fresh] {
-                auto ids = ex.get(fresh.lease, "ids").data.get<std::vector<uint32_t>>();
+                auto ids = ex.get(fresh.lease, "ids").data().get<std::vector<uint32_t>>();
                 if (ids.empty()) {
                     ex.release(fresh.lease);
                     select();

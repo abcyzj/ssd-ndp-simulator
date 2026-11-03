@@ -231,8 +231,11 @@ const Json& capabilities() {
     return j;
 }
 std::string catalog_sha256() {
-    auto bytes = capabilities().dump();
-    return content::sha256(reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
+    static const std::string digest = [] {
+        auto bytes = capabilities().dump();
+        return content::sha256(reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
+    }();
+    return digest;
 }
 Json read_json(const std::string& path) {
     std::ifstream f(path);
@@ -258,7 +261,15 @@ Json read_json(const std::string& path) {
 }
 static Document parse_impl(const Json& j, bool submission) {
     try {
-        validate(j, schema(), "");
+        if (submission) {
+            // The Executor owns an immutable, fully validated contract and only
+            // supplies already admitted live producers. Validate the NEW
+            // descriptor in full, then run the same semantic/reference checks.
+            // Static file parsing still validates the entire document.
+            validate(j.at("operations").back(), schema().at("$defs").at("operation"),
+                     "/operations/" + std::to_string(j.at("operations").size() - 1));
+        } else
+            validate(j, schema(), "");
     } catch (Error& e) {
         if (e.path.rfind("/operations/", 0) == 0 && j.contains("operations") &&
             j["operations"].is_array()) {
@@ -766,6 +777,29 @@ static Document parse_impl(const Json& j, bool submission) {
 }
 Document parse(const Json& j) {
     return parse_impl(j, false);
+}
+SubmissionValidator::SubmissionValidator(const Document& contract) : context_(encode(contract)) {
+    if (!contract.operations.empty())
+        throw Error("InvalidArgument", "/operations", "validator requires an empty run contract");
+    (void)parse(context_);
+}
+Json SubmissionValidator::check(const Operation& operation, const std::vector<const Json*>& producers) {
+    auto& ops = context_.at("operations");
+    try {
+        for (const auto* producer : producers)
+            ops.push_back(*producer);
+        ops.push_back(encode(operation));
+        (void)parse_impl(context_, true);
+        const auto& admitted = ops.back();
+        Json descriptor = {{"op_id", admitted.at("op_id")},
+                           {"scope", admitted.at("scope")},
+                           {"outputs", admitted.at("outputs")}};
+        ops.clear();
+        return descriptor;
+    } catch (...) {
+        ops.clear();
+        throw;
+    }
 }
 void validate_submission(const Document& context, const Operation& operation) {
     auto d = context;

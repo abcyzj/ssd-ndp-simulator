@@ -127,9 +127,21 @@ struct Error : std::runtime_error {
 // visibility, ownership, or dependency admission state is created here (V03-2).
 Document parse(const Json&);
 Json encode(const Document&);
+Json encode(const Operation&);
 void validate(const Document&); // same checks for programmatically constructed values
-// context contains only trusted, already admitted active producers.
+// context has an immutable, fully validated contract and only trusted, already
+// admitted active producers. Only the new descriptor needs structural validation;
+// all its semantic/reference checks still run. Used by Executor after admission.
 void validate_submission(const Document& context, const Operation&);
+// Per-executor validated static context; transient candidates are cleared after
+// each check. Only active producers own the returned admission descriptors.
+class SubmissionValidator {
+public:
+    explicit SubmissionValidator(const Document&);
+    Json check(const Operation&, const std::vector<const Json*>& producers);
+private:
+    Json context_;
+};
 Json read_json(const std::string& path); // also rejects duplicate JSON object keys
 const Json& schema();
 const Json& capabilities();

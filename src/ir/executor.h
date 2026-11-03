@@ -21,10 +21,24 @@ private:
     Json data_;
     std::shared_ptr<uint64_t> sequence_;
 };
+// Immutable shared payloads: resolving an input pins the existing value block,
+// rather than copying the whole candidate array. Ownership still follows leases
+// and in-flight consumers; no history/cache of retired values is introduced.
 struct Value {
-    Json data;
+    Value(Json data = {}, std::shared_ptr<const StateSnapshot> snapshot = {});
+    static Value scores(content::Bytes); // immutable, validated packed FP64 records
+    const Json& data() const; // lazy diagnostic view, same logical value/schema
+    const content::Bytes* packed_scores() const;
+    size_t size() const;
     std::shared_ptr<const StateSnapshot> state;
+private:
+    struct Payload {
+        Json json;
+        std::optional<content::Bytes> scores;
+    };
+    std::shared_ptr<Payload> data_;
 };
+
 using Values = std::map<std::string, Value>;
 using States = std::map<std::string, std::shared_ptr<const StateSnapshot>>;
 struct Lease {
@@ -81,8 +95,10 @@ private:
         size_t owners = 1, pins = 1;
         Values outputs;
         std::vector<uint64_t> producers;
+        Json admission;
     };
     Document contract_;
+    SubmissionValidator validator_;
     runtime::Runtime& runtime_;
     std::function<uint64_t()> now_;
     std::map<uint64_t, Record> records_;

@@ -11,8 +11,12 @@ void require(bool ok, const char* detail) {
     if (!ok)
         throw content::Error(content::Code::InvalidArgument, detail);
 }
-Bytes packed(const Json& scores) {
+Bytes packed(const Value& value) {
+    if (auto bytes = value.packed_scores())
+        return *bytes;
+    const auto& scores = value.data();
     Bytes bytes;
+    bytes.reserve(scores.size() * 12);
     for (const auto& s : scores) {
         auto id = s.at("id").get<uint32_t>();
         auto distance = s.at("distance").get<double>();
@@ -25,12 +29,6 @@ Bytes packed(const Json& scores) {
     }
     (void)operators::scores(bytes);
     return bytes;
-}
-Json scored(const Bytes& bytes) {
-    Json out = Json::array();
-    for (auto s : operators::scores(bytes))
-        out.push_back({{"id", s.id}, {"distance", s.distance}});
-    return out;
 }
 std::set<uint32_t> state_set(const Value& value, const char* field, uint64_t count) {
     require(bool(value.state), "missing search state snapshot");
@@ -102,7 +100,7 @@ std::vector<content::Selection> Mapping::selections(const Operation& op, const V
     const auto& binding = objects_.at(access.object_id);
     std::vector<content::Selection> out;
     std::set<uint32_t> unique;
-    for (auto id : in.at("ids").data.get<std::vector<uint32_t>>()) {
+    for (auto id : in.at("ids").data().get<std::vector<uint32_t>>()) {
         require(unique.insert(id).second, "duplicate logical read ID");
         content::ObjectRef object{binding.dataset, binding.kind, id, binding.version};
         auto size = store_.metadata(object).size;
@@ -141,9 +139,9 @@ Mapping::dispatch(const Operation& op, const Values& in, std::vector<runtime::Ha
             for (const auto& s : selected)
                 tasks.push_back(child(read_(q, s)));
         } else {
-            auto query = in.at("query").data.get<std::vector<float>>();
+            auto query = in.at("query").data().get<std::vector<float>>();
             require(query == queries_.at(q).vector, "SCORE query differs from admitted query");
-            auto ids = in.at("ids").data.get<std::vector<uint32_t>>();
+            auto ids = in.at("ids").data().get<std::vector<uint32_t>>();
             if (controller_)
                 tasks.push_back(child(controller_->score(q, selected)));
             else {
@@ -174,11 +172,11 @@ Mapping::dispatch(const Operation& op, const Values& in, std::vector<runtime::Ha
 operators::Result Mapping::control(const Operation& op, const Values& in) const {
     const auto count = contract_.manifest.artifacts.at("dataset").at("shape").at(0).get<uint64_t>();
     if (op.op == Operator::MergeCandidates) {
-        auto previous = packed(in.at("previous").data), batch = packed(in.at("batch").data);
+        auto previous = packed(in.at("previous")), batch = packed(in.at("batch"));
         previous.insert(previous.end(), batch.begin(), batch.end());
         return operators::candidates(previous, count);
     } else if (op.op == Operator::SelectFrontier) {
-        auto all = packed(in.at("scores").data);
+        auto all = packed(in.at("scores"));
         auto expanded = state_set(in.at("expanded"), "expanded", count);
         const auto& params = op.params;
         {
@@ -199,7 +197,7 @@ operators::Result Mapping::control(const Operation& op, const Values& in) const 
         }
     } else if (op.op == Operator::DedupNeighbors) {
         auto seen = state_set(in.at("scored"), "scored", count);
-        auto adjacency = in.at("adjacency").data;
+        const auto& adjacency = in.at("adjacency").data();
         // Whole batch validation precedes the charged functional service.
         for (const auto& row : adjacency) {
             require(row.at("degree").get<uint64_t>() == row.at("ids").size(),
@@ -318,7 +316,7 @@ Lease Mapping::submit(Operation op, std::vector<Lease> producers, States snapsho
                 Bytes bytes;
                 for (const auto& b : batch->bytes)
                     bytes.insert(bytes.end(), b.begin(), b.end());
-                *values = {{"scores", {scored(bytes), {}}}};
+                *values = {{"scores", Value::scores(std::move(bytes))}};
             } else
                 *values = {{"ids", {search::ids(batch->bytes.at(0)), {}}}};
             runtime_.start(parent);
@@ -372,10 +370,9 @@ Lease Mapping::submit(Operation op, std::vector<Lease> producers, States snapsho
         };
         adapter.evaluate = [evaluate = std::move(host.evaluate), op](const Values&) {
             auto bytes = evaluate({});
-            return Values{
-                {op.op == Operator::MergeCandidates ? "scores" : "ids",
-                 {op.op == Operator::MergeCandidates ? scored(bytes) : Json(search::ids(bytes)),
-                  {}}}};
+            if (op.op == Operator::MergeCandidates)
+                return Values{{"scores", Value::scores(std::move(bytes))}};
+            return Values{{"ids", {search::ids(bytes), {}}}};
         };
         adapter.service = std::move(host.service);
     }

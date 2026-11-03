@@ -105,3 +105,10 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 根CTest新增 `ir_observation_comparator`（跨页d260、B2/chunk2、并发2的两engine/两placement/statistics-detail八次真实SST运行、19项比较器对抗检查及IR日志预算拒绝）。生产前端回归也使用正式比较器；保留既有独立搜索/数值/账本检查。Python schema回归使用本机已有jsonschema 4.26.0及referencing。
 
 锁定Python运行 `tools/verify_ir_observation.py --output <新目录>`，核对V03-0～4依赖hash、根构建/全部CTest、新运行合成及真实SIFT10k八组合、独立账本、冻结direct两放置与源码/依赖稳定性。最终79/79 CTest、各项对照与对抗检查通过；见[V03-5命令、证据、开发失败与限制](ir-observation-v0.3.md)。这不运行V03-6或V03-7，不接受完整矩阵、效率或交付。
+
+
+## V03-6 完整矩阵与效率门槛
+
+锁定Python运行 `tools/verify_ir_matrix.py --output <新目录>`；RAM在受限沙箱下可用 `--ram-evidence <本轮sysctl stdout>`。入口预检冻结输入/依赖/资源，根构建和全CTest、定向IR ASan后新跑52条完整SIFT1M矩阵、补足两placement各三组交替和18次Q梯度。无历史仿真复用/quick选项，失败或缺项不能通过。实际命令、全部样本、质量、独立账本、资源口径和失败记录见[V03-6](ir-matrix-v0.3.md)。
+
+本轮80/80 CTest、定向ASan4/4、52/52及效率/Q门槛通过。新增 `ir_matrix_gates` 五组失败关闭检查；原有比较器19项对抗、预算拒绝、schema、因果与资源回归保留。此次不是V03-7总交付：不运行完整继承AC/独立原生oracle，不切换默认engine。

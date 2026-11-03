@@ -123,64 +123,67 @@ Json encode(const Document& d) {
         optional(obj, "extensions", o.extensions);
         j["objects"].push_back(obj);
     }
-    for (const auto& o : d.operations) {
-        Json scope = {{"run", o.scope.run},
-                      {"query", o.scope.query},
-                      {"query_ordinal", o.scope.query_ordinal},
-                      {"iteration", o.scope.iteration},
-                      {"semantic_batch", o.scope.semantic_batch}};
-        if (o.scope.chunk)
-            scope["chunk"] = *o.scope.chunk;
-        if (o.scope.stage)
-            scope["stage"] = *o.scope.stage;
-        Json op = {
-            {"op_id", o.op_id},
-            {"scope", scope},
-            {"kind", name(o.kind, std::array{"MEMORY", "COMPUTE", "CONTROL", "SYNC", "EXTERNAL"})},
-            {"operator",
-             name(o.op,
-                  std::array{"QUERY_READY",
-                             "READ_ADJACENCY",
-                             "SCORE_L2",
-                             "MERGE_CANDIDATES",
-                             "SELECT_FRONTIER",
-                             "DEDUP_NEIGHBORS",
-                             "JOIN"})},
-            {"operator_version", o.operator_version},
-            {"placement", name(o.placement, std::array{"host", "controller"})},
-            {"inputs", Json::array()},
-            {"outputs", Json::array()},
-            {"deps", Json::array()},
-            {"access", Json::array()},
-            {"params", o.params},
-            {"workload", o.workload},
-            {"effects", o.effects}};
-        for (const auto& i : o.inputs)
-            op["inputs"].push_back({{"port", i.port}, {"value", value(i.value)}});
-        for (const auto& p : o.outputs)
-            op["outputs"].push_back(
-                {{"name", p.name},
-                 {"type", type(p.type)},
-                 {"location",
-                  name(p.location, std::array{"HostMemory", "DeviceBuffer", "SSDStorage"})}});
-        for (const auto& dep : o.deps) {
-            Json item = {
-                {"producer_op", dep.producer_op},
-                {"kind", name(dep.kind, std::array{"ADDRESS", "DATA", "CONTROL", "ORDER"})},
-                {"port", dep.port}};
-            if (dep.state_version)
-                item["state_version"] = dep.state_version;
-            op["deps"].push_back(item);
-        }
-        for (const auto& a : o.access)
-            op["access"].push_back(
-                {{"slice", slice(a)}, {"mode", "readonly"}, {"order", "input-order"}});
-        optional(op, "schedule", o.schedule);
-        optional(op, "provenance", o.provenance);
-        optional(op, "extensions", o.extensions);
-        j["operations"].push_back(op);
-    }
+    for (const auto& o : d.operations)
+        j["operations"].push_back(encode(o));
     return j;
+}
+Json encode(const Operation& o) {
+
+    Json scope = {{"run", o.scope.run},
+                  {"query", o.scope.query},
+                  {"query_ordinal", o.scope.query_ordinal},
+                  {"iteration", o.scope.iteration},
+                  {"semantic_batch", o.scope.semantic_batch}};
+    if (o.scope.chunk)
+        scope["chunk"] = *o.scope.chunk;
+    if (o.scope.stage)
+        scope["stage"] = *o.scope.stage;
+    Json op = {
+        {"op_id", o.op_id},
+        {"scope", scope},
+        {"kind", name(o.kind, std::array{"MEMORY", "COMPUTE", "CONTROL", "SYNC", "EXTERNAL"})},
+        {"operator",
+         name(o.op,
+              std::array{"QUERY_READY",
+                         "READ_ADJACENCY",
+                         "SCORE_L2",
+                         "MERGE_CANDIDATES",
+                         "SELECT_FRONTIER",
+                         "DEDUP_NEIGHBORS",
+                         "JOIN"})},
+        {"operator_version", o.operator_version},
+        {"placement", name(o.placement, std::array{"host", "controller"})},
+        {"inputs", Json::array()},
+        {"outputs", Json::array()},
+        {"deps", Json::array()},
+        {"access", Json::array()},
+        {"params", o.params},
+        {"workload", o.workload},
+        {"effects", o.effects}};
+    for (const auto& i : o.inputs)
+        op["inputs"].push_back({{"port", i.port}, {"value", value(i.value)}});
+    for (const auto& p : o.outputs)
+        op["outputs"].push_back(
+            {{"name", p.name},
+             {"type", type(p.type)},
+             {"location",
+              name(p.location, std::array{"HostMemory", "DeviceBuffer", "SSDStorage"})}});
+    for (const auto& dep : o.deps) {
+        Json item = {
+            {"producer_op", dep.producer_op},
+            {"kind", name(dep.kind, std::array{"ADDRESS", "DATA", "CONTROL", "ORDER"})},
+            {"port", dep.port}};
+        if (dep.state_version)
+            item["state_version"] = dep.state_version;
+        op["deps"].push_back(item);
+    }
+    for (const auto& a : o.access)
+        op["access"].push_back(
+            {{"slice", slice(a)}, {"mode", "readonly"}, {"order", "input-order"}});
+    optional(op, "schedule", o.schedule);
+    optional(op, "provenance", o.provenance);
+    optional(op, "extensions", o.extensions);
+    return op;
 }
 void validate(const Document& d) {
     (void)parse(encode(d));

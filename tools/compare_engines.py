@@ -11,6 +11,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 from ann_data import digest, write_json
+from stream_statistics import read_statistics
 
 VERSION = 'ndpsim-equivalence/1'
 MANAGEMENT = {'ir_operation', 'ir_binding', 'ir_task_edge', 'ir_runtime', 'ir_summary', 'ir_session'}
@@ -79,7 +80,7 @@ class Run:
             if contract['operations'] or contract['manifest']['execution_engine']!='ir': raise ValueError('invalid dynamic IR contract')
             for key in ('ir_version','operator_set','mapping'):
                 if observation[key]!=contract['manifest'][key]: raise ValueError('IR metadata mismatch: '+key)
-        self.stats=load(self.path/'statistics.json'); self.results=load(self.path/'results.json')
+        self.stats=read_statistics(self.path/'statistics.json',db,prefix+'_stats'); self.results=load(self.path/'results.json')
         if engine=='ir' and self.stats['resources'].get('ir_summary')!=[observation['ir']]: raise ValueError('IR observation count mismatch')
         self.ids={}; self.id_counts={}; self.tasks={}; self.counts={}; self.task_context={}
         db.execute(f'create table {prefix}(seq integer primary key, kind text, row text)')
@@ -226,7 +227,11 @@ def compare(left,right):
             check(a.stats,b.stats,'statistics')
             for kind in sorted(set(ra)|set(rb)):
                 if kind=='ir_summary' and a.manifest['execution_engine']!=b.manifest['execution_engine']: continue
-                check([a.normalize(r) for r in ra.get(kind,[])],[b.normalize(r) for r in rb.get(kind,[])],'resources.'+kind)
+                if (kind in ra)!=(kind in rb):
+                    check(kind in ra,kind in rb,'resources.'+kind+'.present')
+                for i,(x,y) in enumerate(itertools.zip_longest(ra.get(kind,[]),rb.get(kind,[]))):
+                    check(a.normalize(x) if x is not None else None,b.normalize(y) if y is not None else None,f'resources.{kind}[{i}]')
+                    if len(report['differences'])>=100:break
             if a.detail and b.detail:
                 kinds={k for (k,) in db.execute('select distinct kind from a union select distinct kind from b')}-MANAGEMENT
                 for kind in sorted(kinds):

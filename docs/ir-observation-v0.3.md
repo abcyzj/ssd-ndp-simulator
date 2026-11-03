@@ -44,7 +44,7 @@
 3. `lifecycle.runtime_peak_tasks`、`lifecycle_sample.runtime_tasks/waiters`：含 IR 管理任务/continuation 的总数。最终资源清零仍检查；IR 累计/活动/峰值和每算子完成守恒单独验证。同 engine 的 ir_summary 仍必须一致。
 4. 仅跨 engine 排除 IR 专属 ir_summary；detail 仅枚举 `ir_operation/ir_binding/ir_task_edge/ir_session/ir_runtime/ir_summary` 六类管理记录。它们先检查 envelope、生命周期、提交计数、父操作存在、Runtime 可见、资源 task 覆盖及 query/operator 归属，不能因被排除而缺失或伪造关联。
 
-不排除“所有时间”“所有 task”“所有资源”或任意 `ir_*` 前缀。delta 管理差异未作为目标费用；原可比较物理时间、资源流顺序和发布因果保留。事件和 IR 历史在比较器的临时 SQLite 中分组；离线仍加载 statistics.json 及必要 ID 关联，不宣称比较器 RSS 常量或全规模预算已通过。
+不排除“所有时间”“所有 task”“所有资源”或任意 `ir_*` 前缀。delta 管理差异未作为目标费用；原可比较物理时间、资源流顺序和发布因果保留。事件和 IR 历史在比较器的临时 SQLite 中分组；V03-6已将statistics资源数组也改为流式SQLite，仅保留必要ID关联；全规模实测预算见[V03-6](ir-matrix-v0.3.md)，不宣称任意输入下RSS常量。
 
 既有 `compare_placements.py` 继续从真实向量/查询/图独立重算搜索与 FP64 数值，并核对协议、chunk、SQ/CQ/DMA/link、普通/本地流量和向量零 D2H；不是两个共享实现互比的替代。该独立核对器的既有跨工具链容差不替代本机 direct/ir 的严格比较。
 

@@ -71,7 +71,7 @@ void guards(const Document& d) {
     auto qcopy = q;
     auto retained = ex.retain(q);
     auto score = d.operations[1];
-    for (auto mode : {0, 1, 2, 3, 4, 5}) {
+    for (auto mode : {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}) {
         auto bad = score;
         if (mode == 0)
             bad.op_id = 1;
@@ -85,6 +85,14 @@ void guards(const Document& d) {
             bad.inputs[0].value.type.shape[0].extent = 3;
         if (mode == 5)
             bad.scope.run = "foreign";
+        if (mode == 6)
+            bad.params["unknown_semantics"] = true;
+        if (mode == 7)
+            bad.operator_version = 2;
+        if (mode == 8)
+            bad.outputs[0].location = Location::DeviceBuffer;
+        if (mode == 9)
+            bad.workload["counts"] = {{"flops", 0}};
         rejects("", [&] {
             ex.submit(bad, {q}, f.a());
         });
@@ -101,7 +109,22 @@ void guards(const Document& d) {
         score, {retained}, f.a({{"scores", {Json::array({{{"id", 0u}, {"distance", 1.}}}), {}}}}));
     ex.release(retained);
     f.drain();
-    check(ex.get(s, "scores").data.size() == 1, "in-flight ownership");
+    auto first = ex.get(s, "scores"), copy = first;
+    check(first.data().size() == 1 && &first.data() == &copy.data(),
+          "in-flight immutable payload must share ownership");
+    Json external = Json::array({1u});
+    Value immutable(external);
+    external[0] = 2u;
+    check(immutable.data()[0] == 1u, "mutable caller must not alias published payload");
+    auto native = Value::scores(content::Bytes(12, 0));
+    auto pinned = native;
+    check(native.size() == 1 && pinned.packed_scores() == native.packed_scores() &&
+              native.data() == Json::array({{{"id", 0u}, {"distance", 0.}}}),
+          "native scores must preserve shape, immutable storage and diagnostic value");
+    bool malformed = false;
+    try { (void)Value::scores(content::Bytes(1, 0)); }
+    catch (const content::Error&) { malformed = true; }
+    check(malformed, "malformed native score record accepted");
     ex.release(s);
     f.empty();
     rejects("Released", [&] {
@@ -216,17 +239,17 @@ void dynamic_successor(const Document& d, uint32_t selected_id) {
     select_op.deps.push_back({1, DependencyKind::Order, "state", 1});
     auto select_a = f.a();
     select_a.evaluate = [](const Values& v) {
-        return Values{{"ids", {Json::array({v.at("scores").data[0]["id"]}), {}}}};
+        return Values{{"ids", {Json::array({v.at("scores").data()[0]["id"]}), {}}}};
     };
     auto select = ex.submit(select_op, {q, merge}, std::move(select_a));
     bool called = false;
     ex.when_all({select}, 9, [&](runtime::Outcome o) {
         check(!o.failure && ex.counts().submitted == 4, "successor prebuilt");
-        auto visible = ex.get(select, "ids").data[0].get<uint32_t>();
+        auto visible = ex.get(select, "ids").data()[0].get<uint32_t>();
         check(visible == selected_id, "real decision lost");
         auto a = f.a();
         a.evaluate = [&, visible](const Values& v) {
-            check(v.at("ids").data[0] == visible, "successor read wrong ID");
+            check(v.at("ids").data()[0] == visible, "successor read wrong ID");
             called = true;
             return Values{
                 {"adjacency", {Json::array({{{"degree", 0u}, {"ids", Json::array()}}}), {}}}};

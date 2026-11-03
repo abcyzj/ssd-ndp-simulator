@@ -6,7 +6,7 @@
 
 当前目标是让现有 SIFT1M 图搜索通过动态、进程内 IR 执行，并保持搜索结果、模拟时序和资源账本与 direct 基线等价。先读 [V0.3 PRD](docs/prd-v0.3.md) 和 [IR 设计规范](docs/ir-v0.3.md)，再从[文档索引](docs/README.md)按任务选择接口与测试说明。
 
-V03-0 已完成[direct 基线冻结](docs/direct-baseline-v0.3.md)，包含新运行和独立核对；V03-1 已完成[schema 与能力目录](docs/ir-schema-v0.3.md)，V03-2 已完成[动态依赖与值生命周期](docs/ir-lifecycle-v0.3.md)，V03-3 已完成[算子与 placement 映射](docs/ir-mapping-v0.3.md)。V03-4 已完成[动态 GraphSearch 前端](docs/ir-frontend-v0.3.md)，支持显式 direct/ir；V03-5 已完成[流式观测与独立比较器](docs/ir-observation-v0.3.md)，完整矩阵、效率与 IR 交付验收尚未完成。后续按[实施清单](docs/implementation-plan-v0.3.md)推进；旧交付证据不替代本轮基线。范围仍为 SIFT1M、单 SSD、只读、主机控制搜索和 host/controller 对照，不加入第二类负载或新计算位置。
+V03-0 已完成[direct 基线冻结](docs/direct-baseline-v0.3.md)，包含新运行和独立核对；V03-1 已完成[schema 与能力目录](docs/ir-schema-v0.3.md)，V03-2 已完成[动态依赖与值生命周期](docs/ir-lifecycle-v0.3.md)，V03-3 已完成[算子与 placement 映射](docs/ir-mapping-v0.3.md)。V03-4 已完成[动态 GraphSearch 前端](docs/ir-frontend-v0.3.md)，支持显式 direct/ir；V03-5 已完成[流式观测与独立比较器](docs/ir-observation-v0.3.md)，V03-6 已完成[完整矩阵与效率门槛](docs/ir-matrix-v0.3.md)（52/52、三组交替与Q梯度通过）；IR 总交付验收与默认切换尚未完成。后续按[实施清单](docs/implementation-plan-v0.3.md)推进；旧交付证据不替代本轮基线。范围仍为 SIFT1M、单 SSD、只读、主机控制搜索和 host/controller 对照，不加入第二类负载或新计算位置。
 
 当前可运行基线为 V0.2，交付范围与历史证据见 [V0.2 交付记录](docs/releases/v0.2.md)。数据/图/真值准备和固定矩阵见 [SIFT1M](docs/sift1m.md)，继承回归见[测试说明](docs/testing.md)。开发期配置省略 `execution_engine` 仍走 direct；设为 `"ir"` 可运行动态 IR，设为 `"direct"` 保留对照。有效 engine 写入 manifest/config，IR 另写 ir-manifest.json；无效值拒绝。以下未指定 engine 的配置仍使用 direct。
 

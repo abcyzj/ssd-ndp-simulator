@@ -318,12 +318,12 @@ public:
                         out_ << ir::Json({{"type", "score_visible"},
                                           {"query", op.scope.query},
                                           {"time_ns", getCurrentSimTimeNano()},
-                                          {"scores", values.at("scores").data}})
+                                          {"scores", values.at("scores").data()}})
                                     .dump()
                              << '\n';
                     ir::Json summaries = ir::Json::array();
                     for (const auto& [port, value] : values) {
-                        auto text = value.state ? value.state->data().dump() : value.data.dump();
+                        auto text = value.state ? value.state->data().dump() : value.data().dump();
                         uint64_t hash = 14695981039346656037ULL;
                         for (unsigned char b : text) {
                             hash ^= b;

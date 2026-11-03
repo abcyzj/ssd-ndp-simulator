@@ -1,6 +1,6 @@
 # V0.3 可执行实施清单
 
-状态：**V03-0～V03-5 已完成**（2026-11-03），包括生产动态 GraphSearch、显式 direct/ir、流式观测与独立比较器；V03-6～V03-7 未开始，完整 SIFT1M 矩阵、效率门槛及 V0.3 交付验收尚未完成。实际命令、身份、预算及限制见 [V03-0 收口](direct-baseline-v0.3.md)。
+状态：**V03-0～V03-6 已完成**（2026-11-03），包括完整 SIFT1M 52条矩阵、三组交替效率及Q梯度；V03-7 未开始，V0.3 总交付验收和日常默认切换尚未完成。V03-6实际证据见[收口](ir-matrix-v0.3.md)。V03-0冻结命令、身份与预算见[基线收口](direct-baseline-v0.3.md)。
 
 ## 规划时仓库复核（历史快照）
 
@@ -54,6 +54,14 @@
 - [接口、规范化白名单、命令、失败记录与限制](ir-observation-v0.3.md)；主证据 `results/v0.3/observation-v035/final2/manifest.json`，10项命令阶段均退出0，1,235项产物hash。V03-0～4依赖成功证据全部复核，代码与依赖在运行期间未变。
 - 未执行完整AC、原生oracle、ASan、完整SIFT1M 52条矩阵、Q/RSS/效率验收。普通NVMe内部transaction ID及共享NAND命令参与集合仍Unsupported；不伪造归因。默认仍direct，停止于V03-5。
 
+## V03-6 本轮收口（2026-11-03）
+
+- 新增失败关闭的完整矩阵/效率入口；严格复核V03-0～5依赖、相同完整base/NSG/真值/查询及builder、16GiB RAM和冻结磁盘预算。两个engine各26条全部新跑，补4次第三组交替、4次冻结smoke及18次Q梯度，共78次生产SST运行；不复用历史仿真结果、不重抽查询或重建SIFT图。
+- 诊断首组旧IR查询墙钟2.57倍后，改用经完整静态校验的contract缓存、仅活动producer描述、共享不可变payload和原packed FP64得分；JSON只在诊断时生成。静态文件仍全文校验，新操作结构/引用/真实shape/可见性与计费、事件顺序不变。比较器资源数组改为流式SQLite，保留全部字段和顺序。
+- 根配置/构建退出0，完整CTest **80/80**、定向IR ASan **4/4**；52条覆盖、28项同placement engine对照、重复/日志模式/并发决策、两engine独立数值/搜索/全账本及完整评价集冻结参考均通过。171项断言全true，129个命令阶段退出0，2,831项产物hash；运行期间源码/依赖/冻结预算一致。
+- host/controller三组统计模式中位墙钟比 **1.299966/1.427963 ≤1.5**；每对IR RSS增量通过。Q32/128/512各3次、两placement共18次，终态清零，峰值5 ops/7 values；Q32→512中位SST RSS增量81,920/16,629,760B ≤64MiB。SST最大854,425,600B；磁盘采样峰值10,764,730,877B <25GiB，最小卷余量83,994,238,976B >20GiB。
+- [命令、全部样本、四点质量、detail开销、失败与限制](ir-matrix-v0.3.md)；主证据 `results/v0.3/matrix-v036/final5/manifest.json`，补充 `results/v0.3/matrix-v036/closeout/manifest.json`。开发中断/插桩失败与旧IR诊断保留，不计正式通过。未运行完整V0.1 AC或独立原生oracle，不宣称V0.3总交付；默认仍direct，停止于V03-6，V03-7未开始。
+
 ## 可执行任务
 
 每项关闭时保存输入/源码/依赖身份、命令和退出码、断言及产物哈希。实际文件名可随实现调整，但不得降低验收内容。
@@ -66,7 +74,7 @@
 | **V03-3 算子与 placement 映射（已完成）** | FR-03-02/03/05、IR §6–7、AC-03-02/05/06；依赖：V03-1、V03-2 | 实现 QUERY_READY、READ_ADJACENCY、SCORE_L2、MERGE_CANDIDATES、SELECT_FRONTIER、DEDUP_NEIGHBORS、JOIN；映射至既有读取、HostCpu、Controller。SCORE_L2 保持 host 原逐块提交/评分及 controller 原 Open/容量 chunk/返回/Close 语义 | 两 placement 的提交与汇合顺序、工作量/服务次数、消息和账本核对；跨页/多 chunk/单块容量/失败用例通过；向量完整 D2H 为零 | [本轮收口](ir-mapping-v0.3.md)；`results/v0.3/mapping-v033/final4/`：七算子真实服务映射、20次真实 MQSim 探针、四组合逐批/时序/Work/全链路字节/credit/资源账本一致、跨页/多chunk/单块容量/同刻竞争/失败及Open排空；根构建和75/75 CTest、定向ASan4/4、冻结smoke两放置新跑结果/事件/服务一致；未启动生产前端迁移 |
 | **V03-4 动态 GraphSearch 前端（已完成）** | FR-03-02/03/09、IR §9、AC-03-02/03/04；依赖：V03-3 | 将现有搜索流程改为只提交 IR 并消费可见输出；保留 scored/expanded 更新时点、搜索批次、计数、同分和终止行为；支持 direct/ir 显式选择，保留可运行 direct 对照 | 源码旁路审计；合成和真实 SIFT 10k 小矩阵 direct/ir × host/controller 逐批一致；固定图下扰动向量改变真实后继读取且两 engine 各自一致；输入/计算/返回延迟因果检查 | [V03-4 收口](ir-frontend-v0.3.md)；`results/v0.3/frontend-v034/final2/`：78/78 CTest、16次合成/12次真实SIFT10k生产运行、四组合逐批/时序/账本一致、固定图向量扰动/三阶段延迟、20次后端探针、冻结smoke两放置新跑及定向ASan2/2；实际engine/contract身份、源码旁路审计与失败记录 |
 | **V03-5 观测与独立比较器（已完成）** | FR-03-08/09/11、PRD §7、IR §10、AC-03-08；依赖：V03-0、V03-3、V03-4 | 输出 engine/schema/operator/mapping 身份、算子计数、活动/峰值/决策摘要；detail 日志流式关联 IR op/value 与 runtime task/request/transaction/message；实现版本化语义比较键和窄白名单 | statistics/detail 模拟结果一致；比较器逐字段验证第7节；仅允许文档列出的身份、编号、诊断、墙钟/RSS、文件大小差异；跨 engine 结果不得复用 | [V03-5 收口](ir-observation-v0.3.md)；`results/v0.3/observation-v035/final2/`：身份/摘要/七算子统计、诊断schema及实际关联样本、严格版本化比较器、79/79 CTest、19项对抗检查/预算拒绝、合成8次及真实SIFT10k8次statistics/detail/四组合对照与独立账本、冻结direct两放置新跑；不含完整矩阵或效率验收 |
-| **V03-6 完整矩阵与效率门槛** | FR-03-10/11、PRD §8–9、AC-03-09/10；依赖：V03-4、V03-5；进入本项前确认固定数据与磁盘预算可用 | 运行完整 base 的两个 engine 各 26 条；按冻结方案做评价集交替重复、Q 梯度和 detail 样本；不重抽查询、不重建图掩盖差异；仅身份严格匹配时复用本轮产物 | 52 条矩阵齐全；同 placement direct/ir 模拟等价、质量和预算门槛通过；Q 梯度证明非必要活动历史回收；超限明确失败并调查，不缩小矩阵 | 失败关闭的矩阵 manifest、每点命令/退出码/产物 hash、等价/资源/效率报告 |
+| **V03-6 完整矩阵与效率门槛（已完成）** | FR-03-10/11、PRD §8–9、AC-03-09/10；依赖：V03-4、V03-5；进入本项前确认固定数据与磁盘预算可用 | 运行完整 base 的两个 engine 各 26 条；按冻结方案做评价集交替重复、Q 梯度和 detail 样本；不重抽查询、不重建图掩盖差异；仅身份严格匹配时复用本轮产物 | 52 条矩阵齐全；同 placement direct/ir 模拟等价、质量和预算门槛通过；Q 梯度证明非必要活动历史回收；超限明确失败并调查，不缩小矩阵 | [V03-6收口](ir-matrix-v0.3.md)；`results/v0.3/matrix-v036/final5/`：52/52、完整CTest80/80、定向ASan4/4、28项engine对照/重复/日志/并发/独立账本、三组中位比1.300/1.428及RSS门槛、18次Q梯度通过；171项断言/129阶段命令/2,831产物hash；补充closeout完整冻结评价对照和detail开销；V03-7未开始 |
 | **V03-7 继承回归与交付切换** | FR-03-10/12、AC-03-10/11/12；依赖：V03-6 | 增加 V0.3 总验收入口与适用 AC 映射；旧配置省略 engine 可运行并记录有效模式，显式 direct 可用；全部门槛通过后将日常入口默认改为 ir；更新限制、接口、测试和交付文档 | 根 CMake 构建、全部有效 CTest、完整 V0.1 AC、相关 V0.2 检查、原生 oracle、IR 生命周期 ASan；不接受 quick/缺项/失败/身份不符复用 | 总验收 manifest/AC 矩阵、继承与新增测试日志、交付说明、限制和有效 engine 记录 |
 
 ## 阻塞项与默认决策
@@ -74,7 +82,7 @@
 ### 开始核心实现前的阻塞项
 
 1. **V03-0 direct 参考证据门槛已关闭。**本轮冻结源码/输入/配置和新运行结果，详细样本覆盖主要阶段与账本，独立核对通过。后续共享重构须分别对照冻结参考，不能仅靠重构后的direct/ir互比；证据见[收口](direct-baseline-v0.3.md)。V03-1 本轮已复查冻结manifest和全部产物hash；V03-1轮止于schema与能力目录；V03-2已完成管理层实现；V03-3已完成真实算子映射；V03-4已完成生产动态前端；本轮V03-5复查全部依赖证据并完成观测与独立比较器，止于V03-5。
-2. **V03-6 资源门槛须届时重查。**V03-0已重新核实完整输入、16GiB RAM和当前卷余量，并在完整base参考运行前冻结预算；这不保证未来52条矩阵开跑时资源仍可用。进入V03-6前复核相同身份、预算和空间，缺数据按既有流程恢复，不换数据或缩小矩阵。
+2. **本轮V03-6资源门槛已关闭。**重新读取16GiB RAM，完整输入/准备manifest与V03-0精确匹配，52条和效率/Q梯度均按原冻结阈值通过；磁盘/卷余量采样通过，见[证据](ir-matrix-v0.3.md)。未来复跑仍须重新预检，不以本轮余量代替未来资源状态。
 
 当前没有发现需要重新决定 V0.3 产品范围的问题。除届时资源复核门槛外，下列是可依规范采用的实现默认，不阻塞设计或编码：
 
@@ -87,6 +95,6 @@
 | SCORE_L2 映射 | 沿用 IR §6.2：host 按原 chunk 逐块提交读与 HostCpu；controller 复用现有会话、容量 chunk、本地读和真实返回 | 不改算法批次、计费、消息或结果可见边界；若探针发现原语义不匹配，先修映射而非放宽等价标准 |
 | 对照与规范化 | 保留同构建 direct；以冻结 direct 产物作为独立锚点；用 query/iteration/semantic_batch/角色/块建立语义关联，白名单只排除 PRD §7.1 允许项 | 不能泛化排除时间、资源、工作量或所有 task ID |
 | 诊断产物 | 采用 manifest + 可选流式 operations/bindings JSONL；大值只记类型、shape、身份/hash，不存完整 DAG/张量 | IR §10，按输出预算失败关闭；诊断不可回放 |
-| 效率阈值 | 已按PRD §9默认值冻结；小规模测量及完整SIFT运行前决策见 [V03-0](direct-baseline-v0.3.md)，IR开销及三组/Q梯度补测仍待V03-6 | 正确性阈值不随效率预算调整；所有 hardware 参数仍 `configured_unvalidated` |
+| 效率阈值 | 已按PRD §9默认值冻结；小规模测量及完整SIFT运行前决策见 [V03-0](direct-baseline-v0.3.md)，V03-6三组/Q梯度及预算已通过，见[收口](ir-matrix-v0.3.md) | 正确性阈值不随效率预算调整；所有 hardware 参数仍 `configured_unvalidated` |
 
 本计划不授权扩大负载/设备/计算位置，不要求修改 SST Core 或引入第二条时间、存储、PCIe 计费路径；不提交、推送、升级或初始化依赖。

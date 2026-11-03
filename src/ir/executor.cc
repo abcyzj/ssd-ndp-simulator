@@ -1,4 +1,5 @@
 #include "ir/executor.h"
+#include "operators/operators.h"
 #include <algorithm>
 #include <cmath>
 #include <set>
@@ -15,6 +16,28 @@ content::Error adapter_error(const Operation& op,
     return content::Error(code, e.diagnostic().dump());
 }
 } // namespace
+Value::Value(Json data, std::shared_ptr<const StateSnapshot> snapshot)
+    : state(std::move(snapshot)), data_(std::make_shared<Payload>(Payload{std::move(data), {}})) {}
+Value Value::scores(content::Bytes bytes) {
+    (void)operators::scores(bytes); // full record/finite validation before publication
+    Value result;
+    result.data_->scores = std::move(bytes);
+    return result;
+}
+const content::Bytes* Value::packed_scores() const {
+    return data_->scores ? &*data_->scores : nullptr;
+}
+size_t Value::size() const {
+    return data_->scores ? data_->scores->size() / 12 : data_->json.size();
+}
+const Json& Value::data() const {
+    if (data_->scores && !data_->json.is_array()) {
+        data_->json = Json::array();
+        for (auto score : operators::scores(*data_->scores))
+            data_->json.push_back({{"id", score.id}, {"distance", score.distance}});
+    }
+    return data_->json;
+}
 std::shared_ptr<const StateSnapshot>
 StateSnapshot::initial(uint64_t query, std::string id, Json data) {
     if (!query || id.empty())
@@ -37,10 +60,9 @@ StateSnapshot::advance(std::shared_ptr<const StateSnapshot> old, Json data) {
     return s;
 }
 Executor::Executor(Document contract, runtime::Runtime& runtime, std::function<uint64_t()> now)
-    : contract_(std::move(contract)), runtime_(runtime), now_(std::move(now)) {
+    : contract_(std::move(contract)), validator_(contract_), runtime_(runtime), now_(std::move(now)) {
     if (!contract_.operations.empty())
         throw Error("InvalidArgument", "/operations", "executor requires an empty run contract");
-    validate(contract_);
     for (unsigned i = 0; i < capabilities().at("operators").size(); ++i)
         operator_counts.emplace(static_cast<Operator>(i), Counts{});
 }
@@ -113,12 +135,12 @@ Values Executor::resolve(const Operation& op, const States& snapshots) const {
         else if (auto literal = std::get_if<Literal>(&v.reference))
             std::visit(
                 [&](const auto& x) {
-                    value.data = x;
+                    value = Value(x);
                 },
                 literal->value);
         else if (auto slice = std::get_if<Slice>(&v.reference)) {
             if (auto ids = std::get_if<std::vector<uint32_t>>(&slice->indices))
-                value.data = *ids;
+                value = Value(*ids);
             else {
                 const auto& ref = std::get<OutputRef>(slice->indices);
                 value = output(ref.producer_op, ref.port);
@@ -161,7 +183,7 @@ Values Executor::resolve(const Operation& op, const States& snapshots) const {
             ids = *static_ids;
         else {
             const auto& r = std::get<OutputRef>(a.indices);
-            ids = output(r.producer_op, r.port).data;
+            ids = output(r.producer_op, r.port).data();
         }
         auto object =
             std::find_if(contract_.objects.begin(), contract_.objects.end(), [&](const auto& o) {
@@ -197,7 +219,15 @@ void Executor::validate_values(const Operation& op,
         }
         if (v.state)
             bad();
-        const auto& d = v.data;
+        if (v.packed_scores()) {
+            if (port.type.name != TypeName::ScoresIdF64 || port.type.shape.size() != 1)
+                bad();
+            const auto& dim = port.type.shape[0];
+            if (dim.dynamic ? v.size() > dim.extent : v.size() != dim.extent)
+                bad();
+            continue;
+        }
+        const auto& d = v.data();
         if (!port.type.shape.empty()) {
             const auto& dim = port.type.shape[0];
             if (!d.is_array() || (dim.dynamic ? d.size() > dim.extent : d.size() != dim.extent))
@@ -257,9 +287,9 @@ void Executor::validate_values(const Operation& op,
         }
     }
     if ((op.op == Operator::ReadAdjacency &&
-         values.at("adjacency").data.size() != inputs.at("ids").data.size()) ||
+         values.at("adjacency").data().size() != inputs.at("ids").data().size()) ||
         (op.op == Operator::ScoreL2 &&
-         values.at("scores").data.size() != inputs.at("ids").data.size()))
+         values.at("scores").size() != inputs.at("ids").data().size()))
         error(op, "InvalidArgument", "actual output cardinality differs from address batch");
 }
 Lease Executor::submit(Operation op,
@@ -268,20 +298,17 @@ Lease Executor::submit(Operation op,
                        States snapshots) {
     if (!op.op_id || op.op_id <= last_id_ || op.op_id == UINT64_MAX)
         error(op, "InvalidArgument", "nonmonotonic/reused/overflow op ID");
-    Document context = contract_;
+    std::vector<const Json*> descriptors;
+    Json admission;
     std::set<uint64_t> provided, required;
     for (auto lease : producers) {
         const auto& r = checked(lease);
         if (!provided.insert(lease.op_).second)
             error(op, "InvalidArgument", "duplicate producer lease");
-        context.operations.push_back(r.op);
+        descriptors.push_back(&r.admission);
     }
-    std::sort(
-        context.operations.begin(), context.operations.end(), [](const auto& a, const auto& b) {
-            return a.op_id < b.op_id;
-        });
     try {
-        validate_submission(context, op);
+        admission = validator_.check(op, descriptors);
     } catch (Error& e) {
         e.time_ns = now_();
         throw;
@@ -400,7 +427,7 @@ Lease Executor::submit(Operation op,
             throw adapter_error(records_.at(id).op, now_(), e);
         }
     };
-    Record record{std::move(op), {}, 1, 1, {}, {provided.begin(), provided.end()}};
+    Record record{std::move(op), {}, 1, 1, {}, {provided.begin(), provided.end()}, std::move(admission)};
     record.completion = runtime_.submit(std::move(task));
     records_.emplace(id, std::move(record));
     for (auto producer : provided)

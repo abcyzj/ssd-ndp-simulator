@@ -77,7 +77,7 @@ public:
             operations[0], {}, adapter(rt, bridge, now, ready(state), 10 + input_delay));
         auto score_adapter = adapter(rt, bridge, now, {}, 20 + compute_delay, 30 + return_delay);
         score_adapter.evaluate = [](const Values& v) {
-            check(v.at("query").data[0] == 1. && v.at("ids").data[0] == 0u, "real input binding");
+            check(v.at("query").data()[0] == 1. && v.at("ids").data()[0] == 0u, "real input binding");
             return Values{{"scores", {Json::array({{{"id", 0u}, {"distance", 42.}}}), {}}}};
         };
         auto score = executor.submit(operations[1], {q}, std::move(score_adapter));
@@ -88,27 +88,27 @@ public:
         auto merge = executor.submit(operations[2], {score}, std::move(merge_adapter));
         auto select_adapter = adapter(rt, bridge, now, {});
         select_adapter.evaluate = [state](const Values& v) {
-            check(v.at("expanded").state == state && v.at("scores").data[0]["distance"] == 42.,
+            check(v.at("expanded").state == state && v.at("scores").data()[0]["distance"] == 42.,
                   "state/data binding");
             return Values{{"ids", {Json::array({1u}), {}}}};
         };
         auto select = executor.submit(operations[3], {q, merge}, std::move(select_adapter));
         auto read_adapter = adapter(rt, bridge, now, {}, 5);
         read_adapter.evaluate = [](const Values& v) {
-            check(v.at("ids").data == Json::array({1u}), "dynamic address binding");
+            check(v.at("ids").data() == Json::array({1u}), "dynamic address binding");
             return Values{
                 {"adjacency", {Json::array({{{"degree", 1u}, {"ids", Json::array({2u})}}}), {}}}};
         };
         auto read = executor.submit(operations[4], {select}, std::move(read_adapter));
         auto dedup_adapter = adapter(rt, bridge, now, {});
         dedup_adapter.evaluate = [](const Values& v) {
-            return Values{{"ids", {v.at("adjacency").data[0]["ids"], {}}}};
+            return Values{{"ids", {v.at("adjacency").data()[0]["ids"], {}}}};
         };
         auto dedup = executor.submit(operations[5], {q, read}, std::move(dedup_adapter));
         auto joined = executor.join(operations[6], {score, dedup});
         leases = {q, score, merge, select, read, dedup, joined};
         executor.when_all({joined}, 100, [this, now, dedup](runtime::Outcome o) {
-            check(!o.failure && executor.get(dedup, "ids").data == Json::array({2u}),
+            check(!o.failure && executor.get(dedup, "ids").data() == Json::array({2u}),
                   "join result");
             successor_time = now();
             ++completed;

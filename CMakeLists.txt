@@ -434,3 +434,8 @@ if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
         "${PROJECT_SOURCE_DIR}/tests/test_ir_observation.py" --build "${PROJECT_BINARY_DIR}")
     set_tests_properties(ir_observation_comparator PROPERTIES TIMEOUT 240)
 endif()
+
+if(BUILD_TESTING)
+    add_test(NAME ir_matrix_gates COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_ir_matrix.py")
+endif()

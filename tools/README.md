@@ -65,3 +65,10 @@ build/delivery/bench_host_cpu
 
 - `compare_engines.py <left-run> <right-run> --output <report.json>`：独立严格同placement direct/ir或同engine statistics/detail比较；输出 `ndpsim-equivalence/1`、实际比较范围与差异定位，失败退出非0，不改写运行产物。
 - `verify_ir_observation.py --output <新目录>`：锁定Python执行V03-5依赖/构建/79项CTest、合成及真实SIFT10k对照、独立账本与冻结direct核查，失败关闭；不启动完整矩阵或交付切换。字段、白名单、schema和实际证据见[接口](../docs/ir-observation-v0.3.md)。
+
+
+### V03-6
+
+- `verify_ir_matrix.py --output <新目录>`：锁定Python运行完整52条SIFT1M direct/IR矩阵、三组交替效率补测、Q32/128/512两placement各3次；预检V03-0～5冻结证据/相同输入/资源，根构建/全CTest/定向ASan；不接受历史仿真复用或缩小矩阵。默认 `--build build/delivery --asan-build build/v036-asan`，受限沙箱用 `--ram-evidence` 保存本轮实测stdout。实际结果/命令见[收口](../docs/ir-matrix-v0.3.md)。
+- `stream_statistics.py`：严格比较器内部使用的资源JSON流式读取/SQLite暂存；保留嵌套字段及原顺序，拒绝重复key、截断与尾随数据。不是新运行入口。
+- 本轮仅V03-6：默认仍direct，V03-7总验收与切换未开始。
