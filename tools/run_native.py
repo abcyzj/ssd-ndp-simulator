@@ -3,6 +3,7 @@ import argparse
 import json
 from pathlib import Path
 import platform
+import resource
 import shutil
 import subprocess
 import sys
@@ -129,6 +130,9 @@ def run(args):
         print(f'run_native: {exc}', file=sys.stderr)
     finally:
         manifest['artifacts_sha256'] = {str(p.relative_to(out)): sha(p) for p in sorted(out.rglob('*')) if p.is_file()}
+        if args.mode:
+            peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            manifest['launcher_self_peak_rss_bytes'] = peak * (1 if platform.system() == 'Darwin' else 1024)
         write_json(out/'manifest.json', manifest)
     return manifest['exit_code']
 
