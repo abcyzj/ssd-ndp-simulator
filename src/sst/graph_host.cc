@@ -73,6 +73,7 @@ public:
                             {"scratch_bytes", "extra block bytes", "0"},
                             {"vector_sector_bound", "vector sector coverage bytes", "512"},
                             {"max_inflight", "finite query admission limit", "1"},
+                            {"semantic_output", "optional reference semantics JSONL", ""},
                             {"event_log", "enable JSONL events", "0"},
                             {"output_budget_bytes", "required+detail byte budget", "2147483648"},
                             {"records", "mandatory result records", ""},
@@ -208,6 +209,12 @@ public:
         device_ = std::make_unique<OrdinaryDevice>(preload, profile.name, resource_budget);
         output_budget_.limit = p.find<uint64_t>("output_budget_bytes", uint64_t(2) << 30);
         out_.exceptions(std::ios::badbit);
+        auto semantic_path = p.find<std::string>("semantic_output", "");
+        if (!semantic_path.empty()) {
+            semantic_.open(semantic_path);
+            if (!semantic_)
+                throw std::invalid_argument("cannot open reference semantic log");
+        }
         records_.open(p.find<std::string>("records", ""));
         if (!records_)
             throw std::invalid_argument("cannot open graph records");
@@ -393,7 +400,19 @@ public:
             };
         rt_->statistics_only();
         handles_->statistics_only();
+        if (semantic_.is_open()) {
+            cpu_->observe_score = [this](auto query, const auto& result) {
+                semantic_score(query, 0, result);
+            };
+            if (controller_)
+                controller_->observe_score = [this](auto query, auto chunk, const auto& result) {
+                    semantic_score(query, chunk, result);
+                };
+        }
         cpu_->observations().sink = [this](const auto& s) {
+            if (semantic_.is_open() && s.kind == model::Kind::Control)
+                semantic_ << "{\"type\":\"control\",\"query\":" << s.query << ",\"work\":"
+                          << semantic_work(s.work) << "}\n";
             records_ << "{\"type\":\"service\",\"task\":" << s.task << ",\"query\":" << s.query
                      << ",\"ready_ns\":" << s.ready_ns << ",\"read_bytes\":" << s.work.read_bytes
                      << ",\"write_bytes\":" << s.work.write_bytes << ",\"kind\":\""
@@ -534,6 +553,8 @@ public:
              << ",\"sector_bytes\":" << sectors_ * 512
              << ",\"services\":" << cpu_->observations().count << "}\n";
 
+        if (semantic_.is_open())
+            semantic_.flush();
         out_.flush();
         if (log_.is_open()) {
             log_.flush();
@@ -578,6 +599,10 @@ private:
             state->content = handles_->create({selection},
                                               content::Location::HostMemory,
                                               {state->query, task, getCurrentSimTimeNano()});
+            if (semantic_.is_open())
+                semantic_ << "{\"type\":\"read\",\"query\":" << state->query
+                          << ",\"kind\":\"" << (kind == content::Kind::Vector ? "vector" : "adjacency")
+                          << "\",\"id\":" << id << "}\n";
             const auto& plan = state->association->plan();
             useful_ += plan.useful_bytes;
             sectors_ += plan.sector_bytes / 512;
@@ -689,6 +714,10 @@ private:
             out_ << "]}\n";
             std::ostringstream decision;
             score_json(decision, d.candidates);
+            if (semantic_.is_open())
+                semantic_ << "{\"type\":\"decision\",\"query\":" << q
+                          << ",\"candidates\":" << decision.str()
+                          << ",\"expand\":" << ir::Json(d.expand).dump() << "}\n";
             for (auto id : d.expand)
                 decision << ':' << id;
             auto& digest = decision_digest_.at(q);
@@ -835,9 +864,19 @@ private:
             return traits_type::not_eof(c);
         }
     } null_;
+    static ir::Json semantic_work(const operators::Work& w) {
+        return {w.elements, w.flops, w.read_bytes, w.write_bytes, w.output_bytes,
+                w.candidate_checks, w.comparisons};
+    }
+    void semantic_score(uint64_t query, uint64_t chunk, const operators::Result& result) {
+        semantic_ << "{\"type\":\"score\",\"query\":" << query << ",\"chunk\":" << chunk
+                  << ",\"work\":" << semantic_work(result.work) << ",\"scores\":";
+        score_json(semantic_, operators::scores(result.bytes));
+        semantic_ << "}\n";
+    }
     std::ostream out_{&null_};
     OutputBudget output_budget_;
-    BudgetFile records_{output_budget_}, log_{output_budget_};
+    BudgetFile records_{output_budget_}, log_{output_budget_}, semantic_{output_budget_};
     content::Bytes queries_;
     content::AnnLayout ann_;
     std::unique_ptr<content::ContentStore> store_;

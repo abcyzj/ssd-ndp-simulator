@@ -34,10 +34,13 @@ def run(config, build, output, data=None, *, paired=False):
     output_budget = integer(c.get('output_budget_bytes', 2*1024**3), 'output_budget_bytes', 1, 2**64-1)
     timeout = integer(c.get('simulation_timeout_seconds', 600), 'simulation_timeout_seconds')
     event_log = c.get('event_log', False)
+    semantic_log = c.get('semantic_log', False)
+    if type(semantic_log) is not bool:
+        raise ValueError('semantic_log must be boolean')
     if type(event_log) is not bool:
         raise ValueError('event_log must be boolean')
     # Remove stale artifacts when reusing an output directory.
-    for name in ('events.jsonl', 'results.json', 'statistics.json', 'manifest.json', 'ir-manifest.json', 'observation.json'):
+    for name in ('events.jsonl', 'semantic.jsonl', 'results.json', 'statistics.json', 'manifest.json', 'ir-manifest.json', 'observation.json'):
         (output/name).unlink(missing_ok=True)
     if not c['parameter_source']:
         raise ValueError('parameter_source is required')
@@ -103,6 +106,8 @@ def run(config, build, output, data=None, *, paired=False):
     params.update(output_budget_bytes=output_budget, content_backend=backend, device_profile=c['device_profile'],
                   resource_budget_bytes=resource_check['resource_budget_bytes'], data=str(data), output=str(output / 'events.jsonl'), records=str(output/'records.jsonl'),
                   event_log=int(event_log), max_inflight=c['max_inflight'])
+    if semantic_log:
+        params['semantic_output'] = str(output/'semantic.jsonl')
     params['execution_engine'] = engine
     if engine == 'ir':
         from ir_frontend import contract
@@ -218,7 +223,7 @@ def run(config, build, output, data=None, *, paired=False):
         code_diff_sha256=hashlib.sha256(subprocess.check_output(['git', 'diff', 'HEAD'], cwd=ROOT)).hexdigest(),
         mqsim_commit=git('-C', 'third_party/MQSim', 'rev-parse', 'HEAD'),
         sst_commit=git('-C', 'third_party/sst-core', 'rev-parse', 'HEAD'), parameter_source=c['parameter_source'],
-        artifacts_sha256={name:digest(output/name) for name in ('observation.json','config.json','layout.json','preflight.json','ssdconfig.xml','results.json','statistics.json','capabilities.json','sst-params.json', 'sst-measurement.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []), *(['ir-manifest.json'] if engine == 'ir' else []))},
+        artifacts_sha256={name:digest(output/name) for name in ('observation.json','config.json','layout.json','preflight.json','ssdconfig.xml','results.json','statistics.json','capabilities.json','sst-params.json', 'sst-measurement.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []), *(['semantic.jsonl'] if semantic_log else []), *(['ir-manifest.json'] if engine == 'ir' else []))},
         assumptions=['single SSD/'+c['device_profile']+'/SIMPLE/TURNED_OFF; CMT retained',
                      'deterministic page preload drained before measurement; no cross-query object cache',
                      'all queries offered at measurement origin, FIFO bounded admission; slots retire after CloseAck; host control; distance placement='+c['placement'],

@@ -81,6 +81,17 @@ def main():
             cmd = [binary, *map(str, (*shape_and_search, workers, concurrency)), *files]
             proc = subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=20)
             check(json.loads(proc.stdout), expected, truth, original_ids, workers, concurrency)
+        traced = subprocess.run([*cmd, '--semantic-log'], check=True, capture_output=True,
+                                text=True, timeout=20)
+        traced = json.loads(traced.stdout)
+        check(traced, expected, truth, original_ids, workers, concurrency)
+        for row in traced['queries']:
+            # Entry first, ordered nonempty score chunks, explicit empty terminal selection.
+            assert row['score_trace'][0][0][0] == 0
+            assert len(row['score_trace']) == row['score_chunks']
+            assert row['expansion_trace'][-1] == []
+            assert len(row['expansion_trace']) == row['expansion_batches'] + 1
+            assert sum(map(len, row['expansion_trace'])) == row['expanded']
         invalid = [
             (12, '3', 'invalid search'),
             (13, '1', 'invalid search'),

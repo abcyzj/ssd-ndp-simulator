@@ -50,10 +50,12 @@ runtime::Operation HostCpu::operation(uint64_t query,
         queue_.push_back({id, submitted, kind, work});
         pump();
     };
-    op.evaluate = [evaluate = std::move(evaluate), work](const auto& values) {
+    op.evaluate = [this, query, kind, evaluate = std::move(evaluate), work](const auto& values) {
         auto r = evaluate(values);
         if (r.work.output_bytes != r.bytes.size() || r.work.write_bytes != r.bytes.size())
             throw content::Error(Code::InvalidArgument, "operator output/work mismatch");
+        if (observe_score && kind == Kind::Distance)
+            observe_score(query, r);
         *work = r.work;
         return r.bytes;
     };

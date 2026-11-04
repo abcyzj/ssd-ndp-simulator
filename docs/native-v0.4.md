@@ -34,4 +34,4 @@ python3 tools/run_native.py --binary build/native/ndpsim_native \
 | 2 / 32 | 32 | 22.11 | 37 / 0 |
 | 4 / 32 | 32 | 37.78 | 45 / 0 |
 
-AC-04-01 已有独立构建和真实运行证据。上述 SIFT 数据是功能试跑，样本每配置一次，接纳窗口随配置变化。三路径语义、独立 evaluation128、Profiler、静态 IR、CPU 精度和常规 14 配置验收属于后续任务。完整继承 AC 与 52 条深度回归本轮未执行。
+AC-04-01 已有独立构建和真实运行证据。上述 SIFT 数据是功能试跑，样本每配置一次，接纳窗口随配置变化。独立 evaluation128 的三路径语义见 [V04-1c](reference-semantics-v0.4.md)。Profiler、静态 IR、CPU 精度和常规 14 配置验收属于后续任务。完整继承 AC 与 52 条深度回归本轮未执行。

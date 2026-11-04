@@ -33,3 +33,7 @@ T6新增`resources.initial_state`/同名CSV，记录完整预装载实际完成s
 
 
 V03-7 交付接口：`execution_engine` 省略时有效值为 `ir`，显式 `direct` 保留，无效值拒绝。有效值写入config/manifest/observation；IR另写ir-manifest。旧自动化参考显式固定direct。总验收和本轮状态见[V0.3交付记录](releases/v0.3.md)。
+
+## V0.4 参考语义诊断
+
+模拟实验可显式设置 `semantic_log: true`，在共享输出预算内额外生成 `semantic.jsonl`。独立原生入口的 `--semantic-log` 将评分分块和扩展序列随 `batch.json` 输出。记录格式与比较入口见 [V04-1c 参考语义](reference-semantics-v0.4.md)。

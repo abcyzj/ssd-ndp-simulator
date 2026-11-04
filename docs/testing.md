@@ -131,3 +131,7 @@ V0.3 必须保留这些测试与独立核对器；名字中的阶段编号仅用
 ## V04-1a 纯核心持续回归
 
 根CTest `search_core_oracle` 用独立Python数值/搜索与计数公式核对60组小搜索的逐阶段packed结果、评分分块顺序和全部七字段Work；覆盖重复边/自环/跨批重复、同分、空邻接/断连、不足k、预算、B>E、多chunk及非法输入。接口、实际根构建/84项CTest和四组合冻结smoke证据见[纯核心收口](core-v0.4.md)。不代表V04-1c三路径、完整规模或CPU精度通过。
+
+## V04-1c 参考语义回归
+
+`reference_path_comparator` 覆盖独立计数、缺失和变更观测、读顺序及距离容差开关。`native_search_batch` 另检查显式开启的评分分块和末轮选择。三路径完整主配置及定向验证入口见 [V04-1c 参考语义](reference-semantics-v0.4.md)。

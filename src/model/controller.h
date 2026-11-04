@@ -130,6 +130,7 @@ public:
     runtime::Handle open(uint64_t query, uint64_t version, const std::vector<float>&);
     // Passive semantic batch -> actual chunk Runtime task association.
     std::function<void(uint64_t, uint64_t)> bind_chunk;
+    std::function<void(uint64_t, uint64_t, const operators::Result&)> observe_score;
     runtime::Handle score(uint64_t query, const std::vector<content::Selection>&);
     runtime::Handle close(uint64_t query);
     // Trusted composite failure boundary: wait for every issued chunk/reply.

@@ -107,13 +107,15 @@ struct Result {
     uint64_t admission = 0, start = 0, end = 0, cpu = 0;
     std::vector<operators::Score> top;
     operators::Work work;
+    std::vector<std::vector<operators::Score>> score_trace;
+    std::vector<std::vector<uint32_t>> expansion_trace;
     void add(const operators::Work& delta) {
         for (auto field : work_fields)
             work.*field += delta.*field;
     }
 };
 
-Result search_query(const Config& c, const Input& input, size_t query_id) {
+Result search_query(const Config& c, const Input& input, size_t query_id, bool trace = false) {
     Result result;
     const auto stride = c.dimensions * 4;
     const auto* q = input.queries.data() + query_id * stride;
@@ -136,6 +138,8 @@ Result search_query(const Config& c, const Input& input, size_t query_id) {
                 }
                 auto scores = operators::squared_l2(query, vectors, group);
                 result.add(scores.work);
+                if (trace)
+                    result.score_trace.push_back(operators::scores(scores.bytes));
                 batch.insert(batch.end(), scores.bytes.begin(), scores.bytes.end());
                 ++result.chunks;
             }
@@ -145,11 +149,14 @@ Result search_query(const Config& c, const Input& input, size_t query_id) {
         }
         auto selected = search::core::select_frontier(ranked, expanded, c.width, c.batch, c.budget);
         result.add(selected.work);
-        if (selected.bytes.empty())
+        const auto chosen = ids(selected.bytes.data(), selected.bytes.size() / 4);
+        if (trace)
+            result.expansion_trace.push_back(chosen);
+        if (chosen.empty())
             break;
         ++result.rounds;
         std::vector<std::vector<uint32_t>> rows;
-        for (auto id : ids(selected.bytes.data(), selected.bytes.size() / 4)) {
+        for (auto id : chosen) {
             expanded.insert(id);
             const auto* row = input.graph.data() + id * (c.degree + 1) * 4;
             rows.push_back(ids(row + 4, u32(row)));
@@ -192,8 +199,8 @@ rusage usage() {
 
 class Batch {
 public:
-    Batch(const Config& c, const Input& input)
-        : config(c), data(input), admissions(c.queries), admitted(std::min(c.concurrency, c.queries)),
+    Batch(const Config& c, const Input& input, bool trace)
+        : config(c), data(input), trace(trace), admissions(c.queries), admitted(std::min(c.concurrency, c.queries)),
           results(c.queries) {}
 
     void run() {
@@ -260,6 +267,24 @@ public:
                 std::cout << (j ? ",{" : "{") << "\"id\":" << score.id
                           << ",\"distance\":" << score.distance << '}';
             }
+            if (trace) {
+                std::cout << "],\"score_trace\":[";
+                for (size_t j = 0; j < r.score_trace.size(); ++j) {
+                    std::cout << (j ? ",[" : "[");
+                    const auto& chunk = r.score_trace[j];
+                    for (size_t n = 0; n < chunk.size(); ++n)
+                        std::cout << (n ? ",[" : "[") << chunk[n].id << ',' << chunk[n].distance << ']';
+                    std::cout << ']';
+                }
+                std::cout << "],\"expansion_trace\":[";
+                for (size_t j = 0; j < r.expansion_trace.size(); ++j) {
+                    std::cout << (j ? ",[" : "[");
+                    const auto& chosen = r.expansion_trace[j];
+                    for (size_t n = 0; n < chosen.size(); ++n)
+                        std::cout << (n ? "," : "") << chosen[n];
+                    std::cout << ']';
+                }
+            }
             std::cout << "],\"recall_at_k\":" << double(hits) / config.k
                       << ",\"one_recall_at_r\":" << int(first)
                       << ",\"insufficient_results\":" << (r.top.size() < config.k ? "true" : "false") << '}';
@@ -300,7 +325,7 @@ private:
                 const auto start = clock_ns(CLOCK_MONOTONIC) - begin;
                 lock.unlock();
                 const auto cpu_start = clock_ns(CLOCK_THREAD_CPUTIME_ID);
-                auto result = search_query(config, data, query);
+                auto result = search_query(config, data, query, trace);
                 result.cpu = clock_ns(CLOCK_THREAD_CPUTIME_ID) - cpu_start;
                 result.worker = id;
                 result.admission = admission;
@@ -323,6 +348,7 @@ private:
 
     const Config& config;
     const Input& data;
+    const bool trace;
     std::mutex mutex;
     std::condition_variable changed;
     std::exception_ptr failure;
@@ -338,11 +364,12 @@ private:
 
 int main(int argc, char** argv) {
     try {
-        if (argc != 24)
+        const bool trace = argc == 25 && std::string(argv[24]) == "--semantic-log";
+        if (argc != 24 && !trace)
             throw std::runtime_error("use tools/run_native.py for validated dataset-v2 input");
         const Config config(argv);
         const Input input(config, argv);
-        Batch batch(config, input);
+        Batch batch(config, input, trace);
         batch.run();
         batch.report();
     } catch (const std::exception& e) {

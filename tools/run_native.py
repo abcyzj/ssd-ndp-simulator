@@ -58,6 +58,9 @@ def run(args):
             shape['count'], shape['dimensions'], shape['queries'], shape['degree'], truth['k'],
             *(search[k] for k in SEARCH_FIELDS), args.workers, args.concurrency)),
             *(item for pair in files for item in pair)]
+        if args.semantic_log:
+            argv.append('--semantic-log')
+        manifest['semantic_log'] = args.semantic_log
         manifest['pressure_before_process'] = pressure()
         manifest['command'] = measure(argv, out/'process.json', args.timeout, args.rss_limit, poll_seconds=.01)
         manifest['pressure_after_process'] = pressure()
@@ -86,6 +89,7 @@ def main():
         parser.add_argument('--'+key, type=Path, required=True)
     parser.add_argument('--workers', type=int, choices=(1, 2, 4), default=1)
     parser.add_argument('--concurrency', type=int, default=1)
+    parser.add_argument('--semantic-log', action='store_true', help='include reference search trace; timings are diagnostic')
     parser.add_argument('--timeout', type=int, default=600, help='native process timeout in seconds')
     parser.add_argument('--rss-limit', type=int, default=4*1024**3, help='native child peak RSS budget in bytes')
     args = parser.parse_args()

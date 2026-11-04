@@ -337,6 +337,8 @@ runtime::Handle Controller::chunk(const std::shared_ptr<Session>& s,
             if (result.work.flops != checked_mul(checked_mul(ids.size(), config_.dimension), 3) ||
                 result.work.output_bytes != c->output)
                 throw Error(Code::InvalidArgument, "L2 work/buffer bound mismatch");
+            if (observe_score)
+                observe_score(s->query, c->chunk, result);
             c->result = std::move(result.bytes);
             return c->result;
         } catch (const std::exception& e) {

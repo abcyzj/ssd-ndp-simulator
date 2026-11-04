@@ -241,6 +241,8 @@ if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
 endif()
 
 if(BUILD_TESTING)
+    add_test(NAME reference_path_comparator COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_reference_paths.py")
     add_test(NAME native_search_batch COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_native_search.py" "$<TARGET_FILE:ndpsim_native>")
     add_executable(search_core_probe tests/search_core_probe.cc)

@@ -24,6 +24,7 @@ struct Service {
 // Owner and Runtime/bridge outlive all queued callbacks. No standalone clock or PCIe fee.
 class HostCpu {
 public:
+    std::function<void(uint64_t, const operators::Result&)> observe_score;
     using Evaluate = std::function<operators::Result(const std::vector<content::Bytes>&)>;
     HostCpu(runtime::Runtime&, EventBridge&, EventBridge::Clock, HostConfig);
     runtime::Handle submit(uint64_t query, std::vector<runtime::Handle>, Kind, Evaluate);
