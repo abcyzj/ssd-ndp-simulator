@@ -1,15 +1,10 @@
 """Fit and freeze the V04 resident, single-worker CPU Profile from V04-2c evidence."""
-import argparse
 from collections import defaultdict
 import math
-from pathlib import Path
-import platform
 from statistics import mean, median
-import sys
 
-from ann_data import write_json
 from v04_contract import (FEATURE_UNITS, ROOT, STAGES, decode, digest, file_hash, require,
-                          validate_measurement, validate_profile)
+                          validate_measurement)
 
 FEATURES = {
     'init': ('copied_bytes',),
@@ -136,7 +131,19 @@ def read_training(freeze_path, freeze_sha, start_path, start_sha):
             features = row['work'] | row['features']
             values = tuple(features[name] for name in FEATURES[stage])
             threshold = 4 * max(record['cpu_clock']['resolution_ns'], row['overhead_ns'])
+            merge_phase = None
+            if stage == 'merge':
+                # Chunk concatenation records empty Work. Final candidates reads packed scores.
+                packed_bytes = 12 * (features['old_scores'] + features['new_scores'])
+                require(packed_bytes > 0 and row['work']['read_bytes'] in (0, packed_bytes),
+                        'invalid merge sample Work')
+                merge_phase = 'merge_finalize' if row['work']['read_bytes'] else 'merge_append'
+                require(merge_phase != 'merge_append' or
+                        (not any(row['work'].values()) and features['old_scores'] == 0
+                         and 0 < features['new_scores'] <= config['chunk']),
+                        'invalid merge append Work')
             by_stage[stage].append(dict(values=values, ns=row['corrected_ns'], point=label,
+                                        merge_phase=merge_phase,
                                         query=row['query'], usable=row['quality'] == 'usable',
                                         short=row['corrected_ns'] < threshold,
                                         operator=row['operator']))
@@ -192,6 +199,15 @@ def estimate(model, values):
         ns = model['ns']
     elif kind == 'table':
         ns = next(b['ns'] for b in model['bins'] if values[0] <= b['upper'])
+    elif kind == 'log_gbdt':
+        total = 0.
+        for tree in model['trees']:
+            i = 0
+            while isinstance(tree[i], dict):
+                node = tree[i]
+                i = i + 1 if values[node['feature']] <= node['threshold'] else node['right']
+            total += tree[i]
+        ns = max(1., math.exp(model['initial'] + model['rate'] * total))
     else:
         ns = model['intercept_ns']
         for value, coefficient in zip(values, model['coefficients']):
@@ -265,70 +281,3 @@ def fit_stage(stage, rows, tuning, classification):
                  error={k: errors[k] for k in ('mae_ns', 'relative_p50', 'relative_p95')},
                  selection_rule=RULE)
     return entry, report
-
-
-def freeze(args):
-    applicability, tuning, evaluation, receipts, rows, classification, hashes = read_training(
-        args.training_freeze, args.training_sha256, args.start_manifest, args.start_sha256)
-    models, reports = zip(*(fit_stage(stage, rows[stage], tuning, classification['buckets'][stage])
-                            for stage in FEATURES))
-    tool_files = ['tools/fit_v04_cpu_profile.py', 'tools/v04_contract.py', 'tools/ann_data.py',
-                  'schemas/ndpsim-measurement-v1.schema.json', 'schemas/ndpsim-cpu-profile-v1.schema.json',
-                  'deps.lock.json']
-    provenance = dict(training_freeze_sha256=args.training_sha256, start_manifest_sha256=args.start_sha256,
-                      python=dict(version=platform.python_version(), binary_sha256=file_hash(Path(sys.executable))),
-                      training_inputs=hashes,
-                      tool_files_sha256={name: file_hash(ROOT/name) for name in tool_files})
-    report = dict(format='ndpsim-v04-fit-report/1', provenance=provenance, applicability=applicability,
-                  split=dict(tuning_ids=tuning, evaluation_ids=evaluation, overlap=[]),
-                  input_measurements=receipts, selection_rule=RULE,
-                  candidate_rules=dict(constant='median corrected ns',
-                                       linear='512 scaled projected coordinate sweeps, squared loss',
-                                       table='median corrected ns by first feature nearest-rank quartile bins'),
-                  classification_rule=classification['rule'], stages=reports)
-    write_json(args.output/'fit-report.json', report)
-    profile = dict(format='ndpsim-cpu-profile/1', unit='ns', rounding='ceil-u64',
-                   applicability=applicability, models=list(models),
-                   training=dict(split='tuning32', query_ids=tuning,
-                                 measurement_sha256=[p['measurement_sha256'] for p in receipts],
-                                 fit_report_sha256=file_hash(args.output/'fit-report.json')))
-    validation = validate_profile(profile)
-    write_json(args.output/'cpu-profile.json', profile)
-    lines = ['# V04-3b tuning32 CPU Profile', '', RULE, '',
-             'Training errors below are measured on the final refit. Evaluation128 IDs were used only for split checks.',
-             '', '| Stage | Model | Usable / total | Holdout outside common range | Training MAE (ns) | Relative P50 / P90 | Short MAE (ns) |',
-             '| --- | --- | ---: | ---: | ---: | ---: | ---: |']
-    for row in reports:
-        quality, error = row['quality'], row['training']
-        short = row['short_training'].get('mae_ns')
-        short_display = f'{short:.1f}' if short is not None else '—'
-        outside = sum(f['out_of_range'] for f in row['folds'])
-        lines.append(f"| {row['stage']} | {row['selected']} | {quality['usable']} / {quality['total']} | "
-                     f"{outside} | {error['mae_ns']:.1f} | {error['relative_p50']:.1%} / "
-                     f"{error['relative_p90']:.1%} | {short_display} |")
-    lines.extend(['', 'See fit-report.json for per-point and per-shape residuals, sample quality and candidate errors.',
-                  'Level A and AC-04-04 remain open. Runtime applicability and observed feature ranges are binding.', ''])
-    (args.output/'fit-report.md').write_text('\n'.join(lines))
-    write_json(args.output/'fit-freeze.json', dict(format='ndpsim-v04-profile-freeze/1', provenance=provenance,
-               artifacts_sha256={name: file_hash(args.output/name) for name in
-                                 ('cpu-profile.json', 'fit-report.json', 'fit-report.md')},
-               assertions=dict(profile_validation=validation, training_evaluation_overlap=0,
-                               measurement_validations=len(receipts)), level_a='not_run'))
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    for option in ('training-freeze', 'start-manifest', 'output'):
-        parser.add_argument('--' + option, type=Path, required=True)
-    for option in ('training-sha256', 'start-sha256'):
-        parser.add_argument('--' + option, required=True)
-    args = parser.parse_args()
-    try:
-        args.output.mkdir(parents=True)
-        freeze(args)
-    except (OSError, ValueError, KeyError) as exc:
-        parser.exit(1, f'fit failed: {exc}\n')
-
-
-if __name__ == '__main__':
-    main()

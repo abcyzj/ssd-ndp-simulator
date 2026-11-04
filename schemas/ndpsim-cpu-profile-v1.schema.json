@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ndpsim-cpu-profile/1",
+  "title": "ndpsim-cpu-profile",
   "description": "Service times use ceil-u64. Linear models accumulate the intercept and ordered feature products in binary64 without contraction.",
   "type": "object",
   "additionalProperties": false,
@@ -15,7 +15,7 @@
   "properties": {
     "format": {
       "enum": [
-        "ndpsim-cpu-profile/1"
+        "ndpsim-cpu-profile/3"
       ]
     },
     "unit": {
@@ -205,7 +205,8 @@
               "init",
               "score_prepare",
               "score_l2",
-              "merge",
+              "merge_append",
+              "merge_finalize",
               "select",
               "adjacency_prepare",
               "dedup",
@@ -356,6 +357,74 @@
                       }
                     },
                     "minItems": 1
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "initial",
+                  "rate",
+                  "trees"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "log_gbdt"
+                    ]
+                  },
+                  "initial": {
+                    "type": "number"
+                  },
+                  "rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "trees": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 180,
+                    "items": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 15,
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "feature",
+                              "threshold",
+                              "right"
+                            ],
+                            "properties": {
+                              "feature": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 18446744073709551615
+                              },
+                              "threshold": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 18446744073709551615
+                              },
+                              "right": {
+                                "type": "integer",
+                                "minimum": 2,
+                                "maximum": 14
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
                   }
                 }
               }

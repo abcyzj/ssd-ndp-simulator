@@ -1,5 +1,5 @@
 {
-  "format": "ndpsim-cpu-profile/1",
+  "format": "ndpsim-cpu-profile/3",
   "unit": "ns",
   "rounding": "ceil-u64",
   "applicability": {
@@ -71,6 +71,87 @@
       "model": {
         "kind": "constant",
         "ns": 4
+      },
+      "samples": 1,
+      "error": {
+        "mae_ns": 0,
+        "relative_p50": 0,
+        "relative_p95": 0
+      },
+      "selection_rule": "synthetic fixture"
+    },
+    {
+      "operator": "DEDUP_NEIGHBORS",
+      "stage": "dedup",
+      "features": [
+        {
+          "name": "dimensions",
+          "unit": "count",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "model": {
+        "kind": "log_gbdt",
+        "initial": 0.0,
+        "rate": 1.0,
+        "trees": [
+          [
+            0.0
+          ]
+        ]
+      },
+      "samples": 1,
+      "error": {
+        "mae_ns": 0,
+        "relative_p50": 0,
+        "relative_p95": 0
+      },
+      "selection_rule": "synthetic fixture"
+    },
+    {
+      "operator": "MERGE_CANDIDATES",
+      "stage": "merge_append",
+      "features": [
+        {
+          "name": "dimensions",
+          "unit": "count",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "model": {
+        "kind": "linear",
+        "intercept_ns": 1,
+        "coefficients": [
+          0
+        ]
+      },
+      "samples": 1,
+      "error": {
+        "mae_ns": 0,
+        "relative_p50": 0,
+        "relative_p95": 0
+      },
+      "selection_rule": "synthetic fixture"
+    },
+    {
+      "operator": "MERGE_CANDIDATES",
+      "stage": "merge_finalize",
+      "features": [
+        {
+          "name": "dimensions",
+          "unit": "count",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "model": {
+        "kind": "linear",
+        "intercept_ns": 1,
+        "coefficients": [
+          0
+        ]
       },
       "samples": 1,
       "error": {

@@ -1,5 +1,6 @@
 """Exercise preflight, actual replay causality, re-costing and failure drain through SST."""
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -82,8 +83,17 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
     exemplar = profile['models'][0]
     profile['models'] = [
         dict(exemplar, operator=op, stage=stage, features=[], model=dict(kind='constant', ns=ns))
-        for op, stages in STAGES.items() for stage in stages if stage != 'state'
+        for op, stages in STAGES.items() for stage in stages if stage not in ('state', 'merge', 'dedup')
     ]
+    profile['models'].extend([
+        dict(exemplar, operator='MERGE_CANDIDATES', stage=phase,
+             features=[dict(name='dimensions', unit='count', minimum=base['width'], maximum=base['width'])],
+             model=dict(kind='linear', intercept_ns=ns, coefficients=[0]))
+        for phase in ('merge_append', 'merge_finalize')])
+    profile['models'].append(dict(
+        exemplar, operator='DEDUP_NEIGHBORS', stage='dedup',
+        features=[dict(name='dimensions', unit='count', minimum=base['width'], maximum=base['width'])],
+        model=dict(kind='log_gbdt', initial=math.log(max(1, ns) - .25), rate=1., trees=[[0.]])))
     # A constant model still needs a declared, bounded feature.
     for model in profile['models']:
         model['features'] = [dict(name='dimensions', unit='count', minimum=base['width'], maximum=base['width'])]
@@ -172,12 +182,15 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
                if row['type'] == 'replay_verified'}
     submitted = {(row['query'], row['op']): row['time_ns'] for row in events
                  if row['type'] == 'replay_submit'}
+    dedup_count = 0
     for row in events:
         if row['type'] == 'replay_stage':
             service = services[row['task']]
             key = row['query'], row['op']
             assert submitted[key] <= service['start_ns'] <= service['end_ns'] <= visible[key]
-            assert service['end_ns'] - service['start_ns'] == ns
+            is_dedup = row['stage'] == 'dedup'
+            dedup_count += is_dedup
+            assert service['end_ns'] - service['start_ns'] == (max(1, ns) if is_dedup else ns)
         if row['type'] == 'replay_read' and row['op'] > 1:
             assert row['time_ns'] >= visible[row['query'], row['op']-1]
     assert len(visible) == len(submitted) == expected_operations
@@ -191,7 +204,7 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
     assert summary['workers_idle'] == workers
     assert all(summary[k] == 0 for k in ('cpu_busy_slots', 'cpu_queued', 'pending_admissions',
                                         'cpu_queue_wait_ns', 'cpu_dependency_wait_ns'))
-    assert summary['cpu_busy_ns'] == len(services)*ns
+    assert summary['cpu_busy_ns'] == len(services)*ns + (dedup_count if ns == 0 else 0)
     assert summary['worker_wait_ns'] == sum(r['worker_wait_ns'] for r in results)
     final = next(row for row in records if row['type'] == 'summary')
     assert final['peak_inflight'] == min(len(ids), inflight)
@@ -287,12 +300,17 @@ def worker_replay(build, output):
         actual = sorted((r for r in rows(dest/'records.jsonl') if r['type'] == 'query_result'),
                         key=lambda r: r['query'])
         # Independent earliest-free-worker schedule with the serial service totals.
+        # The GBDT has a 1 ns floor, even in the zero-duration fixture.
+        dedup_per_query = {i + 1: 0 for i in range(len(ids))}
+        for event in rows(dest/'events.jsonl'):
+            if event['type'] == 'replay_stage' and event['stage'] == 'dedup':
+                dedup_per_query[event['query']] += 1
         free = [0] * workers
         for i, (row, serial) in enumerate(zip(actual, serial_ns)):
             assert row['worker'] == i % workers  # This fixture completes each wave at one tick.
             start = min(free)
             assert row['worker_start_ns'] == start == free[row['worker']]
-            assert row['visible_ns'] == start + (serial if ns else 0)
+            assert row['visible_ns'] == start + (serial if ns else dedup_per_query[i + 1])
             free[row['worker']] = row['visible_ns']
     for name in ('records.jsonl', 'events.jsonl'):
         assert (output/'four'/name).read_bytes() == (output/'reordered'/name).read_bytes()
@@ -310,7 +328,9 @@ def verify(build, output):
     slow_top, slow, slow_count = run(build, output/'slow', 7, backend='memory')
     assert top == slow_top == [[{'id': 0, 'distance': 0}], [{'id': 1, 'distance': 0}]]
     zero_top, zero, zero_count = run(build, output/'zero', 0)
-    assert zero_top == top and zero == [0, 0] and zero_count == service_count
+    zero_dedup = [sum(row['type'] == 'replay_stage' and row['stage'] == 'dedup' and row['query'] == query
+                      for row in rows(output/'zero/events.jsonl')) for query in (1, 2)]
+    assert zero_top == top and zero == zero_dedup and zero_count == service_count
     assert slow_count == service_count and [x * 7 for x in fast] == [x * 2 for x in slow]
     run(build, output/'wrong-value', 2, 'value')
     run(build, output/'wrong-work', 2, 'work')

@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | `ndpsim-static-ir/1` | [静态包](../schemas/ndpsim-static-ir-v1.schema.json) | [manifest](../examples/v04-contract/package/manifest.json)、[index](../examples/v04-contract/package/index.jsonl)、[operations](../examples/v04-contract/package/operations.jsonl)、[tail](../examples/v04-contract/package/tail.json)、[独立 binding](../examples/v04-contract/binding.json) |
 | `ndpsim-measurement/1` | [Measurement](../schemas/ndpsim-measurement-v1.schema.json) | [Measurement 样例](../examples/v04-contract/measurement.json) |
-| `ndpsim-cpu-profile/1` | [CPU Profile](../schemas/ndpsim-cpu-profile-v1.schema.json) | [Profile 样例](../examples/v04-contract/cpu-profile.json) |
+| `ndpsim-cpu-profile/3` | [CPU Profile](../schemas/ndpsim-cpu-profile-v1.schema.json) | [v3 夹具](../examples/v04-contract/cpu-profile.json)、[V04-3b 冻结 Profile](../configs/profiles/v04-merge-split.json) |
 | `ndpsim-effective-config/1` | [有效配置](../schemas/ndpsim-effective-config-v1.schema.json) | [配置样例](../examples/v04-contract/effective-config.json) |
 
 ```sh
@@ -82,6 +82,10 @@ Measurement 的时间统一整数 ns，墙钟必须单调，CPU 区间来自线�
 ## Profile、有效配置和复用
 
 Profile 按算子与桶记录训练 Measurement 哈希、训练 query ID、拟合报告身份、样本数、误差和选型规则。记录 CPU/OS/内存、构建/编译选项、准备上下文、维度、记录数及 worker。特征声明单位与闭区间。线性模型按有序特征数组给出非负系数与截距，分段表使用单特征递增闭上界，从下一整数接续，覆盖全部声明范围。返回有限非负整数 ns，向上取整，检查 uint64 上界，允许零服务异步完成。缺模型、身份不符或越界须在使用点拒绝。预检校验文档内部一致性，Profile 覆盖、训练来源完整性、实际条件绑定及范围门控由模型和 Validator 实现。tuning32 的原始 ID 须与 evaluation128 独立比对，禁止评价数据回流训练。fixture Profile 只用于夹具。
+
+`ndpsim-cpu-profile/3` 要求 `DEDUP_NEIGHBORS/dedup` 使用 `log_gbdt`。每棵树按前序存储，数值节点为叶值，分支按零基特征索引取整数值，小于等于阈值走下一节点，否则走显式右子树索引。最多 180 棵树，树深最多 3。依树序用 binary64 累加叶值，计算 `max(1, ceil(exp(initial + rate * sum)))`。加载时检查完整树结构、阈值和服务上界，估计前仍检查所有特征范围。模型使用同一 dedup 桶及同一计费边界。
+
+`ndpsim-cpu-profile/3` 为 `MERGE_CANDIDATES` 声明两个必需的线性模型。在 `SCORE_L2` 内，每个 chunk 的得分拼接和工作集释放使用 `merge_append`；在 `MERGE_CANDIDATES` 内，批末候选合并使用 `merge_finalize`。两段分别检查范围，越界即失败。v1/v2 加载时拒绝。Measurement 的 `merge` 桶、segment 和 replay 日志的 `merge` 阶段名继续用于区间对齐，Validator 以操作边界独立选择模型。
 
 有效配置 schema 冻结新增控制字段。旧配置仍以动态 ir、SSD 和 legacy 费用为默认。静态使用 replay + ir_input。host_memory 首版要求 replay、Host placement、显式 CPU Profile 和 worker-fifo/1；SSD 使用 legacy-ssd/1，native_workers=1 为未启用 worker 策略的规范化值。content_backend 继续单独表达 mmap 或 memory。CPU Profile 可显式用于 replay SSD，准备条件须与 SSD 返回缓冲匹配。mapping_sha256 引用本次完整资源/布局/设备及映射配置，其他继承参数沿用原有效配置和 manifest。配置校验器检查组合，运行接线须进一步核验引用哈希与实际输入。驻留 2/4 worker 诊断复用经过单 worker 适用性核验的冻结服务需求，并显式记录诊断用途和实际运行配额。
 

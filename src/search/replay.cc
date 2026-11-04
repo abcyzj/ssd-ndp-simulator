@@ -105,7 +105,9 @@ void Replay::service(const char* stage,
                      Next next) {
     const bool l2 = std::string_view(stage) == "score_l2";
     auto actual = std::make_shared<Work>();
-    const char* cpu_op = std::string_view(stage) == "merge" ? "MERGE_CANDIDATES" : op_.c_str();
+    const bool merge = std::string_view(stage) == "merge";
+    const char* cpu_op = merge ? "MERGE_CANDIDATES" : op_.c_str();
+    const char* model_stage = merge ? (op_ == "SCORE_L2" ? "merge_append" : "merge_finalize") : stage;
     auto handle = cpu_.submit(
         query_,
         {},
@@ -117,7 +119,7 @@ void Replay::service(const char* stage,
             *actual = result.work;
             return result;
         },
-        model::CpuStage{cpu_op, stage, [features = std::move(features)](const auto&, const auto&) {
+        model::CpuStage{cpu_op, model_stage, [features = std::move(features)](const auto&, const auto&) {
                             return features;
                         }});
     task_ = handle.id();

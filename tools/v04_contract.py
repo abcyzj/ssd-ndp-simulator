@@ -461,14 +461,18 @@ def validate_profile(profile):
     training = profile['training']
     require(training['split'] == 'fixture' or len(training['query_ids']) == 32, 'wrong training split size')
     seen = set()
+    has_gbdt = False
+    split_keys = {('MERGE_CANDIDATES', stage) for stage in ('merge_append', 'merge_finalize')}
     for entry in profile['models']:
         op, stage = entry['operator'], entry['stage']
         key = op, stage
-        require(key not in seen and stage in STAGES.get(op, ()), 'duplicate or invalid model key')
+        require(key not in seen and (key in split_keys or (stage != 'merge' and stage in STAGES.get(op, ()))),
+                'duplicate or invalid model key')
         require(profile['applicability']['preparation_context'] != 'resident_random'
                 or stage != 'state', 'resident preparation already owns scored/expanded insertion')
         seen.add(key)
         features, model = entry['features'], entry['model']
+        require(key not in split_keys or model['kind'] == 'linear', 'split merge requires linear models')
         require(len({f['name'] for f in features}) == len(features), 'duplicate model feature')
         for feature in features:
             require(FEATURE_UNITS[feature['name']] == feature['unit']
@@ -485,9 +489,37 @@ def validate_profile(profile):
             require(edges == sorted(set(edges)) and edges[0] >= features[0]['minimum']
                     and edges[-1] == features[0]['maximum'], 'table must cover exact feature range')
             upper = max(b['ns'] for b in model['bins'])
+        elif model['kind'] == 'log_gbdt':
+            require((op, stage) == ('DEDUP_NEIGHBORS', 'dedup'), 'unsupported GBDT stage')
+            has_gbdt = True
+            require(model['rate'] > 0, 'nonpositive GBDT learning rate')
+            magnitude = 0.
+            for tree in model['trees']:
+                leaves = []
+
+                def visit(index, depth):
+                    require(index < len(tree), 'incomplete tree')
+                    node = tree[index]
+                    if not isinstance(node, dict):
+                        leaves.append(abs(node))
+                        return index + 1
+                    feature, threshold, right = (node[k] for k in ('feature', 'threshold', 'right'))
+                    require(depth < 3 and feature < len(features)
+                            and features[feature]['minimum'] <= threshold < features[feature]['maximum'],
+                            'invalid tree split')
+                    require(visit(index + 1, depth + 1) == right, 'invalid right child')
+                    return visit(right, depth + 1)
+
+                require(visit(0, 0) == len(tree), 'trailing tree nodes')
+                magnitude += max(leaves)
+            log_upper = model['initial'] + model['rate'] * magnitude
+            require(log_upper <= math.log(2**64), 'service time overflow')
+            upper = math.exp(log_upper)
         else:
             upper = model['ns']
         require(math.isfinite(upper) and math.ceil(upper) <= U64, 'service time overflow')
+    require(has_gbdt, 'missing dedup GBDT model')
+    require(split_keys <= seen, 'split merge requires both linear models')
     return dict(models=len(seen))
 
 

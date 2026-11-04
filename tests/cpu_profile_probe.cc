@@ -53,10 +53,10 @@ int main(int argc, char** argv) {
     auto load = [&](const json& doc) {
         return load_raw(doc.dump(), actual);
     };
-    auto legacy_fixture = load(fixture);
+    auto frozen_fixture = load(fixture);
     operators::Work work;
     work.flops = 6;
-    check(legacy_fixture.estimate("SCORE_L2", "score_l2", work, {{"vectors", 1}}) == 4,
+    check(frozen_fixture.estimate("SCORE_L2", "score_l2", work, {{"vectors", 1}}) == 4,
           "frozen fixture constant");
 
     fixture["models"][0]["model"]["ns"] = 2.25;
@@ -158,9 +158,48 @@ int main(int argc, char** argv) {
             load(bad);
         });
     };
-    changed("version", [](auto& d) {
-        d["format"] = "ndpsim-cpu-profile/2";
+    for (const auto* version : {"ndpsim-cpu-profile/1", "ndpsim-cpu-profile/2"})
+        changed("retired version", [version](auto& d) { d["format"] = version; });
+    auto boosted = fixture;
+    auto& dedup = boosted["models"][2];
+    dedup["features"] = table["features"];
+    dedup["model"] = {{"kind", "log_gbdt"}, {"initial", 0.}, {"rate", 1.},
+                      {"trees", json::array({json::array({
+                          {{"feature", 0}, {"threshold", 2}, {"right", 2}}, 1., 2.})})}};
+    auto boosted_profile = load(boosted);
+    work.elements = 2;
+    check(boosted_profile.estimate("DEDUP_NEIGHBORS", "dedup", work) == 3, "GBDT left");
+    work.elements = 3;
+    check(boosted_profile.estimate("DEDUP_NEIGHBORS", "dedup", work) == 8, "GBDT right");
+    work.elements = 6;
+    rejects("GBDT out of range", [&] {
+        boosted_profile.estimate("DEDUP_NEIGHBORS", "dedup", work);
     });
+    boosted["models"][2]["model"]["trees"][0][0]["right"] = 3;
+    rejects("GBDT bad child", [&] { load(boosted); });
+    changed("dedup without GBDT", [](auto& d) {
+        d["models"][2]["model"] = {{"kind", "constant"}, {"ns", 1}};
+    });
+
+    auto split = fixture;
+    for (size_t i : {3, 4}) {
+        auto& phase = split["models"][i];
+        phase["features"] = fixture["models"][1]["features"];
+        phase["model"] = fixture["models"][1]["model"];
+        phase["model"]["intercept_ns"] = i == 3 ? 20 : 40;
+    }
+    auto split_profile = load(split);
+    check(split_profile.estimate("MERGE_CANDIDATES", "merge_append", {}, {{"vectors", 2}}) == 21,
+          "split append");
+    check(split_profile.estimate("MERGE_CANDIDATES", "merge_finalize", {}, {{"vectors", 2}}) == 41,
+          "split finalize");
+    rejects("split append out of range", [&] {
+        split_profile.estimate("MERGE_CANDIDATES", "merge_append", {}, {{"vectors", 5}});
+    });
+    rejects("retired mixed stage", [&] {
+        split_profile.estimate("MERGE_CANDIDATES", "merge", {}, {{"vectors", 2}});
+    });
+    changed("missing finalize stage", [](auto& d) { d["models"].erase(4); });
     changed("rounding", [](auto& d) {
         d["rounding"] = "floor";
     });
@@ -184,7 +223,7 @@ int main(int argc, char** argv) {
         d["models"].push_back(row);
     });
     changed("table gap", [](auto& d) {
-        d["models"][2]["model"]["bins"].erase(2);
+        d["models"].back()["model"]["bins"].erase(2);
     });
     changed("coefficient shape", [](auto& d) {
         d["models"][1]["model"]["coefficients"].erase(0);

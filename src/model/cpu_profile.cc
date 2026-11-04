@@ -13,7 +13,8 @@ const std::set<Key> stages{{"INIT", "init"},
                            {"MARK_EXPANDED", "state"},
                            {"SCORE_L2", "score_prepare"},
                            {"SCORE_L2", "score_l2"},
-                           {"MERGE_CANDIDATES", "merge"},
+                           {"MERGE_CANDIDATES", "merge_append"},
+                           {"MERGE_CANDIDATES", "merge_finalize"},
                            {"SELECT_FRONTIER", "select"},
                            {"READ_ADJACENCY", "adjacency_prepare"},
                            {"DEDUP_NEIGHBORS", "dedup"},
@@ -50,12 +51,19 @@ struct Feature {
     std::string name;
     uint64_t minimum, maximum;
 };
+struct TreeNode {
+    double leaf = 0;
+    size_t feature = 0, right = 0;
+    uint64_t threshold = 0;
+};
 struct Entry {
     std::vector<Feature> features;
     uint64_t constant = 0;
     double intercept = 0;
     std::vector<double> coefficients;
     std::map<uint64_t, uint64_t> bins;
+    double rate = 0;
+    std::vector<std::vector<TreeNode>> trees;
 };
 } // namespace
 
@@ -129,6 +137,7 @@ CpuProfile CpuProfile::load(const std::string& path,
 
     auto data = std::make_shared<Data>();
     data->dimensions = actual.dimensions;
+    bool has_gbdt = false;
     for (const auto& row : profile["models"]) {
         const Key key{row["operator"], row["stage"]};
         const auto label = key.first + "/" + key.second;
@@ -172,9 +181,49 @@ CpuProfile CpuProfile::load(const std::string& path,
             }
             require(entry.bins.rbegin()->first == range.maximum,
                     label + ": incomplete table range");
+        } else if (model["kind"] == "log_gbdt") {
+            require(key == Key{"DEDUP_NEIGHBORS", "dedup"}, label + ": unsupported GBDT stage");
+            has_gbdt = true;
+            entry.intercept = model["initial"];
+            entry.rate = model["rate"];
+            require(entry.rate > 0, label + ": nonpositive learning rate");
+            double magnitude = 0;
+            for (const auto& tree : model["trees"]) {
+                auto& nodes = entry.trees.emplace_back();
+                double largest_leaf = 0;
+                const auto parse = [&](const auto& self, size_t i, unsigned depth) -> size_t {
+                    require(i < tree.size(), label + ": incomplete tree");
+                    const auto& node = tree[i];
+                    if (node.is_number()) {
+                        const double leaf = node.get<double>();
+                        largest_leaf = std::max(largest_leaf, std::abs(leaf));
+                        nodes.push_back(TreeNode{leaf});
+                        return i + 1;
+                    }
+                    const auto feature = node["feature"].get<uint64_t>();
+                    const auto threshold = node["threshold"].get<uint64_t>();
+                    const auto right = node["right"].get<size_t>();
+                    require(depth < 3 && feature < entry.features.size() &&
+                                threshold >= entry.features[feature].minimum &&
+                                threshold < entry.features[feature].maximum,
+                            label + ": invalid tree split");
+                    nodes.push_back(TreeNode{0, static_cast<size_t>(feature), right, threshold});
+                    require(self(self, i + 1, depth + 1) == right, label + ": invalid right child");
+                    return self(self, right, depth + 1);
+                };
+                require(parse(parse, 0, 0) == tree.size(), label + ": trailing tree nodes");
+                magnitude += largest_leaf;
+            }
+            (void)rounded(std::exp(entry.intercept + entry.rate * magnitude), label);
         } else {
             entry.constant = rounded(model["ns"], label);
         }
+    }
+    require(has_gbdt, "missing dedup GBDT model");
+    for (const auto* stage : {"merge_append", "merge_finalize"}) {
+        auto entry = data->models.find({"MERGE_CANDIDATES", stage});
+        require(entry != data->models.end() && !entry->second.coefficients.empty(),
+                "split merge requires both linear models");
     }
     return CpuProfile(std::move(data));
 }
@@ -190,6 +239,9 @@ uint64_t CpuProfile::estimate(std::string_view op,
     require(found != data_->models.end(), label + ": missing model", Code::Unsupported);
     const auto& entry = found->second;
     double ns = entry.intercept;
+    std::vector<uint64_t> tree_values;
+    if (!entry.trees.empty())
+        tree_values.reserve(entry.features.size());
     uint64_t value = 0;
     for (size_t i = 0; i < entry.features.size(); ++i) {
         const auto& feature = entry.features[i];
@@ -214,11 +266,25 @@ uint64_t CpuProfile::estimate(std::string_view op,
                 Code::OutOfRange);
         if (!entry.coefficients.empty())
             ns += entry.coefficients[i] * static_cast<double>(value);
+        if (!entry.trees.empty())
+            tree_values.push_back(value);
     }
     if (!entry.coefficients.empty())
         return rounded(ns, label);
     if (!entry.bins.empty())
         return entry.bins.lower_bound(value)->second;
+    if (!entry.trees.empty()) {
+        double sum = 0;
+        for (const auto& tree : entry.trees) {
+            size_t i = 0;
+            while (tree[i].right != 0) {
+                const auto& node = tree[i];
+                i = tree_values[node.feature] <= node.threshold ? i + 1 : node.right;
+            }
+            sum += tree[i].leaf;
+        }
+        return std::max(uint64_t{1}, rounded(std::exp(entry.intercept + entry.rate * sum), label));
+    }
     return entry.constant;
 }
 } // namespace ndpsim::model

@@ -12,7 +12,7 @@
   },
   "cpu_profile": {
     "path": "cpu-profile.json",
-    "sha256": "4ce33b83270674e016a1b03ef9d89c87526f1cbd5cf08ead8b8380d793b83ad2"
+    "sha256": "ab48d66740dff8dc9f144d83025e3b454993e549ce0d5778e6a9b21f407f17f7"
   },
   "native_workers": 1,
   "max_inflight": 1,

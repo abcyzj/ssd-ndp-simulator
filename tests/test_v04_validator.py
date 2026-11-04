@@ -1,5 +1,6 @@
 """Run the Validator through native capture, resident replay and both SSD references."""
 import json
+import math
 from pathlib import Path
 import shutil
 import struct
@@ -96,7 +97,16 @@ def run(out, build):
     profile['models'] = [
         dict(exemplar, operator=op, stage=stage, model=dict(kind='constant', ns=2000),
              features=[dict(name='read_bytes', unit='B', minimum=0, maximum=100000)])
-        for op, stages in STAGES.items() for stage in stages if stage != 'state']
+        for op, stages in STAGES.items() for stage in stages if stage not in ('state', 'merge', 'dedup')]
+    profile['models'].extend([
+        dict(exemplar, operator='MERGE_CANDIDATES', stage=phase,
+             features=[dict(name='read_bytes', unit='B', minimum=0, maximum=100000)],
+             model=dict(kind='linear', intercept_ns=2000, coefficients=[0]))
+        for phase in ('merge_append', 'merge_finalize')])
+    profile['models'].append(dict(
+        exemplar, operator='DEDUP_NEIGHBORS', stage='dedup',
+        features=[dict(name='read_bytes', unit='B', minimum=0, maximum=100000)],
+        model=dict(kind='log_gbdt', initial=math.log(1999.75), rate=1., trees=[[0.]])))
     model = out/'profile.json'
     write_json(model, profile)
     for engine in ('replay', 'direct', 'ir'):

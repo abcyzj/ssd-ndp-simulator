@@ -110,7 +110,10 @@ def expected_operations(expected, graph, search, query, dim):
 
 
 def service_demand(models, operator, stage, features, work, scope):
-    key = ('MERGE_CANDIDATES' if stage == 'merge' else operator, stage)
+    key = operator, stage
+    if stage == 'merge':
+        phase = 'merge_append' if operator == 'SCORE_L2' else 'merge_finalize'
+        key = 'MERGE_CANDIDATES', phase
     require(key in models, f'{scope}: missing model {key}')
     model = models[key]
     values = []

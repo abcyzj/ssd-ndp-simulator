@@ -194,6 +194,10 @@ class ContractTest(unittest.TestCase):
     def test_profile_and_config_fail_closed(self):
         for kind, validate, cases in [
             ('cpu-profile', validate_profile, [
+                lambda v: v.update(format='ndpsim-cpu-profile/1'),
+                lambda v: v.update(format='ndpsim-cpu-profile/2'),
+                lambda v: v['models'].pop(),
+                lambda v: v['models'][2].update(model=dict(kind='constant', ns=1)),
                 lambda v: v['models'][0]['features'][0].update(unit='B'),
                 lambda v: v['models'][0]['features'][0].update(minimum=2),
                 lambda v: v['models'][0].update(stage='merge'),
