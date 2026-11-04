@@ -45,6 +45,29 @@ find_package(Threads REQUIRED)
 add_executable(ndpsim_native src/search/native.cc)
 target_link_libraries(ndpsim_native PRIVATE ndpsim_algorithm Threads::Threads)
 target_compile_options(ndpsim_native PRIVATE -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off)
+# Embed source identity from the actual native build inputs.
+set(_native_identity "")
+foreach(_source CMakeLists.txt src/search/native.cc src/search/native_observation.h
+        src/search/core.cc src/search/core.h src/operators/operators.cc src/operators/operators.h
+        src/content/content.cc src/content/content.h src/content/sha256.cc)
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_source}")
+    file(SHA256 "${PROJECT_SOURCE_DIR}/${_source}" _sha)
+    string(APPEND _native_identity "${_source}=${_sha}\n")
+endforeach()
+string(SHA256 _native_sha "${_native_identity}")
+set(_native_flags "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off")
+foreach(_config Debug Release MinSizeRel RelWithDebInfo)
+    string(TOUPPER "${_config}" _upper)
+    string(APPEND _native_flags " $<$<CONFIG:${_config}>:${CMAKE_CXX_FLAGS_${_upper}}>")
+endforeach()
+if(NDPSIM_SLOW_FUNCTIONAL)
+    string(APPEND _native_flags " -DNDPSIM_SLOW_FUNCTIONAL=1")
+endif()
+if(NDPSIM_SANITIZE)
+    string(APPEND _native_flags " -fsanitize=address -fno-omit-frame-pointer")
+endif()
+target_compile_definitions(ndpsim_native PRIVATE
+    NDPSIM_NATIVE_SOURCE_SHA256="${_native_sha}" NDPSIM_NATIVE_FLAGS="${_native_flags}")
 if(NDPSIM_NATIVE_ONLY)
     return()
 endif()
@@ -245,6 +268,8 @@ if(BUILD_TESTING)
         "${PROJECT_SOURCE_DIR}/tests/test_reference_paths.py")
     add_test(NAME native_search_batch COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_native_search.py" "$<TARGET_FILE:ndpsim_native>")
+    add_test(NAME native_observation COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_native_observation.py" "$<TARGET_FILE:ndpsim_native>")
     add_executable(search_core_probe tests/search_core_probe.cc)
     target_link_libraries(search_core_probe PRIVATE ndpsim_algorithm)
     add_test(NAME search_core_oracle COMMAND "${Python3_EXECUTABLE}"

@@ -1,4 +1,4 @@
-#include "search/core.h"
+#include "search/native_observation.h"
 
 #include <algorithm>
 #include <array>
@@ -12,6 +12,13 @@
 #include <sys/resource.h>
 #include <thread>
 #include <time.h>
+
+uint64_t ndpsim::search::native::clock_ns(clockid_t clock) {
+    timespec ts{};
+    if (clock_gettime(clock, &ts))
+        throw std::runtime_error("clock_gettime failed");
+    return uint64_t(ts.tv_sec) * 1000000000 + ts.tv_nsec;
+}
 
 namespace {
 using namespace ndpsim;
@@ -95,92 +102,192 @@ struct Input {
     }
 };
 
-constexpr std::array work_fields{
-    &operators::Work::elements, &operators::Work::flops, &operators::Work::read_bytes,
-    &operators::Work::write_bytes, &operators::Work::output_bytes,
-    &operators::Work::candidate_checks, &operators::Work::comparisons};
-constexpr std::array work_names{"elements", "flops", "read_bytes", "write_bytes",
-                                "output_bytes", "candidate_checks", "comparisons"};
+using namespace ndpsim::search::native;
 
 struct Result {
-    size_t worker = 0, expanded = 0, scored = 0, rounds = 0, chunks = 0;
-    uint64_t admission = 0, start = 0, end = 0, cpu = 0;
+    size_t worker = 0, expanded = 0, scored = 0, rounds = 0, chunks = 0, score_batches = 0;
+    uint64_t admission = 0, start = 0, end = 0, cpu = 0, cpu_start = 0;
     std::vector<operators::Score> top;
     operators::Work work;
     std::vector<std::vector<operators::Score>> score_trace;
     std::vector<std::vector<uint32_t>> expansion_trace;
     void add(const operators::Work& delta) {
-        for (auto field : work_fields)
-            work.*field += delta.*field;
+        add_work(work, delta);
     }
 };
 
-Result search_query(const Config& c, const Input& input, size_t query_id, bool trace = false) {
+std::vector<uint32_t> score_ids(const Bytes& packed) {
+    std::vector<uint32_t> result;
+    for (size_t i = 0; i < packed.size(); i += 12)
+        result.push_back(u32(packed.data() + i));
+    return result;
+}
+
+template<Mode mode>
+Result search_query(const Config& c, const Input& input, size_t query_id,
+                    bool trace = false, Recorder* observer = nullptr) {
+    constexpr bool cpu = mode == Mode::cpu_sample;
+    constexpr bool capture = mode == Mode::static_capture;
+    const auto take = [&](Bucket bucket) { return cpu && observer->take(bucket); };
+    const auto tick = [&](bool enabled) { return cpu ? observer->tick(enabled) : uint64_t{0}; };
     Result result;
-    const auto stride = c.dimensions * 4;
-    const auto* q = input.queries.data() + query_id * stride;
-    const Bytes query(q, q + stride);
-    std::set<uint32_t> scored, expanded;
-    Bytes ranked;
-    std::vector<uint32_t> fresh{static_cast<uint32_t>(c.entry)};
-    for (;;) {
-        if (!fresh.empty()) {
-            Bytes batch;
-            for (size_t offset = 0; offset < fresh.size(); offset += c.chunk) {
-                const auto end = std::min(fresh.size(), offset + c.chunk);
-                const std::vector<uint32_t> group(fresh.begin() + offset, fresh.begin() + end);
-                std::vector<Bytes> vectors;
-                vectors.reserve(group.size());
-                for (auto id : group) {
-                    const auto* v = input.vectors.data() + id * stride;
-                    vectors.emplace_back(v, v + stride);
-                    scored.insert(id);
+    size_t op = 1;
+    auto start = tick(take(Bucket::init));
+    // The scope ends in the finish bucket, including private state destruction.
+    {
+        const auto stride = c.dimensions * 4;
+        const auto* q = input.queries.data() + query_id * stride;
+        const Bytes query(q, q + stride);
+        std::set<uint32_t> scored, expanded;
+        Bytes ranked;
+        std::vector<uint32_t> fresh{static_cast<uint32_t>(c.entry)};
+        if constexpr (cpu)
+            observer->sample("init", op, -1, 0, start, tick(start != 0), {}, stride);
+        if constexpr (capture)
+            observer->event("INIT");
+        for (;;) {
+            if (!fresh.empty()) {
+                ++result.score_batches;
+                op += 2; // MARK_SCORED, SCORE_L2
+                if constexpr (capture)
+                    observer->event("MARK_SCORED", fresh);
+                Bytes batch;
+                operators::Work score_work;
+                size_t chunk = 0;
+                for (size_t offset = 0; offset < fresh.size(); offset += c.chunk, ++chunk) {
+                    const bool sample_score = take(Bucket::score);
+                    const bool sample_merge = take(Bucket::merge);
+                    const auto prepare_start = tick(sample_score);
+                    const auto end = std::min(fresh.size(), offset + c.chunk);
+                    uint64_t prepared, scored_at, merged_at;
+                    operators::Work l2_work;
+                    {
+                        const std::vector<uint32_t> group(fresh.begin() + offset, fresh.begin() + end);
+                        std::vector<Bytes> vectors;
+                        vectors.reserve(group.size());
+                        for (auto id : group) {
+                            const auto* v = input.vectors.data() + id * stride;
+                            vectors.emplace_back(v, v + stride);
+                            scored.insert(id);
+                        }
+                        prepared = tick(sample_score);
+                        auto scores = operators::squared_l2(query, vectors, group);
+                        scored_at = tick(sample_score || sample_merge);
+                        l2_work = scores.work;
+                        batch.insert(batch.end(), scores.bytes.begin(), scores.bytes.end());
+                    }
+                    merged_at = tick(sample_merge);
+                    result.add(l2_work);
+                    if constexpr (capture)
+                        add_work(score_work, l2_work);
+                    if (trace) {
+                        Bytes packed(batch.end() - (end - offset) * 12, batch.end());
+                        result.score_trace.push_back(operators::scores(packed));
+                    }
+                    if constexpr (cpu) {
+                        const auto n = end - offset;
+                        operators::Work preparation;
+                        preparation.read_bytes = n * stride;
+                        observer->sample("score_prepare", op, chunk, 0, prepare_start, prepared,
+                                         preparation, n, c.dimensions);
+                        observer->sample("score_l2", op, chunk, 0, prepared, scored_at,
+                                         l2_work, n, c.dimensions);
+                        observer->sample("merge", op + 1, -1, chunk, sample_merge ? scored_at : 0, merged_at,
+                                         {}, 0, n);
+                    }
+                    ++result.chunks;
                 }
-                auto scores = operators::squared_l2(query, vectors, group);
-                result.add(scores.work);
-                if (trace)
-                    result.score_trace.push_back(operators::scores(scores.bytes));
-                batch.insert(batch.end(), scores.bytes.begin(), scores.bytes.end());
-                ++result.chunks;
+                if constexpr (capture)
+                    observer->event("SCORE_L2", fresh, batch, fresh.size(), score_work);
+                ++op;
+                const auto previous = ranked.size() / 12;
+                start = tick(take(Bucket::merge));
+                operators::Work merge_work;
+                {
+                    auto merged = search::core::merge_candidates(std::move(ranked), batch, c.count);
+                    merge_work = merged.work;
+                    ranked = std::move(merged.bytes);
+                    Bytes{}.swap(batch);
+                }
+                const auto end = tick(start != 0);
+                result.add(merge_work);
+                if constexpr (cpu)
+                    observer->sample("merge", op, -1, chunk, start, end, merge_work, previous, fresh.size());
+                if constexpr (capture)
+                    observer->event("MERGE_CANDIDATES", score_ids(ranked), ranked, ranked.size()/12, merge_work);
             }
-            auto merged = search::core::merge_candidates(std::move(ranked), batch, c.count);
-            result.add(merged.work);
-            ranked = std::move(merged.bytes);
+            ++op;
+            start = tick(take(Bucket::select));
+            auto selected = search::core::select_frontier(ranked, expanded, c.width, c.batch, c.budget);
+            const auto chosen = ids(selected.bytes.data(), selected.bytes.size() / 4);
+            const auto selected_at = tick(start != 0);
+            result.add(selected.work);
+            if constexpr (cpu)
+                observer->sample("select", op, -1, 0, start, selected_at, selected.work,
+                                 ranked.size()/12, expanded.size());
+            if constexpr (capture)
+                observer->event("SELECT_FRONTIER", chosen, selected.bytes, chosen.size(), selected.work);
+            if (trace)
+                result.expansion_trace.push_back(chosen);
+            if (chosen.empty())
+                break;
+            ++result.rounds;
+            ++op; // MARK_EXPANDED
+            if constexpr (capture)
+                observer->event("MARK_EXPANDED", chosen);
+            std::vector<std::vector<uint32_t>> rows;
+            Bytes joined;
+            for (auto id : chosen) {
+                ++op;
+                start = tick(take(Bucket::adjacency));
+                expanded.insert(id);
+                const auto* row = input.graph.data() + id * (c.degree + 1) * 4;
+                rows.push_back(ids(row + 4, u32(row)));
+                const auto end = tick(start != 0);
+                if constexpr (cpu) {
+                    operators::Work preparation;
+                    preparation.read_bytes = 4 * (1 + rows.back().size());
+                    observer->sample("adjacency_prepare", op, -1, 0, start, end, preparation,
+                                     rows.back().size());
+                }
+                if constexpr (capture) {
+                    Bytes payload(row, row + 4 * (1 + rows.back().size()));
+                    observer->event("READ_ADJACENCY", {id}, payload, rows.back().size());
+                    joined.insert(joined.end(), payload.begin(), payload.end());
+                }
+            }
+            ++op; // JOIN
+            if constexpr (capture)
+                observer->event("JOIN", chosen, joined, rows.size());
+            ++op;
+            start = tick(take(Bucket::dedup));
+            auto dedup = search::core::dedup_neighbors(rows, scored, c.count);
+            fresh = ids(dedup.bytes.data(), dedup.bytes.size() / 4);
+            decltype(rows){}.swap(rows);
+            const auto dedup_at = tick(start != 0);
+            result.add(dedup.work);
+            if constexpr (cpu)
+                observer->sample("dedup", op, -1, 0, start, dedup_at, dedup.work,
+                                 dedup.work.candidate_checks, scored.size());
+            if constexpr (capture)
+                observer->event("DEDUP_NEIGHBORS", fresh, dedup.bytes, fresh.size(), dedup.work);
         }
-        auto selected = search::core::select_frontier(ranked, expanded, c.width, c.batch, c.budget);
-        result.add(selected.work);
-        const auto chosen = ids(selected.bytes.data(), selected.bytes.size() / 4);
-        if (trace)
-            result.expansion_trace.push_back(chosen);
-        if (chosen.empty())
-            break;
-        ++result.rounds;
-        std::vector<std::vector<uint32_t>> rows;
-        for (auto id : chosen) {
-            expanded.insert(id);
-            const auto* row = input.graph.data() + id * (c.degree + 1) * 4;
-            rows.push_back(ids(row + 4, u32(row)));
-        }
-        auto dedup = search::core::dedup_neighbors(rows, scored, c.count);
-        result.add(dedup.work);
-        fresh = ids(dedup.bytes.data(), dedup.bytes.size() / 4);
+        ++op;
+        start = tick(take(Bucket::finish));
+        ranked.resize(std::min(c.k, ranked.size() / 12) * 12);
+        result.top = operators::scores(ranked);
+        result.scored = scored.size();
+        result.expanded = expanded.size();
+        if constexpr (capture)
+            observer->event("FINISH", score_ids(ranked), ranked, ranked.size()/12);
     }
-    ranked.resize(std::min(c.k, ranked.size() / 12) * 12);
-    result.top = operators::scores(ranked);
-    result.scored = scored.size();
-    result.expanded = expanded.size();
+    if constexpr (cpu)
+        observer->sample("finish", op, -1, 0, start, tick(start != 0), {}, result.top.size());
     return result;
 }
 
 uint64_t nanos(const timespec& ts) {
     return uint64_t(ts.tv_sec) * 1000000000 + ts.tv_nsec;
-}
-
-uint64_t clock_ns(clockid_t clock) {
-    timespec ts{};
-    if (clock_gettime(clock, &ts))
-        throw std::runtime_error("clock_gettime failed");
-    return nanos(ts);
 }
 
 uint64_t resolution(clockid_t clock) {
@@ -199,9 +306,10 @@ rusage usage() {
 
 class Batch {
 public:
-    Batch(const Config& c, const Input& input, bool trace)
-        : config(c), data(input), trace(trace), admissions(c.queries), admitted(std::min(c.concurrency, c.queries)),
-          results(c.queries) {}
+    Batch(const Config& c, const Input& input, bool trace, Observation& observation)
+        : config(c), data(input), trace(trace), observation(observation), admissions(c.queries), admitted(std::min(c.concurrency, c.queries)),
+          results(c.queries), prefixes(observation.mode == Mode::cpu_sample && observation.stride > 1 ?
+                                       c.queries : 0) {}
 
     void run() {
         std::vector<std::thread> threads;
@@ -211,6 +319,14 @@ public:
             std::unique_lock<std::mutex> lock(mutex);
             changed.wait(lock, [&] { return failure || ready == config.workers; });
             if (!failure) {
+                Inventory prefix{};
+                for (auto& counts : prefixes) {
+                    const auto local = counts;
+                    counts = prefix;
+                    for (size_t i = 0; i < prefix.size(); ++i)
+                        prefix[i] += local[i];
+                }
+                total_inventory = prefix;
                 before = usage();
                 begin = clock_ns(CLOCK_MONOTONIC);
                 started = true;
@@ -254,8 +370,10 @@ public:
                       << ",\"worker_start_ns\":" << r.start << ",\"visible_ns\":" << r.end
                       << ",\"admission_wait_ns\":" << r.admission << ",\"worker_wait_ns\":" << r.start - r.admission
                       << ",\"latency_ns\":" << latency << ",\"offered_latency_ns\":" << r.end
+                      << ",\"cpu_start_ns\":" << r.cpu_start
                       << ",\"thread_cpu_ns\":" << r.cpu << ",\"expanded\":" << r.expanded
                       << ",\"scored\":" << r.scored << ",\"expansion_batches\":" << r.rounds
+                      << ",\"score_batches\":" << r.score_batches
                       << ",\"score_chunks\":" << r.chunks << ",\"work\":{";
             for (size_t f = 0; f < work_fields.size(); ++f)
                 std::cout << (f ? ",\"" : "\"") << work_names[f] << "\":" << r.work.*work_fields[f];
@@ -267,7 +385,7 @@ public:
                 std::cout << (j ? ",{" : "{") << "\"id\":" << score.id
                           << ",\"distance\":" << score.distance << '}';
             }
-            if (trace) {
+            if (trace || i < observation.detail) {
                 std::cout << "],\"score_trace\":[";
                 for (size_t j = 0; j < r.score_trace.size(); ++j) {
                     std::cout << (j ? ",[" : "[");
@@ -296,6 +414,8 @@ public:
                   << ",\"worker_cpu_fraction\":" << double(cpu_total) / end / config.workers
                   << ",\"qps\":" << double(completed) * 1e9 / end
                   << ",\"p50_ns\":" << percentile(50) << ",\"p95_ns\":" << percentile(95)
+                  << ",\"empty_probe_ns\":" << probes << ",\"empty_probe_count\":"
+                  << (observation.mode == Mode::cpu_sample ? config.workers * probe_count : 0)
                   << ",\"exit_code\":0}\n";
         std::cout.flush();
         if (!std::cout)
@@ -312,8 +432,20 @@ private:
 
     void worker(size_t id) {
         try {
-            search_query(config, data, id % config.queries);
+            search_query<Mode::benchmark>(config, data, id % config.queries);
+            for (size_t query = id; query < prefixes.size(); query += config.workers) {
+                const auto r = search_query<Mode::benchmark>(config, data, query);
+                prefixes[query] = inventory(r);
+            }
+            uint64_t overhead = 0;
+            if (observation.mode == Mode::cpu_sample) {
+                for (size_t i = 0; i < probe_count; ++i) {
+                    const auto start = clock_ns(CLOCK_THREAD_CPUTIME_ID);
+                    overhead += clock_ns(CLOCK_THREAD_CPUTIME_ID) - start;
+                }
+            }
             std::unique_lock<std::mutex> lock(mutex);
+            probes += overhead;
             ++ready;
             changed.notify_all();
             for (;;) {
@@ -324,9 +456,31 @@ private:
                 const auto admission = admissions[query];
                 const auto start = clock_ns(CLOCK_MONOTONIC) - begin;
                 lock.unlock();
-                const auto cpu_start = clock_ns(CLOCK_THREAD_CPUTIME_ID);
-                auto result = search_query(config, data, query, trace);
-                result.cpu = clock_ns(CLOCK_THREAD_CPUTIME_ID) - cpu_start;
+                Recorder observer(observation, prefixes.empty() ? Inventory{} : prefixes[query]);
+                const bool detail = trace || query < observation.detail;
+                const auto cpu_start = observation.mode == Mode::uninstrumented ? 0 :
+                    clock_ns(CLOCK_THREAD_CPUTIME_ID);
+                Result result;
+                switch (observation.mode) {
+                case Mode::static_capture:
+                    result = search_query<Mode::static_capture>(config, data, query, detail, &observer);
+                    break;
+                case Mode::cpu_sample:
+                    result = search_query<Mode::cpu_sample>(config, data, query, detail, &observer);
+                    break;
+                default:
+                    result = search_query<Mode::benchmark>(config, data, query, detail);
+                }
+                if (!prefixes.empty()) {
+                    auto actual = inventory(result);
+                    for (size_t i = 0; i < actual.size(); ++i)
+                        actual[i] += prefixes[query][i];
+                    if (actual != (query + 1 == prefixes.size() ? total_inventory : prefixes[query + 1]))
+                        throw std::runtime_error("CPU sampling plan disagrees with actual query inventory");
+                }
+                result.cpu_start = cpu_start;
+                if (observation.mode != Mode::uninstrumented)
+                    result.cpu = clock_ns(CLOCK_THREAD_CPUTIME_ID) - cpu_start;
                 result.worker = id;
                 result.admission = admission;
                 result.start = start;
@@ -340,6 +494,11 @@ private:
                 if (++completed == config.queries)
                     after = usage();
                 changed.notify_all();
+                if (observation.mode == Mode::static_capture || observation.mode == Mode::cpu_sample) {
+                    lock.unlock();
+                    observer.flush(query);
+                    lock.lock();
+                }
             }
         } catch (...) {
             fail(std::current_exception());
@@ -349,6 +508,9 @@ private:
     const Config& config;
     const Input& data;
     const bool trace;
+    Observation& observation;
+    static constexpr size_t probe_count = 256;
+    uint64_t probes = 0;
     std::mutex mutex;
     std::condition_variable changed;
     std::exception_ptr failure;
@@ -357,6 +519,11 @@ private:
     std::vector<uint64_t> admissions;
     size_t admitted;
     std::vector<Result> results;
+    std::vector<Inventory> prefixes;
+    Inventory total_inventory{};
+    static Inventory inventory(const Result& r) {
+        return {1, r.chunks, r.chunks + r.score_batches, r.rounds + 1, r.expanded, r.rounds, 1};
+    }
     uint64_t begin = 0, end = 0;
     rusage before{}, after{};
 };
@@ -364,12 +531,40 @@ private:
 
 int main(int argc, char** argv) {
     try {
-        const bool trace = argc == 25 && std::string(argv[24]) == "--semantic-log";
-        if (argc != 24 && !trace)
+        if (argc == 2 && std::string(argv[1]) == "--build-info") {
+            std::cout << NDPSIM_NATIVE_SOURCE_SHA256 << '\n' << __VERSION__ << '\n'
+                      << NDPSIM_NATIVE_FLAGS << '\n';
+            return 0;
+        }
+        const bool trace = argc > 24 && std::string(argv[argc-1]) == "--semantic-log";
+        const bool detail = argc > 24 && std::string(argv[argc-1]) == "--detail8";
+        const int count = argc - trace - detail;
+        if (count != 24 && count != 25 && count != 29)
             throw std::runtime_error("use tools/run_native.py for validated dataset-v2 input");
+        Observation observation;
+        observation.detail = detail ? 8 : 0;
+        if (count == 25 && std::string(argv[24]) == "uninstrumented")
+            observation.mode = Mode::uninstrumented;
+        else if (count == 29) {
+            const std::string mode = argv[24];
+            if (mode == "cpu_sample")
+                observation.mode = Mode::cpu_sample;
+            else if (mode == "static_capture")
+                observation.mode = Mode::static_capture;
+            else
+                throw std::runtime_error("invalid observation mode");
+            observation.directory = argv[25];
+            observation.remaining = number(argv[26]);
+            observation.buffer_limit = number(argv[27]);
+            observation.stride = number(argv[28]);
+            if (!observation.stride)
+                throw std::runtime_error("invalid CPU sample stride");
+        } else if (count != 24) {
+            throw std::runtime_error("invalid observation mode");
+        }
         const Config config(argv);
         const Input input(config, argv);
-        Batch batch(config, input, trace);
+        Batch batch(config, input, trace, observation);
         batch.run();
         batch.report();
     } catch (const std::exception& e) {

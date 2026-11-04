@@ -283,7 +283,7 @@ def package_hash(tail):
         ('manifest_sha256', 'index_sha256', 'operations_sha256')))
 
 
-def validate_package(path, binding_path, limit=LIMIT):
+def validate_package(path, binding_path, limit=LIMIT, *, checkpoint=None):
     manifest_raw = bounded_read(path/'manifest.json', limit)
     manifest = decode(manifest_raw)
     check('static-ir', manifest)
@@ -298,6 +298,8 @@ def validate_package(path, binding_path, limit=LIMIT):
     identity = binding['identity']
     check_identity(identity)
     for name, descriptor in identity['objects'].items():
+        if checkpoint is not None:
+            checkpoint()
         file = binding_path.parent / binding['files'][name]
         width = descriptor['width'] + (name == 'graph')
         require(file.stat().st_size == 4 * width * descriptor['records']
@@ -307,6 +309,8 @@ def validate_package(path, binding_path, limit=LIMIT):
     operations = dependencies = 0
     with (path/'index.jsonl').open('rb') as index, (path/'operations.jsonl').open('rb') as stream:
         for query in identity['query_ids']:
+            if checkpoint is not None:
+                checkpoint()
             try:
                 raw, entry = read_line(index, 'index', limit)
                 require(entry['query'] == query and entry['offset'] == stream.tell(),
@@ -332,6 +336,8 @@ def validate_package(path, binding_path, limit=LIMIT):
              tail['index_sha256'], tail['operations_sha256']) ==
             (len(identity['query_ids']), operations, dependencies,
              index_hash.hexdigest(), operations_hash.hexdigest()), 'invalid completeness tail')
+    if checkpoint is not None:
+        checkpoint()
     return dict(package_sha256=tail['package_sha256'], source=manifest['source'],
                 queries=tail['queries'], operations=operations, dependencies=dependencies)
 
