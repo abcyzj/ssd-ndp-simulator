@@ -1,0 +1,55 @@
+{
+  "format": "ndpsim-static-ir-binding/1",
+  "files": {
+    "base": "base.bin",
+    "queries": "queries.bin",
+    "graph": "graph.bin"
+  },
+  "source": "synthetic-fixture",
+  "build": {
+    "source_sha256": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+    "binary_sha256": "74dd6752f5b83360c8fb780f06d74e5edb2712ea55a59b02a263584b091993a4",
+    "compiler": "synthetic-fixture",
+    "flags": [
+      "-fno-fast-math",
+      "-ffp-contract=off"
+    ]
+  },
+  "identity": {
+    "algorithm": "ndpsim-ranked-expansion-v1",
+    "numeric": "fp32-le-ordered-fp64-l2-v1",
+    "work": "ndpsim-work-v1",
+    "objects": {
+      "base": {
+        "sha256": "22b6f43bd8d27738d3213f29e96b62d01d9d6c0ab4f9732aaae803186f51eab7",
+        "records": 2,
+        "width": 1,
+        "encoding": "fp32-le"
+      },
+      "queries": {
+        "sha256": "22b6f43bd8d27738d3213f29e96b62d01d9d6c0ab4f9732aaae803186f51eab7",
+        "records": 2,
+        "width": 1,
+        "encoding": "fp32-le"
+      },
+      "graph": {
+        "sha256": "b35c194be488b20ad2a2564a46fbf301037f6625ef185287c9c7ff5191ca3904",
+        "records": 2,
+        "width": 1,
+        "encoding": "degree-u32-le+padded-ids-u32-le"
+      }
+    },
+    "search": {
+      "entry": 0,
+      "k": 1,
+      "L": 2,
+      "B": 2,
+      "E": 2,
+      "chunk": 1
+    },
+    "query_ids": [
+      7,
+      42
+    ]
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ndpsim-effective-config/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "execution_engine",
+    "data_provider",
+    "content_backend",
+    "placement",
+    "order_policy",
+    "mapping_sha256",
+    "ir_input",
+    "cpu_profile",
+    "native_workers",
+    "max_inflight",
+    "cpu_slots"
+  ],
+  "properties": {
+    "format": {
+      "enum": [
+        "ndpsim-effective-config/1"
+      ]
+    },
+    "execution_engine": {
+      "enum": [
+        "direct",
+        "ir",
+        "replay"
+      ]
+    },
+    "data_provider": {
+      "enum": [
+        "ssd",
+        "host_memory"
+      ]
+    },
+    "content_backend": {
+      "enum": [
+        "mmap",
+        "memory"
+      ]
+    },
+    "placement": {
+      "enum": [
+        "host",
+        "controller"
+      ]
+    },
+    "order_policy": {
+      "enum": [
+        "legacy-ssd/1",
+        "worker-fifo/1"
+      ]
+    },
+    "mapping_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "ir_input": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "cpu_profile": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "native_workers": {
+      "enum": [
+        1,
+        2,
+        4
+      ]
+    },
+    "max_inflight": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 18446744073709551615
+    },
+    "cpu_slots": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 18446744073709551615
+    }
+  }
+}
