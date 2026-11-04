@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "V0.4 Validator point report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "scope", "status", "exit_code", "command", "inputs", "checks",
+               "queries", "metrics", "levels", "limitations"],
+  "properties": {
+    "format": {"const": "ndpsim-validator-report/1"},
+    "scope": {"enum": ["quick", "evaluation"]},
+    "status": {"enum": ["diagnostic", "failed"]},
+    "exit_code": {"enum": [0, 1]},
+    "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "inputs": {"type": "object", "additionalProperties": {"type": "object"}},
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": {"type": "string"},
+          "status": {"$ref": "#/$defs/status"},
+          "detail": {"type": "string"},
+          "sampling_inventory": {"type": "object"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "queries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["query", "operations", "reads", "logical_bytes", "work", "reference_work",
+                     "expanded", "scored", "top_k", "native_cpu_ns", "replay_cpu_ns",
+                     "native_latency_ns", "replay_latency_ns", "cpu_delta_ns", "latency_delta_ns"],
+        "properties": {
+          "query": {"$ref": "#/$defs/count"},
+          "operations": {"$ref": "#/$defs/count"},
+          "reads": {"$ref": "#/$defs/count"},
+          "logical_bytes": {"$ref": "#/$defs/count"},
+          "work": {"$ref": "#/$defs/work"},
+          "reference_work": {
+            "type": "object",
+            "required": ["direct", "ir"],
+            "properties": {"direct": {"$ref": "#/$defs/work"}, "ir": {"$ref": "#/$defs/work"}},
+            "additionalProperties": false
+          },
+          "expanded": {"$ref": "#/$defs/count"},
+          "scored": {"$ref": "#/$defs/count"},
+          "top_k": {"type": "array"},
+          "native_cpu_ns": {"$ref": "#/$defs/count"},
+          "replay_cpu_ns": {"$ref": "#/$defs/count"},
+          "cpu_delta_ns": {"type": "integer"},
+          "latency_delta_ns": {"type": "integer"},
+          "native_latency_ns": {"$ref": "#/$defs/count"},
+          "replay_latency_ns": {"$ref": "#/$defs/count"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "metrics": {"type": "object"},
+    "levels": {
+      "type": "object",
+      "required": ["A", "B", "C", "workers", "offload"],
+      "additionalProperties": {"$ref": "#/$defs/status"}
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "if": {"properties": {"status": {"const": "failed"}}},
+  "then": {"properties": {"exit_code": {"const": 1}}},
+  "else": {"properties": {"exit_code": {"const": 0}}},
+  "$defs": {
+    "status": {"enum": ["passed", "failed", "not_run", "not_applicable", "diagnostic"]},
+    "count": {"type": "integer", "minimum": 0},
+    "work": {
+      "type": "object",
+      "required": ["elements", "flops", "read_bytes", "write_bytes", "output_bytes",
+                   "candidate_checks", "comparisons"],
+      "minProperties": 7,
+      "maxProperties": 7,
+      "additionalProperties": {"$ref": "#/$defs/count"}
+    }
+  }
+}

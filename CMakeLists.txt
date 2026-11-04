@@ -519,4 +519,7 @@ if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
     add_test(NAME sst_static_replay COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_static_replay.py" "${PROJECT_BINARY_DIR}")
     set_tests_properties(sst_static_replay PROPERTIES TIMEOUT 60)
+    add_test(NAME v04_validator COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_v04_validator.py" "${PROJECT_BINARY_DIR}")
+    set_tests_properties(v04_validator PROPERTIES TIMEOUT 120)
 endif()

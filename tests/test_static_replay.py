@@ -38,6 +38,10 @@ def modified_package(source, path, field):
     index = rows(path/'index.jsonl')
     if field == 'reorder':
         index.reverse()
+    elif field == 'dependency':
+        ops[1]['deps'].pop()
+    elif field == 'state':
+        ops[1]['state']['after'] += 1
     else:
         target = next(row for row in ops if row['operator'] == ('SCORE_L2' if field == 'value'
                                                                  else 'DEDUP_NEIGHBORS'))

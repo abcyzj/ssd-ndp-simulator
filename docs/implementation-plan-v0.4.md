@@ -1,6 +1,6 @@
 # V0.4 可执行任务清单
 
-日期：2026-11-04（Asia/Shanghai）。**18项任务中，V04-0开工冻结、V04-1a纯算法核心、V04-1b原生构建与运行、V04-1c参考路径语义出口、V04-2a计时/计费与静态包契约、V04-2b Profiler与静态IR采集、V04-2c训练采集与 A/B/A、V04-3a模型接口与失败关闭、V04-3b训练拟合与冻结、V04-3c静态执行与内存驻留、V04-3d worker 与 CPU 顺序已完成，其余7项待实施。V04-1b关闭AC-04-01，V04-1c关闭AC-04-02参考路径部分，正式四点评价静态语义与精度验收仍待实施。**当前可运行交付仍为 [V0.3](releases/v0.3.md)。开工证据与实际检查见[冻结记录](start-freeze-v0.4.md)。
+日期：2026-11-04（Asia/Shanghai）。**18项任务中，V04-0开工冻结、V04-1a纯算法核心、V04-1b原生构建与运行、V04-1c参考路径语义出口、V04-2a计时/计费与静态包契约、V04-2b Profiler与静态IR采集、V04-2c训练采集与 A/B/A、V04-3a模型接口与失败关闭、V04-3b训练拟合与冻结、V04-3c静态执行与内存驻留、V04-3d worker 与 CPU 顺序、V04-4a Validator 框架已完成，其余6项待实施。V04-1b关闭AC-04-01，V04-1c关闭AC-04-02参考路径部分，正式四点评价静态语义与精度验收仍待实施。**当前可运行交付仍为 [V0.3](releases/v0.3.md)。开工证据与实际检查见[冻结记录](start-freeze-v0.4.md)。
 
 需求权威为 [V0.4 PRD](prd-v0.4.md)；表中 N/P/C/S/V/O 编号均为该 PRD 的 `FR-04-` 需求（如 N01 为 FR-04-N01）。源码核查的版本、来源、定向复核与证据局限见 [复核记录](source-audit-v0.4.md)。执行阶段按实际产物更新本清单，历史通过、接口设计或本页文件名均不代表实现完成。
 
@@ -56,7 +56,7 @@
 
 | ID / 状态 | 需求来源 | 依赖 | 实现范围 | 验收方法 | 完成证据（待产出） |
 | --- | --- | --- | --- | --- | --- |
-| **V04-4a Validator 框架／待实施** | V01/03/05/06；P05；S07/08；AC-04-02/09 | V04-2a、1c格式/语义；可先用夹具 | 关联native无插桩/采集、完整静态包、样本/Profile/本次模拟及direct/动态ir参考；稳定语义键关联IR/task，比较实际值/Work/访问，不只复写输入摘要 | 篡改/缺包/错身份/模型/切分/采样/依赖/状态均失败；重算包hash后的语义篡改仍拒绝；定位query/批次/op；QPS近而CPU/Work错不能通过；缺项/quick/N/A/诊断不合并成通过 | 报告schema/对抗夹具、逐字段错误、命令/退出码/身份/hash及独立数值/搜索/账本报告 |
+| **V04-4a Validator 框架／已完成** | V01/03/05/06；P05；S07/08；AC-04-02/09 | V04-2a、1c格式/语义；可先用夹具 | 关联native无插桩/采集、完整静态包、样本/Profile/本次模拟及direct/动态ir参考；稳定语义键关联IR/task，比较实际值/Work/访问，不只复写输入摘要 | 篡改/缺包/错身份/模型/切分/采样/依赖/状态均失败；重算包hash后的语义篡改仍拒绝；定位query/批次/op；QPS近而CPU/Work错不能通过；缺项/quick/N/A/诊断不合并成通过 | [接口及验证记录](validator-v0.4.md)、[报告 schema](../schemas/ndpsim-validator-report-v1.schema.json)；本机 `results/v0.4/validator-v044a/final2/` 保留命令/退出码、源码/构建/输入身份、SHA256、独立数值/搜索/账本和对抗报告；正式 Level A/B/C 待验收 |
 | **V04-4b Level A 独立算子评价／待实施** | C05；V02/05/06；PRD §6.4.4；AC-04-04 | V04-3b冻结Profile；V04-2b；V04-4a；完整输入 | 冻结后采evaluation128四点独立算子样本；可与4c协调评价IR采集，但计时样本独立；所有重复按原query ID隔离，覆盖类别/阶段/形状；评价Work不回流训练 | 主要算子分别相对误差中位≤10%、P90≤20%；短算子按冻结规则报绝对误差/质量；不排除失败类；超范围/缺采样不得通过；评价后改模型须新版本并披露泄漏 | level-a报告、评价身份/全部重复、逐算子/形状MAE/分位数/残差、冻结分类及失败/不适用清单 |
 | **V04-4c Level B/C 单线程与静态语义出口／待实施** | V03～V06；N04；S07/08；PRD §6.4、§7、§8；AC-04-02/05/06/08 | V04-1c、2b、3b/3c/3d、4a；正式CPU通过需4b同时通过 | 模型冻结后采完整1M×128 base、evaluation128四点完整静态IR；k10/B1/chunk16，A01～A04显式replay+内存Host、1worker/1slot/并发1；每点至少三次独立native基准、同包至少两次模拟；补齐采集/执行与参考及oracle语义 | 每点实际逻辑访问/Work一致；P50≤15%、P95≤20%、QPS≤10%、CPU总服务需求≤15%；逐query偏差/归一占用另报；全部重复保留，以三次实测中位统计量比较；采集时延不能当目标，不能只比较包摘要 | 完整评价包/hash/封包报告、level-b/c、独立语义报告、全部重复及逐query表、窗口/资源、detail8与全评价摘要、确定性/精度断言 |
 | **V04-4d 2/4 worker 诊断／待实施** | N04；S04/05/08；V04；AC-04-07 | V04-3d、4a与冻结Profile；2b采集器，3b冻结后采集或严格复用4c主配置包；不要求单线程精度先通过 | 完整evaluation128、L/E128/256、concurrency32；native/sim 2和4worker，D01/D02显式静态执行；可复用每query IR，调度/分配由本次配额决定；每点至少三次native、同配置两次sim；保留detail8 | 结果/实际Work/路径一致、CPU资源不超额；报告QPS/延迟/CPU/占用/波动/缓存及调度偏差；不设严格精度百分比，诊断缺失或资源错不能通过 | workers报告、包身份/复用依据、所有样本、worker/slots/并发/等待、环境/缺页及语义/配额断言 |
@@ -95,7 +95,7 @@ ctest --test-dir build/delivery --output-on-failure
 /opt/homebrew/Caskroom/miniconda/base/bin/python3.13 tools/verify_acceptance.py --build build/delivery --output results/v0.4/inherited-v01-new
 ```
 
-V0.3完整深度回归入口和RAM证据要求见 [交付命令](releases/v0.3.md)，按 [触发条件](validation-matrix-v0.4.md) 执行；相关定向与继承范围见 [测试](testing.md)。现有V0.3工具仍硬校验52条，不能直接用于判定V0.4的14配置通过。V0.4 [原生](native-v0.4.md)及[参考语义核对](reference-semantics-v0.4.md)已有现行入口。[Profiler 与静态包采集](profiler-v0.4.md)已有现行入口，[训练拟合](cpu-fit-v0.4.md)已有冻结入口，执行和 Validator 入口待实施。每项实现时同步提供实际命令、超时、输入及错误出口。
+V0.3完整深度回归入口和RAM证据要求见 [交付命令](releases/v0.3.md)，按 [触发条件](validation-matrix-v0.4.md) 执行；相关定向与继承范围见 [测试](testing.md)。现有V0.3工具仍硬校验52条，不能直接用于判定V0.4的14配置通过。V0.4 [原生](native-v0.4.md)及[参考语义核对](reference-semantics-v0.4.md)已有现行入口。[Profiler 与静态包采集](profiler-v0.4.md)已有现行入口，[训练拟合](cpu-fit-v0.4.md)已有冻结入口，[内存回放](replay-v0.4.md)与 [Validator 单点核对](validator-v0.4.md)已有现行入口。每项实现时同步提供实际命令、超时、输入及错误出口。
 
 ## 阻塞问题与处理边界
 
