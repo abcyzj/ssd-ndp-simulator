@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "ndpsim-cpu-profile/1",
+  "description": "Service times use ceil-u64. Linear models accumulate the intercept and ordered feature products in binary64 without contraction.",
   "type": "object",
   "additionalProperties": false,
   "required": [

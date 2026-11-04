@@ -58,6 +58,7 @@ public:
                                "Deterministic host graph search",
                                COMPONENT_CATEGORY_UNCATEGORIZED)
     SST_ELI_DOCUMENT_PARAMS({"execution_engine", "direct/ir", "ir"},
+                            {"cpu_profile", "CPU Profile is reserved for static replay", ""},
                             {"ir_contract", "validated run contract", ""},
                             {"placement", "host/controller", "host"},
                             {"content_backend", "mmap/memory", "mmap"},
@@ -102,6 +103,8 @@ public:
     GraphHost(SST::ComponentId_t id, SST::Params& p) : SST::Component(id) {
         if (getNumRanks().rank != 1 || getNumRanks().thread != 1)
             throw std::invalid_argument("graph requires one rank/thread");
+        if (p.contains("cpu_profile"))
+            throw std::invalid_argument("CPU Profile requires the static replay entry point");
         auto engine = p.find<std::string>("execution_engine", "ir");
         if (engine != "direct" && engine != "ir")
             throw std::invalid_argument("Unsupported execution_engine");

@@ -470,8 +470,10 @@ def validate_profile(profile):
                     and feature['minimum'] <= feature['maximum'], 'invalid feature unit or range')
         if model['kind'] == 'linear':
             require(len(features) == len(model['coefficients']), 'coefficient/feature count mismatch')
-            upper = model['intercept_ns'] + sum(
-                feature['maximum'] * coefficient for feature, coefficient in zip(features, model['coefficients']))
+            # Runtime uses ordered binary64 multiply/add without contraction.
+            upper = float(model['intercept_ns'])
+            for feature, coefficient in zip(features, model['coefficients']):
+                upper += float(feature['maximum']) * float(coefficient)
         elif model['kind'] == 'table':
             require(len(features) == 1, 'table needs one feature')
             edges = [b['upper'] for b in model['bins']]

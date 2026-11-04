@@ -1,5 +1,7 @@
 #pragma once
+#include "model/cpu_profile.h"
 #include "observation/history.h"
+#include <optional>
 #include "operators/operators.h"
 #include "runtime/runtime.h"
 namespace ndpsim::model {
@@ -12,6 +14,7 @@ struct HostConfig {
     Cost distance, control;
     uint64_t check_units = 1, comparison_units = 1;
     std::string source = "configured_unvalidated";
+    std::shared_ptr<const CpuProfile> cpu_profile;
 };
 uint64_t service_ns(const operators::Work&, Kind, const HostConfig&);
 struct Service {
@@ -27,9 +30,17 @@ public:
     std::function<void(uint64_t, const operators::Result&)> observe_score;
     using Evaluate = std::function<operators::Result(const std::vector<content::Bytes>&)>;
     HostCpu(runtime::Runtime&, EventBridge&, EventBridge::Clock, HostConfig);
-    runtime::Handle submit(uint64_t query, std::vector<runtime::Handle>, Kind, Evaluate);
+    runtime::Handle submit(uint64_t query,
+                           std::vector<runtime::Handle>,
+                           Kind,
+                           Evaluate,
+                           std::optional<CpuStage> = std::nullopt);
     // Trusted IR adapter may reuse this exact Runtime operation on its parent task.
-    runtime::Operation operation(uint64_t query, std::vector<runtime::Handle>, Kind, Evaluate);
+    runtime::Operation operation(uint64_t query,
+                                 std::vector<runtime::Handle>,
+                                 Kind,
+                                 Evaluate,
+                                 std::optional<CpuStage> = std::nullopt);
     const std::vector<Service>& services() const {
         return services_;
     }
@@ -43,16 +54,11 @@ public:
     }
 
 private:
-    struct Job {
-        uint64_t task, submitted;
-        Kind kind;
-        std::shared_ptr<operators::Work> work;
-    };
     runtime::Runtime& runtime_;
     EventBridge& bridge_;
     EventBridge::Clock now_;
     HostConfig config_;
-    std::deque<Job> queue_;
+    std::deque<uint64_t> queue_;
     uint64_t busy_ = 0;
     History<Service> services_;
     void pump();

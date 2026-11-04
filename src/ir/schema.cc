@@ -1,6 +1,7 @@
 #include "ir/schema.h"
 #include "ir/embedded.h"
 #include "content/content.h"
+#include "serialization/json_schema.h"
 #include <algorithm>
 #include <fstream>
 #include <limits>
@@ -35,91 +36,10 @@ void require(bool ok,
     if (!ok)
         fail(p, d, c);
 }
-// The generated schema uses only this explicitly implemented JSON Schema subset.
-// Tests independently validate fixtures with Draft202012Validator when available.
 void validate(const Json& v, const Json& s, const std::string& p) {
-    if (s.contains("$ref")) {
-        validate(v, schema().at(Json::json_pointer(s["$ref"].get<std::string>().substr(1))), p);
-        return;
-    }
-    if (s.contains("oneOf")) {
-        // Tagged unions retain the selected branch's precise diagnostic.
-        for (const auto& tag : {"operator", "ref"})
-            if (v.is_object() && v.contains(tag)) {
-                for (const auto& branch : s["oneOf"])
-                    if (branch.contains("properties") && branch["properties"].contains(tag) &&
-                        branch["properties"][tag].contains("const") &&
-                        branch["properties"][tag]["const"] == v[tag]) {
-                        validate(v, branch, p);
-                        return;
-                    }
-            }
-        size_t n = 0;
-        for (const auto& branch : s["oneOf"]) {
-            try {
-                validate(v, branch, p);
-                ++n;
-            } catch (const Error&) {
-            }
-        }
-        require(n == 1, p, "expected exactly one schema alternative");
-        return;
-    }
-    if (s.contains("const"))
-        require(v == s["const"],
-                p,
-                "unknown version, semantic constant or operator combination",
-                "Unsupported");
-    if (s.contains("enum"))
-        require(std::find(s["enum"].begin(), s["enum"].end(), v) != s["enum"].end(),
-                p,
-                "unknown enum value",
-                "Unsupported");
-    if (!s.contains("type"))
-        return;
-    const auto t = s["type"].get<std::string>();
-    if (t == "object") {
-        require(v.is_object(), p, "expected object");
-        if (s.contains("required"))
-            for (const auto& k : s["required"])
-                require(
-                    v.contains(k.get<std::string>()), p, "missing field: " + k.get<std::string>());
-        for (auto i = v.begin(); i != v.end(); ++i) {
-            if (s.contains("properties") && s["properties"].contains(i.key()))
-                validate(i.value(), s["properties"][i.key()], p + "/" + i.key());
-            else
-                require(s.value("additionalProperties", true),
-                        p + "/" + i.key(),
-                        "unknown semantic field",
-                        "Unsupported");
-        }
-    } else if (t == "array") {
-        require(v.is_array(), p, "expected array");
-        require(v.size() >= s.value("minItems", size_t(0)), p, "array too short");
-        if (s.contains("maxItems"))
-            require(v.size() <= s["maxItems"].get<size_t>(), p, "array too long");
-        for (size_t i = 0; i < v.size(); ++i)
-            validate(v[i], s.at("items"), p + "/" + std::to_string(i));
-    } else if (t == "string") {
-        require(v.is_string(), p, "expected string");
-        const auto str = v.get<std::string>();
-        require(str.size() >= s.value("minLength", size_t(0)), p, "empty string");
-        if (s.contains("pattern"))
-            require(std::regex_match(str, std::regex(s["pattern"].get<std::string>())),
-                    p,
-                    "invalid identifier/hash");
-    } else if (t == "boolean")
-        require(v.is_boolean(), p, "expected boolean");
-    else if (t == "integer") {
-        require(v.is_number_integer() && !v.is_boolean(), p, "expected exact unsigned integer");
-        require(v.is_number_unsigned() || v.get<int64_t>() >= 0, p, "negative integer");
-        const auto n = v.get<uint64_t>();
-        if (s.contains("minimum"))
-            require(n >= s["minimum"].get<uint64_t>(), p, "integer below minimum", "OutOfRange");
-        if (s.contains("maximum"))
-            require(n <= s["maximum"].get<uint64_t>(), p, "integer above maximum", "OutOfRange");
-    } else
-        fail(p, "unimplemented schema keyword type", "Unsupported");
+    serialization::validate<Error>(v, s, p, schema(),
+        [](bool ok, const std::string& path, const std::string& detail,
+           const std::string& code = "InvalidArgument") { require(ok, path, detail, code); });
 }
 template <class E> E choice(const Json& v, std::initializer_list<const char*> names) {
     int n = 0;
@@ -241,20 +161,10 @@ Json read_json(const std::string& path) {
     std::ifstream f(path);
     if (!f)
         fail(path, "cannot open input");
-    std::vector<std::set<std::string>> keys;
-    auto callback = [&](int, Json::parse_event_t event, Json& parsed) {
-        if (event == Json::parse_event_t::object_start)
-            keys.emplace_back();
-        if (event == Json::parse_event_t::key)
-            require(keys.back().insert(parsed.get<std::string>()).second,
-                    path,
-                    "duplicate JSON key: " + parsed.get<std::string>());
-        if (event == Json::parse_event_t::object_end)
-            keys.pop_back();
-        return true;
-    };
     try {
-        return Json::parse(f, callback);
+        return serialization::parse_unique(f, [&](const auto& key) {
+            fail(path, "duplicate JSON key: " + key);
+        });
     } catch (const Json::exception& e) {
         fail(path, e.what());
     }

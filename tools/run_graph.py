@@ -22,6 +22,8 @@ def run(config, build, output, data=None, *, paired=False):
         if key in c: c[key] = str((config.parent/c[key]).resolve())
     if c['placement'] not in (('host', 'controller') if paired else ('host',)):
         raise ValueError('Unsupported: requires supported placement')
+    if c.get('cpu_profile') is not None:
+        raise ValueError('CPU Profile requires the static replay entry point')
     engine = c.get('execution_engine', 'ir')
     if engine not in ('direct', 'ir'):
         raise ValueError('Unsupported execution_engine')
