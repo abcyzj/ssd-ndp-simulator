@@ -158,6 +158,10 @@ std::pair<const uint8_t*, uint64_t> ContentStore::file_object(ObjectRef ref) con
         throw Error(Code::OutOfRange, "mapped degree");
     return {data, (uint64_t(degree) + 1) * 4};
 }
+void ContentStore::require_file_hashes(const std::string& vectors, const std::string& adjacency) const {
+    if (!files_ || files_->vectors.hash != vectors || files_->adjacency.hash != adjacency)
+        throw Error(Code::VersionMismatch, "replay mapped input hash mismatch");
+}
 void ContentStore::verify_identity() const {
     if (files_) {
         files_->vectors.verify();

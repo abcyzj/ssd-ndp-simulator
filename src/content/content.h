@@ -79,6 +79,7 @@ public:
                  uint32_t max_degree);
     ~ContentStore();
     void verify_identity() const;
+    void require_file_hashes(const std::string& vectors, const std::string& adjacency) const;
     bool mapped() const {
         return bool(files_);
     }

@@ -146,3 +146,7 @@ CTest `native_observation` 用独立搜索 oracle 检查原生四档的结果、
 ## V04-3a CPU Profile 回归
 
 CTest `cpu_profile_fail_closed` 覆盖三类模型手算、区间与舍入、身份与哈希、非法文档和缺模型，以及 HostCpu 失败门控、异步服务与槽排空。适用条件和本轮证据见 [V04-3a 收口](cpu-profile-v0.4.md)。
+
+## V04-3c 静态回放回归
+
+CTest `sst_static_replay` 经 SST 验证 Profile 成本切换、零时长服务、真实值与 Work 失配排空、旧包拒绝变更内容及原生重采。ASan 定向验证和完整 SIFT1M tuning32 的语义证据见 [V04-3c 收口](replay-v0.4.md)。

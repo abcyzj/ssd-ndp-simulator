@@ -14,21 +14,27 @@ public:
     enum Phase { Backend, ResourceCompleteRelease, Publish, ContinueSubmit };
     using Clock = std::function<uint64_t()>;
     using Reserve = std::function<void(uint64_t, uint64_t)>;
-    EventBridge(Clock clock, Reserve reserve, size_t limit = 100000)
-        : clock_(std::move(clock)), reserve_(std::move(reserve)), limit_(limit) {
+    enum class BackendMode { MQSim, PlatformOnly };
+    EventBridge(Clock clock,
+                Reserve reserve,
+                size_t limit = 100000,
+                BackendMode mode = BackendMode::MQSim)
+        : clock_(std::move(clock)), reserve_(std::move(reserve)), limit_(limit), mode_(mode) {
         if (!limit_)
             throw std::invalid_argument("bridge limit must be positive");
     }
     EventBridge(const EventBridge&) = delete;
     EventBridge& operator=(const EventBridge&) = delete;
     ~EventBridge() {
-        Simulator->Set_event_queue_changed_callback({});
+        if (mode_ == BackendMode::MQSim)
+            Simulator->Set_event_queue_changed_callback({});
     }
     void start() {
-        Simulator->Set_event_queue_changed_callback([this] {
-            if (!running_)
-                arm();
-        });
+        if (mode_ == BackendMode::MQSim)
+            Simulator->Set_event_queue_changed_callback([this] {
+                if (!running_)
+                    arm();
+            });
         arm();
     }
     void enqueue(uint64_t time, Phase phase, std::string cause, std::function<void()> action) {
@@ -61,9 +67,10 @@ public:
                 if (!queue_.empty() && std::get<0>(queue_.begin()->first) == now)
                     delta_ = std::get<1>(queue_.begin()->first);
                 phase_ = Backend;
-                auto dispatched = Simulator->Dispatch_current_time(now, limit_ - backend_count_);
-                backend_count_ += dispatched;
-                auto remaining = Simulator->Peek_next_time();
+                if (mode_ == BackendMode::MQSim)
+                    backend_count_ +=
+                        Simulator->Dispatch_current_time(now, limit_ - backend_count_);
+                auto remaining = backend_next();
                 if (remaining && *remaining == now)
                     fail("backend stopped with pending events");
                 auto it = queue_.begin();
@@ -80,7 +87,7 @@ public:
                     history_.pop_front();
                 item.action();
                 // Backward-phase backend work belongs to the next delta.
-                auto next = Simulator->Peek_next_time();
+                auto next = backend_next();
                 if (next && *next == now && phase_ != Backend) {
                     enqueue(now, Backend, "backend reentry", [] {});
                     // Finish the current delta before dispatching backend work.
@@ -128,15 +135,20 @@ private:
     };
     [[noreturn]] void fail(const std::string& reason) const {
         std::ostringstream out;
-        out << "Stalled: " << reason << " SST=" << clock_() << " MQ=" << Simulator->Time()
-            << " generation=" << generation_ << " delta=" << delta_ << " phase=" << phase_
+        out << "Stalled: " << reason << " SST=" << clock_();
+        if (mode_ == BackendMode::MQSim)
+            out << " MQ=" << Simulator->Time();
+        out << " generation=" << generation_ << " delta=" << delta_ << " phase=" << phase_
             << " backend_count=" << backend_count_ << " platform_count=" << platform_count_;
         for (const auto& cause : history_)
             out << " <- " << cause;
         throw std::logic_error(out.str());
     }
+    std::optional<uint64_t> backend_next() const {
+        return mode_ == BackendMode::MQSim ? Simulator->Peek_next_time() : std::nullopt;
+    }
     void arm() {
-        auto next = Simulator->Peek_next_time();
+        auto next = backend_next();
         if (!queue_.empty() && (!next || std::get<0>(queue_.begin()->first) < *next))
             next = std::get<0>(queue_.begin()->first);
         if (next == reserved_)
@@ -154,6 +166,7 @@ private:
     Clock clock_;
     Reserve reserve_;
     size_t limit_;
+    BackendMode mode_;
     std::map<Key, Item> queue_;
     std::deque<std::string> history_;
     std::optional<uint64_t> reserved_, last_;

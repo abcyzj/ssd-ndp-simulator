@@ -10,7 +10,7 @@
 - 在 `HostConfig.cpu_profile` 显式绑定模型后，HostCpu 的每次提交都须指定 `CpuStage`。输入可见且本次功能计算完成后，适配器可从实际输入和结果计算附加特征。估计失败经 Runtime 传播，结果不可见且释放占用的服务槽。合法估计继续由既有 FIFO、EventBridge 和完成回调调度，包括零时长服务。旧公式保留为未配置 Profile 时的默认路径。
 - `resident_random` 将两类插入计入对应准备阶段，加载器拒绝在此条件下另设 `state` 费用。`JOIN` 保持零目标服务。各静态算子阶段的实际 Work 与数据准备归属按 [V04-2a 契约](contract-v0.4.md#cpu-桶资源和窗口) 接入。
 
-现有 Graph CLI 和 SST GraphHost 仅支持 direct/动态 IR，收到显式 Profile 即报错。有效配置 schema 接受合法 replay 引用，实际 replay 接线及阶段特征采集由 V04-3c 完成。加载器检查训练来源字段的形状与 tuning32 条数。Measurement 内容、原始 ID 切分、采样完整性及全路径模型覆盖须在后续 Validator 和执行路径中另行核验。
+Graph CLI 的 direct 和动态 IR 拒绝显式 Profile。[V04-3c](replay-v0.4.md)在 SST GraphHost 的显式驻留 replay 接入 Profile 和阶段特征。加载器检查训练来源字段的形状与 tuning32 条数。Measurement 内容、原始 ID 切分、采样完整性及全路径模型覆盖须在后续 Validator 和执行路径中另行核验。
 
 ## 本轮验证
 

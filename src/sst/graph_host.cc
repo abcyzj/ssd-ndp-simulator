@@ -4,6 +4,7 @@
 #include "backend/ordinary_device.h"
 #include "search/graph.h"
 #include "search/ir_graph.h"
+#include "search/replay.h"
 #include "ir/mapping.h"
 #include "model/controller.h"
 #include "backend/observation.h"
@@ -57,8 +58,11 @@ public:
                                SST_ELI_ELEMENT_VERSION(0, 1, 0),
                                "Deterministic host graph search",
                                COMPONENT_CATEGORY_UNCATEGORIZED)
-    SST_ELI_DOCUMENT_PARAMS({"execution_engine", "direct/ir", "ir"},
-                            {"cpu_profile", "CPU Profile is reserved for static replay", ""},
+    SST_ELI_DOCUMENT_PARAMS({"execution_engine", "direct/ir/replay", "ir"},
+                            {"data_provider", "ssd/host_memory", "ssd"},
+                            {"replay_config", "preflight snapshot and bound identity", ""},
+                            {"native_workers", "replay workers", "1"},
+                            {"cpu_profile", "CPU Profile path for static replay", ""},
                             {"ir_contract", "validated run contract", ""},
                             {"placement", "host/controller", "host"},
                             {"content_backend", "mmap/memory", "mmap"},
@@ -103,10 +107,11 @@ public:
     GraphHost(SST::ComponentId_t id, SST::Params& p) : SST::Component(id) {
         if (getNumRanks().rank != 1 || getNumRanks().thread != 1)
             throw std::invalid_argument("graph requires one rank/thread");
-        if (p.contains("cpu_profile"))
-            throw std::invalid_argument("CPU Profile requires the static replay entry point");
         auto engine = p.find<std::string>("execution_engine", "ir");
-        if (engine != "direct" && engine != "ir")
+        replay_mode_ = engine == "replay";
+        if (!replay_mode_ && p.contains("cpu_profile"))
+            throw std::invalid_argument("CPU Profile requires the static replay entry point");
+        if (engine != "direct" && engine != "ir" && !replay_mode_)
             throw std::invalid_argument("Unsupported execution_engine");
         ir_mode_ = engine == "ir";
         controller_mode_ = p.find<std::string>("placement", "host") == "controller";
@@ -128,6 +133,22 @@ public:
         nq_ = p.find<uint32_t>("queries", 32);
         if (!d_ || !nq_ || r_ >= cfg_.count)
             throw std::invalid_argument("invalid dimensions/queries/degree");
+        const auto provider = p.find<std::string>("data_provider", "ssd");
+        if (replay_mode_ ? provider != "host_memory" || controller_mode_ ||
+                               p.find<uint64_t>("native_workers", 1) != 1 ||
+                               p.find<uint64_t>("slots", 1) != 1 || max_inflight_ != 1
+                         : provider != "ssd" || p.contains("replay_config"))
+            throw std::invalid_argument(
+                "Unsupported replay provider/placement/worker/slot combination");
+        ir::Json replay_config;
+        if (replay_mode_) {
+            replay_config = ir::read_json(p.find<std::string>("replay_config", ""));
+            const auto package = replay_config.at("package").get<std::string>();
+            replay_index_.open(package + "/index.jsonl", std::ios::binary);
+            replay_ops_.open(package + "/operations.jsonl", std::ios::binary);
+            if (!replay_index_ || !replay_ops_)
+                throw std::invalid_argument("cannot open preflight replay streams");
+        }
         if (ir_mode_) {
             ir_contract_ = ir::parse(ir::read_json(p.find<std::string>("ir_contract", "")));
             const auto& m = ir_contract_.manifest;
@@ -146,17 +167,22 @@ public:
                 throw std::invalid_argument("IR contract differs from admitted run parameters");
         }
         auto dir = p.find<std::string>("data", "");
-        const auto& profile = device_profile(p.find<std::string>("device_profile", "native-small"));
+        const auto* profile =
+            replay_mode_ ? nullptr
+                         : &device_profile(p.find<std::string>("device_profile", "native-small"));
         auto resource_budget =
             p.find<uint64_t>("resource_budget_bytes", uint64_t(4) * 1024 * 1024 * 1024);
-        // Checked layout and admission before mapping content or creating MQSim metadata.
-        auto shape = content::ContentStore(std::vector<content::Input>{});
-        ann_ = content::ann_layout(shape, 1, 1, cfg_.count, d_, r_, 0, true);
-        auto preload = model::checked_mul(
-            model::checked_add(ann_.end_lba, profile.page_sectors - 1) / profile.page_sectors,
-            profile.page_sectors);
-        if (preload > profile.raw_sectors || profile.metadata_estimate > resource_budget)
-            throw std::invalid_argument("profile capacity/resource preflight failed");
+        uint64_t preload = 0;
+        if (profile) {
+            // Checked layout and admission before mapping content or creating MQSim metadata.
+            auto shape = content::ContentStore(std::vector<content::Input>{});
+            ann_ = content::ann_layout(shape, 1, 1, cfg_.count, d_, r_, 0, true);
+            preload = model::checked_mul(
+                model::checked_add(ann_.end_lba, profile->page_sectors - 1) / profile->page_sectors,
+                profile->page_sectors);
+            if (preload > profile->raw_sectors || profile->metadata_estimate > resource_budget)
+                throw std::invalid_argument("profile capacity/resource preflight failed");
+        }
         model::ControllerConfig cc;
         cc.dimension = d_;
         cc.chunk_limit = cfg_.chunk;
@@ -180,12 +206,22 @@ public:
         queries_ = load(p.find<std::string>("query_file", dir + "/queries.f32"),
                         model::checked_mul(model::checked_mul(nq_, d_), 4));
         auto backend = p.find<std::string>("content_backend", "mmap");
+        auto check_input = [&](const char* name, const content::Bytes& bytes) {
+            if (replay_mode_ && content::sha256(bytes) != replay_config.at("objects").at(name))
+                throw std::invalid_argument(std::string("replay input hash mismatch: ") + name);
+        };
+        check_input("queries", queries_);
         if (backend == "mmap") {
             store_ = std::make_unique<content::ContentStore>(
                 vector_file, graph_file, cfg_.count, d_, r_);
+            if (replay_mode_)
+                store_->require_file_hashes(replay_config.at("objects").at("base"),
+                                            replay_config.at("objects").at("graph"));
         } else if (backend == "memory") {
             auto vb = load(vector_file, uint64_t(cfg_.count) * d_ * 4);
             auto ab = load(graph_file, uint64_t(cfg_.count) * (uint64_t(r_) + 1) * 4);
+            check_input("base", vb);
+            check_input("graph", ab);
             std::vector<content::Input> objects;
             for (uint32_t i = 0; i < cfg_.count; ++i) {
                 auto v = vb.begin() + uint64_t(i) * d_ * 4;
@@ -208,8 +244,10 @@ public:
         } else
             throw std::invalid_argument("Unsupported content backend");
         handles_ = std::make_unique<content::Handles>(*store_);
-        layout_ = std::make_unique<content::Layout>(*store_, ann_.end_lba, ann_, cfg_.count);
-        device_ = std::make_unique<OrdinaryDevice>(preload, profile.name, resource_budget);
+        if (!replay_mode_) {
+            layout_ = std::make_unique<content::Layout>(*store_, ann_.end_lba, ann_, cfg_.count);
+            device_ = std::make_unique<OrdinaryDevice>(preload, profile->name, resource_budget);
+        }
         output_budget_.limit = p.find<uint64_t>("output_budget_bytes", uint64_t(2) << 30);
         out_.exceptions(std::ios::badbit);
         auto semantic_path = p.find<std::string>("semantic_output", "");
@@ -227,22 +265,28 @@ public:
                 throw std::invalid_argument("cannot open graph log");
             out_.rdbuf(log_.rdbuf());
         }
-        records_ << "{\"type\":\"device_profile\",\"name\":\"" << profile.name
-                 << "\",\"xml_sha256\":\"" << profile.xml_sha256
-                 << "\",\"namespace_sectors\":" << device_->namespace_sectors
-                 << ",\"raw_sectors\":" << profile.raw_sectors
-                 << ",\"page_sectors\":" << profile.page_sectors
-                 << ",\"preload_sectors\":" << preload << "}\n";
+        if (device_)
+            records_ << "{\"type\":\"device_profile\",\"name\":\"" << profile->name
+                     << "\",\"xml_sha256\":\"" << profile->xml_sha256
+                     << "\",\"namespace_sectors\":" << device_->namespace_sectors
+                     << ",\"raw_sectors\":" << profile->raw_sectors
+                     << ",\"page_sectors\":" << profile->page_sectors
+                     << ",\"preload_sectors\":" << preload << "}\n";
         observation_ = std::make_unique<Observation>(false);
         link_ = configureSelfLink(
             "wake", "1ns", new SST::Event::Handler<GraphHost, &GraphHost::wake>(this));
         auto now = [this] {
             return getCurrentSimTimeNano();
         };
-        bridge_ = std::make_unique<EventBridge>(now, [this](auto delay, auto g) {
-            ++pending_;
-            link_->send(delay, new GraphWake(g));
-        });
+        bridge_ = std::make_unique<EventBridge>(
+            now,
+            [this](auto delay, auto g) {
+                ++pending_;
+                link_->send(delay, new GraphWake(g));
+            },
+            100000,
+            replay_mode_ ? EventBridge::BackendMode::PlatformOnly
+                         : EventBridge::BackendMode::MQSim);
         rt_ = std::make_unique<runtime::Runtime>(*bridge_, now);
         model::HostConfig c;
         c.slots = p.find<uint64_t>("slots", 1);
@@ -250,46 +294,72 @@ public:
         c.control = {p.find<uint64_t>("control_setup", 1), p.find<uint64_t>("control_rate", 1)};
         c.check_units = p.find<uint64_t>("check_units", 1);
         c.comparison_units = p.find<uint64_t>("comparison_units", 1);
+        if (replay_mode_) {
+            const auto& a = replay_config.at("applicability");
+            const auto& b = a.at("build");
+            model::CpuApplicability actual{a.at("hardware"),
+                                           a.at("os"),
+                                           a.at("memory_bytes"),
+                                           a.at("frequency"),
+                                           a.at("affinity"),
+                                           b.at("source_sha256"),
+                                           b.at("binary_sha256"),
+                                           b.at("compiler"),
+                                           b.at("flags").get<std::vector<std::string>>(),
+                                           d_,
+                                           cfg_.count,
+                                           "resident_random",
+                                           1};
+            c.cpu_profile = std::make_shared<model::CpuProfile>(
+                model::CpuProfile::load(p.find<std::string>("cpu_profile", ""),
+                                        replay_config.at("profile_sha256"),
+                                        actual,
+                                        replay_config.at("allow_fixture")));
+        }
         cpu_ = std::make_unique<model::HostCpu>(*rt_, *bridge_, now, c);
-        device_->flow->completed = [this](auto c) {
-            if (c.write)
-                return;
-            auto it = requests_.find(c.token);
-            if (it == requests_.end())
-                throw std::logic_error("unknown graph read completion");
-            auto read = it->second;
-            requests_.erase(it);
-            read->association->complete(c.token, c.lba, c.sectors, c.write);
-            out_ << "{\"type\":\"read_complete\",\"query\":" << read->query
-                 << ",\"task\":" << read->task << ",\"request\":" << c.token << ",\"lba\":" << c.lba
-                 << ",\"sectors\":" << c.sectors << ",\"time_ns\":" << c.time << "}\n";
-            if (read->association->complete()) {
-                handles_->publish(read->content);
-                rt_->start(read->task);
-            }
-        };
-        device_->root->data_arrived = [this](auto address, auto bytes) {
-            if (measuring_)
-                dma_ += bytes;
-            device_->flow->data(address, bytes);
-        };
-        device_->link->observe = [this](const char* phase,
-                                        const Host_Components::PCIe_Link::Transfer& t) {
-            if (!measuring_)
-                return;
-            if (std::string(phase) == "arrive") {
-                auto& v = link_totals_[unsigned(t.destination)];
-                ++v[0];
-                v[1] += t.payload;
-                v[2] += t.wire;
-                v[3] += t.service;
-            }
-            out_ << "{\"type\":\"link\",\"phase\":\"" << phase << "\",\"id\":" << t.id
-                 << ",\"platform_id\":" << t.platform_id << ",\"message_type\":" << unsigned(t.type)
-                 << ",\"destination\":" << unsigned(t.destination) << ",\"payload\":" << t.payload
-                 << ",\"wire\":" << t.wire << ",\"service_ns\":" << t.service
-                 << ",\"time_ns\":" << t.time << "}\n";
-        };
+        if (device_) {
+            device_->flow->completed = [this](auto c) {
+                if (c.write)
+                    return;
+                auto it = requests_.find(c.token);
+                if (it == requests_.end())
+                    throw std::logic_error("unknown graph read completion");
+                auto read = it->second;
+                requests_.erase(it);
+                read->association->complete(c.token, c.lba, c.sectors, c.write);
+                out_ << "{\"type\":\"read_complete\",\"query\":" << read->query
+                     << ",\"task\":" << read->task << ",\"request\":" << c.token
+                     << ",\"lba\":" << c.lba << ",\"sectors\":" << c.sectors
+                     << ",\"time_ns\":" << c.time << "}\n";
+                if (read->association->complete()) {
+                    handles_->publish(read->content);
+                    rt_->start(read->task);
+                }
+            };
+            device_->root->data_arrived = [this](auto address, auto bytes) {
+                if (measuring_)
+                    dma_ += bytes;
+                device_->flow->data(address, bytes);
+            };
+            device_->link->observe = [this](const char* phase,
+                                            const Host_Components::PCIe_Link::Transfer& t) {
+                if (!measuring_)
+                    return;
+                if (std::string(phase) == "arrive") {
+                    auto& v = link_totals_[unsigned(t.destination)];
+                    ++v[0];
+                    v[1] += t.payload;
+                    v[2] += t.wire;
+                    v[3] += t.service;
+                }
+                out_ << "{\"type\":\"link\",\"phase\":\"" << phase << "\",\"id\":" << t.id
+                     << ",\"platform_id\":" << t.platform_id
+                     << ",\"message_type\":" << unsigned(t.type)
+                     << ",\"destination\":" << unsigned(t.destination)
+                     << ",\"payload\":" << t.payload << ",\"wire\":" << t.wire
+                     << ",\"service_ns\":" << t.service << ",\"time_ns\":" << t.time << "}\n";
+            };
+        }
         if (controller_mode_) {
             auto* host =
                 static_cast<SSD_Components::Host_Interface_NVMe*>(device_->device->Host_interface);
@@ -414,8 +484,8 @@ public:
         }
         cpu_->observations().sink = [this](const auto& s) {
             if (semantic_.is_open() && s.kind == model::Kind::Control)
-                semantic_ << "{\"type\":\"control\",\"query\":" << s.query << ",\"work\":"
-                          << semantic_work(s.work) << "}\n";
+                semantic_ << "{\"type\":\"control\",\"query\":" << s.query
+                          << ",\"work\":" << semantic_work(s.work) << "}\n";
             records_ << "{\"type\":\"service\",\"task\":" << s.task << ",\"query\":" << s.query
                      << ",\"ready_ns\":" << s.ready_ns << ",\"read_bytes\":" << s.work.read_bytes
                      << ",\"write_bytes\":" << s.work.write_bytes << ",\"kind\":\""
@@ -458,8 +528,17 @@ public:
         primaryComponentDoNotEndSim();
     }
     void setup() override {
-        device_->start();
+        if (device_)
+            device_->start();
         bridge_->start();
+        if (replay_mode_)
+            bridge_->enqueue(
+                getCurrentSimTimeNano(), EventBridge::ContinueSubmit, "resident start", [this] {
+                    measuring_ = true;
+                    origin_ = getCurrentSimTimeNano();
+                    query_wall_start_ = std::chrono::steady_clock::now();
+                    next();
+                });
     }
     void finish() override {
         auto wall_end = std::chrono::steady_clock::now();
@@ -471,9 +550,22 @@ public:
                     seconds(query_wall_start_ - wall_start_),
                     seconds(wall_end - query_wall_start_));
         store_->verify_identity();
-        if (completed_ != nq_ || active_ || !requests_.empty() || cpu_->busy() ||
-            rt_->live_results() || handles_->live_records())
+        if ((replay_error_.empty() && completed_ != nq_) || active_ || !requests_.empty() ||
+            cpu_->busy() || rt_->live_results() || handles_->live_records())
             throw std::logic_error("incomplete graph run/leaked handles");
+        if (replay_session_ || (replay_mode_ && (rt_->task_records() || rt_->wait_records())))
+            throw std::logic_error("replay resources leaked");
+        if (!replay_error_.empty()) {
+            records_ << ir::Json({{"type", "replay_failure"},
+                                  {"detail", replay_error_},
+                                  {"drained", true}})
+                            .dump()
+                     << '\n';
+            records_.flush();
+            if (log_.is_open())
+                log_.flush();
+            getSimulationOutput().fatal(CALL_INFO, 1, "%s\n", replay_error_.c_str());
+        }
         if (executor_ && (executor_->counts().active_ops || executor_->counts().active_values ||
                           mapping_->sessions() || !ir_sessions_.empty()))
             throw std::logic_error("IR graph run leaked active operations/values/sessions");
@@ -530,6 +622,15 @@ public:
             out_ << "{\"type\":\"link_summary\",\"destination\":" << direction
                  << ",\"transfers\":" << v[0] << ",\"payload_bytes\":" << v[1]
                  << ",\"wire_bytes\":" << v[2] << ",\"service_ns\":" << v[3] << "}\n";
+        if (replay_mode_)
+            records_ << ir::Json({{"type", "resident_summary"},
+                                  {"reads", replay_reads_},
+                                  {"logical_bytes", replay_bytes_},
+                                  {"ssd_requests", 0},
+                                  {"active_sessions", 0},
+                                  {"peak_sessions", peak_active_}})
+                            .dump()
+                     << '\n';
         out_ << "{\"type\":\"path_summary\",\"ordinary_dma_bytes\":" << dma_
              << ",\"controller\":" << (controller_mode_ ? "true" : "false") << "}\n";
         records_ << "{\"type\":\"lifecycle\",\"runtime_tasks\":" << rt_->task_records()
@@ -603,8 +704,8 @@ private:
                                               content::Location::HostMemory,
                                               {state->query, task, getCurrentSimTimeNano()});
             if (semantic_.is_open())
-                semantic_ << "{\"type\":\"read\",\"query\":" << state->query
-                          << ",\"kind\":\"" << (kind == content::Kind::Vector ? "vector" : "adjacency")
+                semantic_ << "{\"type\":\"read\",\"query\":" << state->query << ",\"kind\":\""
+                          << (kind == content::Kind::Vector ? "vector" : "adjacency")
                           << "\",\"id\":" << id << "}\n";
             const auto& plan = state->association->plan();
             useful_ += plan.useful_bytes;
@@ -639,7 +740,7 @@ private:
         return controller_ ? controller_->admission_limit() : max_inflight_;
     }
     void next() {
-        while (submitted_ < nq_ && active_ < limit())
+        while (replay_error_.empty() && submitted_ < nq_ && active_ < limit())
             start_query(++submitted_);
     }
     void retired(uint64_t q) {
@@ -654,6 +755,7 @@ private:
         ++completed_;
         bridge_->enqueue(
             getCurrentSimTimeNano(), EventBridge::ContinueSubmit, "admit query", [this, q] {
+                replay_session_.reset();
                 sessions_.erase(q);
                 ir_sessions_.erase(q);
                 records_ << "{\"type\":\"lifecycle_sample\",\"completed\":" << completed_
@@ -667,8 +769,11 @@ private:
     void start_query(uint64_t q) {
         ++active_;
         peak_active_ = std::max(peak_active_, active_);
-        auto begin = queries_.begin() + (q - 1) * uint64_t(d_) * 4;
-        content::Bytes qb(begin, begin + uint64_t(d_) * 4);
+        auto load_query = [this, q] {
+            auto begin = queries_.begin() + (q - 1) * uint64_t(d_) * 4;
+            return content::Bytes(begin, begin + uint64_t(d_) * 4);
+        };
+        auto qb = replay_mode_ ? content::Bytes{} : load_query();
         auto start = getCurrentSimTimeNano();
         decision_digest_[q] = 14695981039346656037ULL;
         search::GraphSearch::Score scorer;
@@ -755,7 +860,53 @@ private:
             } else
                 retired(q);
         };
-        if (ir_mode_) {
+        if (replay_mode_) {
+            std::string line;
+            if (!std::getline(replay_index_, line))
+                throw std::runtime_error("missing preflight query index row");
+            auto index = ir::Json::parse(line);
+            auto original = index.at("query").get<uint32_t>();
+            replay_session_ = std::make_unique<search::Replay>(
+                *rt_,
+                *cpu_,
+                cfg_,
+                q,
+                original,
+                d_,
+                replay_ops_,
+                std::move(index),
+                load_query,
+                [this, q](auto kind, auto node, auto task) {
+                    content::ObjectRef object{1, kind, node, 1};
+                    content::Selection selection{object, {0, store_->metadata(object).size}};
+                    auto lease = handles_->create({selection},
+                                                  content::Location::HostMemory,
+                                                  {q, task, getCurrentSimTimeNano()});
+                    try {
+                        handles_->publish(lease);
+                        auto data = handles_->try_get(lease, content::Consumer::HostExecutor, 1);
+                        handles_->release(lease);
+                        return std::move(data.at(0));
+                    } catch (...) {
+                        handles_->release(lease);
+                        throw;
+                    }
+                },
+                [this](const auto& event) {
+                    if (event.at("type") == "replay_read") {
+                        replay_bytes_ += event.at("bytes").template get<uint64_t>();
+                        ++replay_reads_;
+                    }
+                    out_ << event.dump() << '\n';
+                },
+                std::move(trace),
+                std::move(done),
+                [this, q](auto error) {
+                    replay_error_ = std::move(error);
+                    retired(q);
+                });
+            replay_session_->start();
+        } else if (ir_mode_) {
             std::vector<float> values(d_);
             for (size_t i = 0; i < values.size(); ++i) {
                 uint32_t bits = 0;
@@ -814,7 +965,7 @@ private:
             bridge_->wake(e->generation);
             if (local_)
                 local_->poll();
-            if (!measuring_ &&
+            if (device_ && !measuring_ &&
                 device_->window->advance(!Simulator->Peek_next_time(), getCurrentSimTimeNano())) {
                 measuring_ = true;
                 origin_ = device_->window->origin();
@@ -830,7 +981,8 @@ private:
                 next();
             }
             rt_->require_progress();
-            bridge_->require_progress(completed_ != nq_, "graph/preload incomplete");
+            bridge_->require_progress(replay_error_.empty() && completed_ != nq_,
+                                      "graph/preload incomplete");
             if (!pending_ && bridge_->idle())
                 primaryComponentOKToEndSim();
         } catch (const std::exception& ex) {
@@ -839,7 +991,11 @@ private:
     }
     std::chrono::steady_clock::time_point wall_start_ = std::chrono::steady_clock::now(),
                                           query_wall_start_;
-    bool ir_mode_ = false;
+    bool ir_mode_ = false, replay_mode_ = false;
+    std::ifstream replay_index_, replay_ops_;
+    std::unique_ptr<search::Replay> replay_session_;
+    std::string replay_error_;
+    uint64_t replay_bytes_ = 0, replay_reads_ = 0;
     uint64_t next_ir_op_ = 0;
     ir::Document ir_contract_;
     std::unique_ptr<ir::Executor> executor_;
@@ -868,8 +1024,13 @@ private:
         }
     } null_;
     static ir::Json semantic_work(const operators::Work& w) {
-        return {w.elements, w.flops, w.read_bytes, w.write_bytes, w.output_bytes,
-                w.candidate_checks, w.comparisons};
+        return {w.elements,
+                w.flops,
+                w.read_bytes,
+                w.write_bytes,
+                w.output_bytes,
+                w.candidate_checks,
+                w.comparisons};
     }
     void semantic_score(uint64_t query, uint64_t chunk, const operators::Result& result) {
         semantic_ << "{\"type\":\"score\",\"query\":" << query << ",\"chunk\":" << chunk
