@@ -15,6 +15,8 @@ sys.path.insert(0, str(ROOT/'tools'))
 
 from ann_data import write_json
 from benchmark_artifacts import binding, exact, graph_check, LOCK, PARAMETERS, record, VERSION
+from evaluate_v04_level_a import accuracy, assess_point, summary, timed, verify_raw_samples
+from simulation_input import load_v2
 from test_benchmark_artifacts import fixture
 from test_static_replay import modified_package
 from validate_v04 import level_c_thresholds_met
@@ -107,6 +109,47 @@ def run(out, build):
         exemplar, operator='DEDUP_NEIGHBORS', stage='dedup',
         features=[dict(name='read_bytes', unit='B', minimum=0, maximum=100000)],
         model=dict(kind='log_gbdt', initial=math.log(1999.75), rate=1., trees=[[0.]])))
+    # Exercise Level A against actual native samples with the independent oracle.
+    level_a = out/'level-a'
+    level_a.mkdir()
+    shape, payloads, _ = load_v2(data, config, out)
+    samples = load(out/'cpu_sample/measurement.json')
+    sample_dir = out/'cpu_sample'
+    sample_manifest = load(sample_dir/'manifest.json')
+    verify_raw_samples(sample_dir, sample_manifest, samples)
+    shifted = dict(samples, samples=[dict(samples['samples'][0], end_ns=0), *samples['samples'][1:]])
+    try:
+        verify_raw_samples(sample_dir, sample_manifest, shifted)
+    except ValueError as exc:
+        assert 'raw sample payload' in str(exc)
+    else:
+        raise AssertionError('modified CPU sample passed raw shard verification')
+    batch = load(out/'cpu_sample/batch.json')['queries']
+    models = {(r['operator'], r['stage']): r for r in profile['models']}
+    classification = {stage: dict(major=stage in ('merge_append', 'merge_finalize', 'dedup'))
+                      for _, stage in models}
+    point = assess_point(bound, shape, payloads, [(batch, samples)], models, classification, level_a)
+    assert point['stages']['merge_append']['total'] > 0
+    assert point['stages']['merge_finalize']['total'] > 0
+    assert all(row['unsupported_calls'] == 0 for row in point['stages'].values())
+    missing = dict(samples, samples=samples['samples'][1:])
+    try:
+        assess_point(bound, shape, payloads, [(batch, missing)], models, classification, level_a)
+    except ValueError as exc:
+        assert 'missing CPU sample' in str(exc)
+    else:
+        raise AssertionError('incomplete Level A evidence passed')
+    range_key = ('MERGE_CANDIDATES', 'merge_finalize')
+    limited = models | {range_key: dict(models[range_key], features=[
+        dict(name='read_bytes', minimum=0, maximum=0)])}
+    point = assess_point(bound, shape, payloads, [(batch, samples)], limited, classification, level_a)
+    assert point['stages']['merge_finalize']['unsupported_calls'] > 0
+    assert point['operators']['MERGE_CANDIDATES']['status'] == point['numeric_gate'] == 'failed'
+    assert accuracy(summary([timed(dict(predicted_ns=110), 100, 10, False)]))
+    assert not accuracy(summary([timed(dict(predicted_ns=111), 100, 10, False)]))
+    short = summary([timed(dict(predicted_ns=5), -1, 10, True)])
+    assert short['relative']['samples'] == 0 and short['short_absolute']['mae_ns'] == 6
+
     model = out/'profile.json'
     write_json(model, profile)
     for engine in ('replay', 'direct', 'ir'):

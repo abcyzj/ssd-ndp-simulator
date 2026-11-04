@@ -25,7 +25,10 @@ public:
     static CpuProfile load(const std::string& path,
                            const std::string& expected_sha256,
                            const CpuApplicability& actual,
-                           bool allow_fixture = false);
+                           bool allow_fixture = false,
+                           const std::string& package_sha256 = {},
+                           uint64_t replay_workers = 1,
+                           uint64_t max_inflight = 1);
 
     uint64_t estimate(std::string_view op,
                       std::string_view stage,

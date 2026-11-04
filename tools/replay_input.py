@@ -88,6 +88,7 @@ def prepare(config, config_dir, output, snapshot, params, query_ids, timeout):
                     memory_bytes=int(sysctl('hw.memsize')), frequency='Unsupported',
                     affinity='uncontrolled')
     admission = dict(package=str(snapshot), allow_fixture=fixture, profile_sha256=profile['sha256'],
+                     package_sha256=receipt['package_sha256'],
                      query_ids=query_ids, order_policy=effective['order_policy'],
                      objects={name: obj['sha256'] for name, obj in identity['objects'].items()},
                      applicability=dict(host, build=binding['build']))

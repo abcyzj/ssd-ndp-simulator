@@ -7,6 +7,7 @@ import struct
 import sys
 
 from ann_data import write_json
+from bind_v04_merge_append import build_table
 from compare_reference_paths import (FileRows, check_chunks, check_sim, chunks, oracle, score_pairs,
                                      score_work, totals)
 from fit_v04_cpu_profile import estimate, quantile, SELECTION
@@ -109,11 +110,16 @@ def expected_operations(expected, graph, search, query, dim):
         ('finish', dict(objects=len(top)), counts(), None, 0)]
 
 
-def service_demand(models, operator, stage, features, work, scope):
+def service_demand(models, operator, stage, features, work, scope, *, append_key=None):
     key = operator, stage
     if stage == 'merge':
         phase = 'merge_append' if operator == 'SCORE_L2' else 'merge_finalize'
         key = 'MERGE_CANDIDATES', phase
+        if phase == 'merge_append' and 'measured_append' in models:
+            row = models['measured_append'].get(append_key)
+            require(row is not None and features == dict(old_scores=0, new_scores=row['new_scores'])
+                    and not any(work.values()), f'{scope}: missing or mismatched measured merge append call')
+            return row['ns']
     require(key in models, f'{scope}: missing model {key}')
     model = models[key]
     values = []
@@ -195,7 +201,8 @@ def validate_query(query, ops, events, services, samples, expected, graph, searc
             start, end = service['start_ns'], service['end_ns']
             same((service['submitted_ns'], service['ready_ns'], start, event['time_ns']),
                  (previous,)*4, detail, 'service start/order')
-            duration = service_demand(models, operator, stage, features, stage_work, detail)
+            duration = service_demand(models, operator, stage, features, stage_work, detail,
+                                      append_key=(query, local+1, segment))
             same(end-start, duration, detail, 'CPU service demand (ns)')
             cpu += duration
             previous = end
@@ -224,7 +231,7 @@ def command_ok(command, scope):
             f'{scope}: missing or failed process')
 
 
-def native_run(directory, mode, binding, input_identity, split, report):
+def native_run(directory, mode, binding, input_identity, split, report, *, stride=1):
     manifest = read(directory/'manifest.json')
     scope = f'native {mode}'
     report['inputs'][scope] = dict(manifest_sha256=file_hash(directory/'manifest.json'),
@@ -249,7 +256,8 @@ def native_run(directory, mode, binding, input_identity, split, report):
     same((measurement['workers'], measurement['max_inflight'], batch['workers'], batch['concurrency']),
          (1, 1, 1, 1), scope, 'worker/admission quota')
     require(measurement['complete'] is True and measurement['dropped'] == 0 and
-            measurement['sample_stride'] == 1 and measurement['preparation_context'] == 'resident_random' and
+            measurement['sample_stride'] == manifest['sample_stride'] == stride and
+            measurement['preparation_context'] == 'resident_random' and
             measurement['cpu_clock']['source'] == 'CLOCK_THREAD_CPUTIME_ID' and
             measurement['wall_clock']['source'] == 'CLOCK_MONOTONIC' and batch['paging_eligible'] is True,
             f'{scope}: unsupported or incomplete measurement')
@@ -308,6 +316,7 @@ def validate(args, report):
     training = profile['training']
     require(not set(ids).intersection(training['query_ids']), 'training/evaluation original query ID overlap')
     if args.scope == 'evaluation':
+        require('merge_append_table' in profile, 'evaluation requires measured merge_append Profile')
         selection = read(ROOT/SELECTION)
         same((training['split'], training['query_ids'], ids, base['records'], dim),
              ('tuning32', selection['tuning_ids'], selection['evaluation_ids'], 1_000_000, 128),
@@ -321,6 +330,8 @@ def validate(args, report):
               dict(tuning_ids=training['query_ids'], evaluation_ids=ids, overlap=[]),
               training['measurement_sha256']), 'profile', 'fit provenance')
         stage_rows = {(r['operator'], r['stage']): r for r in fit['stages']}
+        if 'merge_append_table' in profile:
+            stage_rows.pop(('MERGE_CANDIDATES', 'merge_append'), None)
         same(len(stage_rows), len(profile['models']), 'profile', 'frozen stage coverage')
         for entry in profile['models']:
             key = entry['operator'], entry['stage']
@@ -412,6 +423,14 @@ def validate(args, report):
     same(set(events), set(ids), 'replay', 'event query coverage')
     same(set(services), set(range(1, len(ids)+1)), 'replay', 'service query coverage')
     models = {(r['operator'], r['stage']): r for r in profile['models']}
+    if table := profile.get('merge_append_table'):
+        require(table['split'] == split, 'merge append table split mismatch')
+        same(build_table(profile, package, binding_path, args.merge_append_measurement), table,
+             'profile', 'reproduced merge append table')
+        models['measured_append'] = {(r['query'], r['op'], r['segment']): r for r in table['rows']}
+        report['inputs']['profile']['merge_append_table'] = dict(
+            package_sha256=table['package_sha256'], measurement_sha256=table['measurement_sha256'],
+            calls=len(table['rows']), cpu_ns=sum(r['ns'] for r in table['rows']))
     query_report = report['queries']
     with ExitStack() as stack:
         vectors, graph, queries = [
@@ -521,6 +540,7 @@ def main():
     for name in ('capture', 'baseline', 'samples', 'profile', 'replay', 'direct', 'ir', 'output'):
         parser.add_argument('--'+name, type=Path, required=True)
     parser.add_argument('--fit-report', type=Path)
+    parser.add_argument('--merge-append-measurement', action='append', type=Path, default=[])
     parser.add_argument('--scope', choices=('quick', 'evaluation'), required=True)
     args = parser.parse_args()
     args.output.mkdir(parents=True)

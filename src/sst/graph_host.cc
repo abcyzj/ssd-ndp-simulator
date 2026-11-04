@@ -337,7 +337,10 @@ public:
                 model::CpuProfile::load(p.find<std::string>("cpu_profile", ""),
                                         replay_config.at("profile_sha256"),
                                         actual,
-                                        replay_config.at("allow_fixture")));
+                                        replay_config.at("allow_fixture"),
+                                        replay_config.value("package_sha256", std::string{}),
+                                        replay_workers_,
+                                        max_inflight_));
         }
         cpu_ = std::make_unique<model::HostCpu>(*rt_, *bridge_, now, c);
         if (device_) {

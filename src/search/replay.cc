@@ -179,7 +179,8 @@ void Replay::score_chunk() {
                     native::add_work(score_work_, work);
                     service(
                         "merge",
-                        {{"old_scores", 0}, {"new_scores", count}},
+                        {{"old_scores", 0}, {"new_scores", count}, {"original_query_id", original_},
+                         {"sample_op", local_ + 1}, {"segment", (offset_ - count) / config_.chunk}},
                         [this, packed = std::move(packed)] {
                             batch_.insert(batch_.end(), packed.begin(), packed.end());
                             decltype(vectors_){}.swap(vectors_);

@@ -2,6 +2,7 @@
 #include "model/cpu_profile_schema.h"
 #include "serialization/json_schema.h"
 #include <fstream>
+#include <tuple>
 
 namespace ndpsim::model {
 namespace {
@@ -70,12 +71,16 @@ struct Entry {
 struct CpuProfile::Data {
     std::map<Key, Entry> models;
     uint64_t dimensions;
+    std::map<std::tuple<uint64_t, uint64_t, uint64_t>, std::pair<uint64_t, uint64_t>> merge_append;
 };
 
 CpuProfile CpuProfile::load(const std::string& path,
                             const std::string& expected_sha256,
                             const CpuApplicability& actual,
-                            bool allow_fixture) {
+                            bool allow_fixture,
+                            const std::string& package_sha256,
+                            uint64_t replay_workers,
+                            uint64_t max_inflight) {
     constexpr size_t limit = 16 * 1024 * 1024;
     std::ifstream stream(path, std::ios::binary);
     require(static_cast<bool>(stream), "cannot open " + path);
@@ -137,6 +142,26 @@ CpuProfile CpuProfile::load(const std::string& path,
 
     auto data = std::make_shared<Data>();
     data->dimensions = actual.dimensions;
+    const bool measured = profile["format"] == "ndpsim-cpu-profile/4";
+    require(measured == profile.contains("merge_append_table"), "missing or unexpected merge append table");
+    if (measured) {
+        const auto& table = profile.at("merge_append_table");
+        require(table.at("package_sha256") == package_sha256 &&
+                    actual.preparation_context == "resident_random" &&
+                    replay_workers == 1 && max_inflight == 1,
+                "merge append table applicability mismatch", Code::VersionMismatch);
+        require((table.at("split") == "fixture") == (training["split"] == "fixture"),
+                "merge append table split mismatch");
+        for (const auto& row : table.at("rows")) {
+            require(row.at("op").get<uint64_t>() > 1 && row.at("new_scores").get<uint64_t>() > 0,
+                    "invalid merge append call");
+            const auto inserted = data->merge_append.try_emplace(
+                std::make_tuple(row.at("query").get<uint64_t>(), row.at("op").get<uint64_t>(),
+                                row.at("segment").get<uint64_t>()),
+                row.at("new_scores").get<uint64_t>(), row.at("ns").get<uint64_t>());
+            require(inserted.second, "duplicate merge append call");
+        }
+    }
     bool has_gbdt = false;
     for (const auto& row : profile["models"]) {
         const Key key{row["operator"], row["stage"]};
@@ -222,6 +247,10 @@ CpuProfile CpuProfile::load(const std::string& path,
     require(has_gbdt, "missing dedup GBDT model");
     for (const auto* stage : {"merge_append", "merge_finalize"}) {
         auto entry = data->models.find({"MERGE_CANDIDATES", stage});
+        if (measured && std::string_view(stage) == "merge_append") {
+            require(entry == data->models.end(), "unexpected merge append model alongside measured table");
+            continue;
+        }
         require(entry != data->models.end() && !entry->second.coefficients.empty(),
                 "split merge requires both linear models");
     }
@@ -235,6 +264,21 @@ uint64_t CpuProfile::estimate(std::string_view op,
     const Key key{std::string(op), std::string(stage)};
     const auto label = key.first + "/" + key.second;
     require(stages.count(key), label + ": unknown operator/stage", Code::Unsupported);
+    if (stage == "merge_append" && !data_->merge_append.empty()) {
+        auto feature = [&](const char* name) {
+            const auto it = extra.find(name);
+            require(it != extra.end(), label + ": missing feature " + name);
+            return it->second;
+        };
+        const auto call = data_->merge_append.find(
+            {feature("original_query_id"), feature("sample_op"), feature("segment")});
+        require(call != data_->merge_append.end(), label + ": missing measured call", Code::Unsupported);
+        require(feature("old_scores") == 0 && feature("new_scores") == call->second.first,
+                label + ": measured call shape mismatch");
+        for (const auto& field : work_fields)
+            require(work.*(field.second) == 0, label + ": measured call Work mismatch");
+        return call->second.second;
+    }
     const auto found = data_->models.find(key);
     require(found != data_->models.end(), label + ": missing model", Code::Unsupported);
     const auto& entry = found->second;

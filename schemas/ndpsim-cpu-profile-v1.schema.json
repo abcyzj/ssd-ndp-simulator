@@ -15,8 +15,86 @@
   "properties": {
     "format": {
       "enum": [
-        "ndpsim-cpu-profile/3"
+        "ndpsim-cpu-profile/3", "ndpsim-cpu-profile/4"
       ]
+    },
+    "merge_append_table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "package_sha256",
+        "measurement_sha256",
+        "split",
+        "rows"
+      ],
+      "properties": {
+        "package_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "measurement_sha256": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "minItems": 3,
+          "uniqueItems": true
+        },
+        "split": {
+          "enum": [
+            "tuning32",
+            "evaluation128",
+            "fixture"
+          ]
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "query",
+              "op",
+              "segment",
+              "new_scores",
+              "ns"
+            ],
+            "properties": {
+              "query": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 18446744073709551615
+              },
+              "op": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 18446744073709551615
+              },
+              "segment": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 18446744073709551615
+              },
+              "new_scores": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 18446744073709551615
+              },
+              "ns": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 18446744073709551615
+              }
+            }
+          },
+          "minItems": 1
+        }
+      }
     },
     "unit": {
       "enum": [

@@ -79,6 +79,13 @@ def run(args):
             build = build_identity(args.binary, manifest['executable_sha256'])
             binding = binding_for(build, [(Path(p), h) for p, h in files], shape, search)
             manifest['build'] = build
+            if mode == 'cpu_sample' and args.split != 'fixture' and platform.system() == 'Darwin':
+                manifest['cpu_host'] = dict(
+                    hardware=subprocess.check_output(['/usr/sbin/sysctl', '-n', 'machdep.cpu.brand_string'],
+                                                     text=True, timeout=10).strip(),
+                    memory_bytes=int(subprocess.check_output(['/usr/sbin/sysctl', '-n', 'hw.memsize'],
+                                                             text=True, timeout=10)),
+                    os=manifest['platform'], frequency=manifest['frequency'], affinity=manifest['affinity'])
         if mode in ('static_capture', 'cpu_sample'):
             if manifest['free_disk_bytes'] < args.output_budget:
                 raise ValueError('insufficient disk for observation budget')

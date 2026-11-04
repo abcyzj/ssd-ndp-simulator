@@ -69,7 +69,7 @@ def modified_package(source, path, field):
 
 def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'binding.json',
         package=FIXTURE/'package', stale=False, expected_operations=38, expected_reads=10,
-        workers=1, inflight=1, profile_workers=1, invalid=None):
+        workers=1, inflight=1, profile_workers=1, invalid=None, measured=False):
     out.mkdir()
     binding = read(binding_path)
     if field:
@@ -97,6 +97,19 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
     # A constant model still needs a declared, bounded feature.
     for model in profile['models']:
         model['features'] = [dict(name='dimensions', unit='count', minimum=base['width'], maximum=base['width'])]
+    if measured:
+        profile['format'] = 'ndpsim-cpu-profile/4'
+        profile['models'] = [row for row in profile['models'] if row['stage'] != 'merge_append']
+        chunk = binding['identity']['search']['chunk']
+        calls = [dict(query=row['query'], op=row['op']+1, segment=segment,
+                      new_scores=min(chunk, len(row['expected']['ids'])-offset), ns=19)
+                 for row in rows(package/'operations.jsonl') if row['operator'] == 'SCORE_L2'
+                 for segment, offset in enumerate(range(0, len(row['expected']['ids']), chunk))]
+        if invalid == 'missing measured call':
+            calls.pop(0)
+        profile['merge_append_table'] = dict(
+            split='fixture', package_sha256=read(package/'tail.json')['package_sha256'],
+            measurement_sha256=[str(i)*64 for i in (1, 2, 3)], rows=calls)
     profile_path = out/'profile.json'
     write(profile_path, profile)
     paths = {name: str(binding_path.parent / file) for name, file in binding['files'].items()}
@@ -157,6 +170,11 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
         return
     records = rows(out/'records.jsonl')
     events = rows(out/'events.jsonl')
+    if invalid == 'missing measured call':
+        failure = next(row for row in records if row['type'] == 'replay_failure')
+        assert process.returncode != 0 and failure['drained'] and 'missing measured call' in failure['detail']
+        assert not any(row['type'] == 'query_result' for row in records)
+        return
     if field in ('value', 'work'):
         assert process.returncode != 0, process.stdout
         failure = next(row for row in records if row['type'] == 'replay_failure')
@@ -182,15 +200,17 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
                if row['type'] == 'replay_verified'}
     submitted = {(row['query'], row['op']): row['time_ns'] for row in events
                  if row['type'] == 'replay_submit'}
-    dedup_count = 0
+    expected_busy_ns = 0
     for row in events:
         if row['type'] == 'replay_stage':
             service = services[row['task']]
             key = row['query'], row['op']
             assert submitted[key] <= service['start_ns'] <= service['end_ns'] <= visible[key]
             is_dedup = row['stage'] == 'dedup'
-            dedup_count += is_dedup
-            assert service['end_ns'] - service['start_ns'] == (max(1, ns) if is_dedup else ns)
+            is_append = row['stage'] == 'merge' and row['operator'] == 'SCORE_L2'
+            demand = 19 if measured and is_append else max(1, ns) if is_dedup else ns
+            assert service['end_ns'] - service['start_ns'] == demand
+            expected_busy_ns += demand
         if row['type'] == 'replay_read' and row['op'] > 1:
             assert row['time_ns'] >= visible[row['query'], row['op']-1]
     assert len(visible) == len(submitted) == expected_operations
@@ -204,7 +224,7 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
     assert summary['workers_idle'] == workers
     assert all(summary[k] == 0 for k in ('cpu_busy_slots', 'cpu_queued', 'pending_admissions',
                                         'cpu_queue_wait_ns', 'cpu_dependency_wait_ns'))
-    assert summary['cpu_busy_ns'] == len(services)*ns + (dedup_count if ns == 0 else 0)
+    assert summary['cpu_busy_ns'] == expected_busy_ns
     assert summary['worker_wait_ns'] == sum(r['worker_wait_ns'] for r in results)
     final = next(row for row in records if row['type'] == 'summary')
     assert final['peak_inflight'] == min(len(ids), inflight)
@@ -332,6 +352,9 @@ def verify(build, output):
                       for row in rows(output/'zero/events.jsonl')) for query in (1, 2)]
     assert zero_top == top and zero == zero_dedup and zero_count == service_count
     assert slow_count == service_count and [x * 7 for x in fast] == [x * 2 for x in slow]
+    measured_top, _, measured_count = run(build, output/'measured-append', 2, measured=True)
+    assert measured_top == top and measured_count == service_count
+    run(build, output/'missing-measured-append', 2, measured=True, invalid='missing measured call')
     run(build, output/'wrong-value', 2, 'value')
     run(build, output/'wrong-work', 2, 'work')
     recapture(build, output)

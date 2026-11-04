@@ -1,11 +1,29 @@
 # V04-3b CPU Profile 训练拟合与冻结
 
-[现行 v3 Profile](../configs/profiles/v04-merge-split.json) 是 V04-3b 唯一受支持的冻结版。它使用浅层 GBDT 估计 dedup，使用两个非负线性模型分别估计 chunk 得分拼接和批末候选合并。其余阶段沿用原冻结模型。将 `cpu_profile.path` 指向该文件，并填写对应的 `cpu_profile.sha256`。相对路径以配置文件所在目录解析。
+[冻结 v3 Profile](../configs/profiles/v04-merge-split.json) 提供拟合模型与既有回放的复现基线。按新版验收矩阵，用下述工具生成绑定单一静态包的 v4 Profile。v4 的 `merge_append` 只使用逐调用实测表，`merge_finalize` 保留非负线性模型，dedup 保留浅层 GBDT。
 
 ```text
 Profile SHA256  1f52e9333a501a2f078504cf4794099712dd8bdf79c2666e70d8d5b5ef3e66ec
 拟合报告 SHA256  928805e997bcc334b19f4d2e4daa880197b7a401137d3dbd996c45a639a0c32c
 ```
+
+## 逐调用实测表
+
+每个切分及 L/E 点分别准备完整静态包，并独立运行至少三次单 worker 的 `run_native.py --mode cpu_sample --sample-stride 1`，设置对应的 `--split tuning32` 或 `--split evaluation128`。先核验输入、RAM、磁盘、输出预算与时限。每次采集使用不同的输出目录名。将这些 Measurement 与冻结 Profile 绑定：
+
+```sh
+python3 tools/bind_v04_merge_append.py \
+  --profile configs/profiles/v04-merge-split.json \
+  --package <capture>/package --binding <capture>/binding.json \
+  --measurement <sample-1>/measurement.json \
+  --measurement <sample-2>/measurement.json \
+  --measurement <sample-3>/measurement.json \
+  --output <new-profile.json>
+```
+
+在回放配置的 `cpu_profile.path` 和 `cpu_profile.sha256` 显式绑定新文件。表以包 hash、切分、原始 query ID、对应的原生 merge 操作号及 chunk 分段索引定位，核验 chunk 大小及拼接 Work。服务时间取扣除空探针开销后有符号重复值的下中位数。短调用的低信号重复仍保留，若下中位数为负或有符号和低于一计时刻度则拒绝制表。源 Measurement 保留原始重复及质量标记。查表限与采集条件相同的单 worker、单接纳驻留回放。
+
+单点 Validator 使用重复的 `--merge-append-measurement` 参数重建表，并按独立搜索与 Work 核对实际服务。整机原生基准另跑。现有独立模型误差入口仍对应 v3 历史报告，正式矩阵的 Level A 汇总分流待接线。
 
 ## 复现
 
@@ -30,3 +48,7 @@ Profile SHA256  1f52e9333a501a2f078504cf4794099712dd8bdf79c2666e70d8d5b5ef3e66ec
 - 历史冻结和验证分别位于本机 `results/v0.4/cpu-fit-v043b/run1/`、`dedup-gbdt-v2/` 和 `split-merge-v3/`。v1/v2 属于历史证据，现行加载器拒绝这两个版本。
 
 根 CTest 91/91、拟合定向测试 4/4，覆盖 v1/v2 拒绝、缺失模型、范围与身份检查。两次从训练输入生成的 v3 Profile 和报告逐字节一致。SIFT1M tuning32 L/E=32/64 驻留回放与此前 v3 的 13,230 笔服务、语义日志、top-k 和驻留账本逐字节一致。
+
+## v4 接线证据
+
+本机 `results/v0.4/cpu-fit-v043b/measured-append-fixture-2/` 保存三次独立原生采样、逐调用制表、SST 回放和单点 Validator quick 诊断。夹具两条查询共八笔拼接服务，Profile SHA256 为 `d7628648362c7f5c35c4394ba5d8567575ef02b9998136d020027e2fecfa51ad`。根 CTest 91/91，定向 SST 夹具核对了成本切换和缺项失败排空。首轮证据留在 `measured-append-fixture/`，逐样本质量门槛拒绝了短调用，第二轮采用上述聚合规则在新目录复验。完整 SIFT1M 两个切分四点的实测表及整机验收待执行。

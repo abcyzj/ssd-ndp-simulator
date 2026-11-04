@@ -118,6 +118,9 @@ def graph(shard, identity, query):
             iteration += 1
 
 
+MEASUREMENT_LIMIT = 512 * 1024**2
+
+
 class Budget:
     def __init__(self, limit, deadline=float('inf')):
         self.remaining = limit
@@ -236,7 +239,7 @@ def measurement(out, shards, binding, report, mode, stride, split, budget):
                                 features=dict(zip(FEATURES[bucket], (a, b))),
                                 quality='usable' if corrected >= resolution else 'low_signal')
             sample_bytes += len(canonical(sample)) + 1
-            require(sample_bytes <= min(LIMIT, budget.remaining), 'CPU sample output exceeds budget')
+            require(sample_bytes <= min(MEASUREMENT_LIMIT, budget.remaining), 'CPU sample output exceeds budget')
             samples.append(sample)
             if bucket == 'score_prepare':
                 require(prepare is None, 'missing L2 timing interval')
@@ -260,7 +263,10 @@ def measurement(out, shards, binding, report, mode, stride, split, budget):
     checked = validate_measurement(record)
     unattributed = checked['thread_cpu_ns'] - checked['attributed_raw_ns']
     require(unattributed >= 0, 'negative unattributed CPU')
-    budget.json(out/'measurement.json', record)
+    encoded = canonical(record) + b'\n'
+    require(len(encoded) <= MEASUREMENT_LIMIT, 'CPU Measurement exceeds byte limit')
+    with (out/'measurement.json').open('xb') as stream:
+        budget.write(stream, encoded)
     budget.json(out/'measurement-validation.json', dict(**checked, unattributed_cpu_ns=unattributed,
         unattributed_fraction=unattributed / checked['thread_cpu_ns'] if checked['thread_cpu_ns'] else None,
         eligible_calls=dict(eligible), planned_calls=dict(planned),

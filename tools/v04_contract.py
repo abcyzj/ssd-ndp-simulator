@@ -460,9 +460,23 @@ def validate_profile(profile):
     check('cpu-profile', profile)
     training = profile['training']
     require(training['split'] == 'fixture' or len(training['query_ids']) == 32, 'wrong training split size')
+    table = profile.get('merge_append_table')
+    require((profile['format'] == 'ndpsim-cpu-profile/4') == (table is not None),
+            'missing or unexpected merge append table')
+    if table is not None:
+        require((table['split'] == 'fixture') == (training['split'] == 'fixture') and
+                profile['applicability']['workers'] == 1 and
+                profile['applicability']['preparation_context'] == 'resident_random',
+                'merge append table applicability mismatch')
+        keys = {(r['query'], r['op'], r['segment']) for r in table['rows']}
+        require(len(keys) == len(table['rows']) and
+                all(r['op'] > 1 and r['new_scores'] > 0 for r in table['rows']),
+                'duplicate or invalid merge append call')
     seen = set()
     has_gbdt = False
     split_keys = {('MERGE_CANDIDATES', stage) for stage in ('merge_append', 'merge_finalize')}
+    if table is not None:
+        split_keys.remove(('MERGE_CANDIDATES', 'merge_append'))
     for entry in profile['models']:
         op, stage = entry['operator'], entry['stage']
         key = op, stage
