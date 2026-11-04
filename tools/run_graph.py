@@ -229,6 +229,7 @@ def run(config, build, output, data=None, *, paired=False):
         ir=next((r for r in events if r['type']=='ir_summary'), None))
     if replay:
         observation['replay'] = replay_receipt
+        observation['workers'] = next(e for e in events if e['type'] == 'worker_summary')
     write_json(output/'observation.json', observation)
     export(output, results, events, wall_seconds)
     if replay:
@@ -264,7 +265,7 @@ def run(config, build, output, data=None, *, paired=False):
         **(dict(replay=replay_receipt, replay_config_sha256=digest(output/'effective-config.json'),
                 replay_tool_sha256=digest(ROOT/'tools/replay_input.py')) if replay else {}),
         assumptions=(['host_memory with no device or PCIe path',
-                      'single worker, CPU service from explicit Profile'] if replay else ['single SSD/'+c['device_profile']+'/SIMPLE/TURNED_OFF; CMT retained',
+                      'worker-fifo/1, CPU service from explicit single-worker Profile'] if replay else ['single SSD/'+c['device_profile']+'/SIMPLE/TURNED_OFF; CMT retained',
                      'deterministic page preload drained before measurement; no cross-query object cache',
                      'all queries offered at measurement origin, FIFO bounded admission; slots retire after CloseAck; host control; distance placement='+c['placement'],
                      'MQSim owns ordinary PCIe; no platform transfer fee',

@@ -308,13 +308,17 @@ def validate_package(path, binding_path, limit=LIMIT, *, checkpoint=None):
     index_hash, operations_hash = hashlib.sha256(), hashlib.sha256()
     operations = dependencies = 0
     with (path/'index.jsonl').open('rb') as index, (path/'operations.jsonl').open('rb') as stream:
-        for query in identity['query_ids']:
+        remaining = set(identity['query_ids'])
+        for _ in identity['query_ids']:
+            query = None
             if checkpoint is not None:
                 checkpoint()
             try:
                 raw, entry = read_line(index, 'index', limit)
-                require(entry['query'] == query and entry['offset'] == stream.tell(),
-                        'incorrect query index/order or offset')
+                query = entry['query']
+                require(query in remaining and entry['offset'] == stream.tell(),
+                        'incorrect query index/coverage or offset')
+                remaining.remove(query)
                 index_hash.update(raw)
                 reader = QueryPreflight(stream, entry, identity, limit, operations_hash)
                 try:
@@ -330,7 +334,8 @@ def validate_package(path, binding_path, limit=LIMIT, *, checkpoint=None):
                 operations += reader.ops
                 dependencies += reader.deps
             except ValueError as error:
-                raise ValueError(f'query {query}: {error}') from error
+                scope = f'query {query}' if query is not None else f'query {min(remaining)} (coverage)'
+                raise ValueError(f'{scope}: {error}') from error
         require(not index.read(1) and not stream.read(1), 'extra index/operation records')
     require((tail['queries'], tail['operations'], tail['dependencies'],
              tail['index_sha256'], tail['operations_sha256']) ==

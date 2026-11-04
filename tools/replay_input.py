@@ -20,14 +20,15 @@ def prepare(config, config_dir, output, snapshot, params, query_ids, timeout):
                      native_workers=config['native_workers'], max_inflight=params['max_inflight'],
                      cpu_slots=params['slots'], ir_input=dict(config['ir_input']),
                      cpu_profile=dict(config['cpu_profile']))
+    params.update(data_provider=effective['data_provider'], native_workers=effective['native_workers'],
+                  order_policy=effective['order_policy'])
     effective['mapping_sha256'] = digest(canonical({
         key: value for key, value in params.items()
         if key not in ('records', 'output', 'data', 'semantic_output', 'event_log')
     }))
     validate_config(effective)
-    require(effective['data_provider'] == 'host_memory' and
-            effective['cpu_slots'] == effective['native_workers'] == effective['max_inflight'] == 1,
-            'Unsupported: replay currently requires host_memory and 1/1/1')
+    require(effective['data_provider'] == 'host_memory',
+            'Unsupported: replay currently requires host_memory')
     fixture = config.get('allow_replay_fixture', False)
     require(type(fixture) is bool, 'allow_replay_fixture must be boolean')
     binding_path = resolve(config['ir_binding'])
@@ -87,11 +88,12 @@ def prepare(config, config_dir, output, snapshot, params, query_ids, timeout):
                     memory_bytes=int(sysctl('hw.memsize')), frequency='Unsupported',
                     affinity='uncontrolled')
     admission = dict(package=str(snapshot), allow_fixture=fixture, profile_sha256=profile['sha256'],
+                     query_ids=query_ids, order_policy=effective['order_policy'],
                      objects={name: obj['sha256'] for name, obj in identity['objects'].items()},
                      applicability=dict(host, build=binding['build']))
     write_json(output/'replay-admission.json', admission)
     write_json(output/'effective-config.json', effective)
     write_json(output/'replay-preflight.json', dict(receipt, binding_sha256=digest(binding_raw)))
-    params.update(data_provider='host_memory', native_workers=1, cpu_profile=str(profile_path),
+    params.update(cpu_profile=str(profile_path),
                   replay_config=str(output/'replay-admission.json'))
     return receipt

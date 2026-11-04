@@ -25,11 +25,12 @@ Replay::Replay(runtime::Runtime& rt,
                Observe observe,
                GraphSearch::Trace trace,
                GraphSearch::Done done,
-               Fail fail)
+               Fail fail,
+               std::function<bool()> cancelled)
     : rt_(rt), cpu_(cpu), config_(config), query_(query), original_(original),
       dimension_(dimension), input_(input), index_(std::move(index)),
       load_query_(std::move(load_query)), read_(std::move(read)), observe_(std::move(observe)),
-      trace_(std::move(trace)), done_(std::move(done)), fail_(std::move(fail)),
+      trace_(std::move(trace)), done_(std::move(done)), fail_(std::move(fail)), cancelled_(std::move(cancelled)),
       position_(index_.at("offset").get<uint64_t>()),
       end_(model::checked_add(position_, index_.at("length").get<uint64_t>())),
       fresh_{config.entry} {
@@ -110,6 +111,7 @@ void Replay::service(const char* stage,
         {},
         l2 ? model::Kind::Distance : model::Kind::Control,
         [this, stage, evaluate = std::move(evaluate), actual](const auto&) {
+            require(!cancelled_(), "batch stopped after failure");
             emit({{"type", "replay_stage"}, {"stage", stage}, {"task", task_}});
             auto result = evaluate();
             *actual = result.work;
@@ -121,6 +123,11 @@ void Replay::service(const char* stage,
     task_ = handle.id();
     rt_.when_all({handle}, query_, [this, handle, actual, next = std::move(next)](auto outcome) {
         guard([&] {
+            if (cancelled_()) {
+                rt_.release(handle);
+                fail_("");
+                return;
+            }
             if (outcome.failure) {
                 rt_.release(handle);
                 throw std::runtime_error(outcome.failure->detail);
@@ -184,6 +191,9 @@ void Replay::score_chunk() {
 }
 void Replay::advance() {
     require(position_ < end_ && local_ < index_.at("operations").get<uint64_t>(), "shard ended");
+    // Other active sessions can read the shared stream between continuations.
+    input_.seekg(position_);
+    require(bool(input_), "cannot seek to operation");
     std::string line;
     for (;;) {
         require(position_ < end_ && line.size() < line_limit, "operation line bound");
@@ -275,7 +285,8 @@ void Replay::advance() {
                 require(expected.at("object") == "graph" &&
                             expected.at("ids") == std::vector<uint32_t>{id},
                         "adjacency address");
-                emit({{"type", "replay_stage"}, {"stage", "adjacency_prepare"}, {"task", task_}});
+                require(!cancelled_(), "batch stopped after failure");
+            emit({{"type", "replay_stage"}, {"stage", "adjacency_prepare"}, {"task", task_}});
                 *payload = read_(content::Kind::Adjacency, id, task_);
                 auto row = ids(*payload);
                 require(!row.empty() && row.front() == row.size() - 1, "adjacency encoding");

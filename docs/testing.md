@@ -150,3 +150,8 @@ CTest `cpu_profile_fail_closed` 覆盖三类模型手算、区间与舍入、身
 ## V04-3c 静态回放回归
 
 CTest `sst_static_replay` 经 SST 验证 Profile 成本切换、零时长服务、真实值与 Work 失配排空、旧包拒绝变更内容及原生重采。ASan 定向验证和完整 SIFT1M tuning32 的语义证据见 [V04-3c 收口](replay-v0.4.md)。
+
+
+## V04-3d worker 调度回归
+
+CTest `sst_static_replay` 增加同一原生采集包的 1/2/4 worker 回放、手算服务时间线、同刻及零时长、分片重排、配额和 Profile 拒绝、并发失败排空。运行口径及证据见 [V04-3d 收口](replay-v0.4.md#worker-与-cpu-顺序)。

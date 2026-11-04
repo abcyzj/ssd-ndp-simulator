@@ -48,7 +48,12 @@ public:
         return busy_;
     }
 
-public:
+    uint64_t queued() const {
+        return queue_.size();
+    }
+    uint64_t peak_busy() const {
+        return peak_busy_;
+    }
     History<Service>& observations() {
         return services_;
     }
@@ -59,7 +64,7 @@ private:
     EventBridge::Clock now_;
     HostConfig config_;
     std::deque<uint64_t> queue_;
-    uint64_t busy_ = 0;
+    uint64_t busy_ = 0, peak_busy_ = 0;
     History<Service> services_;
     void pump();
 };

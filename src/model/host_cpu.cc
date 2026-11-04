@@ -110,6 +110,8 @@ void HostCpu::pump() {
         runtime_.start(task);
         if (runtime_.state(task) == runtime::State::Failed)
             --busy_;
+        else
+            peak_busy_ = std::max(peak_busy_, busy_);
     }
 }
 } // namespace ndpsim::model

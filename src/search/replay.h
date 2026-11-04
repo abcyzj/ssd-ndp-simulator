@@ -27,7 +27,8 @@ public:
            Observe,
            GraphSearch::Trace,
            GraphSearch::Done,
-           Fail);
+           Fail,
+           std::function<bool()> cancelled);
     void start();
 
 private:
@@ -58,6 +59,7 @@ private:
     GraphSearch::Trace trace_;
     GraphSearch::Done done_;
     Fail fail_;
+    std::function<bool()> cancelled_;
     std::string op_;
     uint64_t position_, end_, local_ = 0, version_ = 0;
     uint64_t task_ = 0;

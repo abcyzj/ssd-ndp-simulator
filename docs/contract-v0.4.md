@@ -26,7 +26,7 @@ python3 tools/v04_contract.py effective-config examples/v04-contract/effective-c
 
 manifest 给出采集运行 ID、采集构建和逻辑语义身份。包来源区分 `native-capture` 与 `synthetic-fixture`，正式运行只允许前者。对象目录固定为 base、graph、queries。内容 SHA256 同时充当对象内容版本。向量文件为连续小端 FP32，width 为维度。图文件按节点 ID 索引，width 为最大邻接长度，每记录有一个小端 uint32 degree 和 width 个小端 uint32 槽，逻辑访问只计 degree 及其有效 ID。queries 文件依 manifest 的原始 query ID 顺序连续存放，原始 ID 到文件行号由该顺序建立。
 
-`index.jsonl` 按 manifest 查询顺序每查询一行。byte offset 从零开始，length 包含各操作行末 LF。偏移连续且覆盖整个 `operations.jsonl`，每分片属于一个查询。尾记录封包条件包括完整查询覆盖、操作和依赖计数、终止原因、分片哈希、决策摘要和最终结果摘要。生产端先写临时包，在计数、预算、验证与无丢失检查后写 tail 并原子发布。预检以单条记录和当前查询活跃元数据流式检查，元数据单文件及单行上限 16 MiB。全量操作流无需载入内存。
+`index.jsonl` 每查询一行，采集器默认按 manifest 查询顺序写入。只要索引与分片同步重排、连续偏移和所有完整性哈希重新核验，就允许改变物理排列。运行的 FIFO 顺序取自独立绑定的查询清单。byte offset 从零开始，length 包含各操作行末 LF。偏移连续且覆盖整个 `operations.jsonl`，每分片属于一个查询。尾记录封包条件包括完整查询覆盖、操作和依赖计数、终止原因、分片哈希、决策摘要和最终结果摘要。生产端先写临时包，在计数、预算、验证与无丢失检查后写 tail 并原子发布。预检以单条记录和当前查询活跃元数据流式检查，元数据单文件及单行上限 16 MiB。全量操作流无需载入内存。
 
 文件和分片 SHA256 按原始字节计算。`decision_sha256` 对该查询按拓扑序的操作逐行摘要，行编码为键排序、ASCII JSON、分隔符 `,` 和 `:` 无空白、LF 结尾。`result_sha256` 等于 FINISH 端口摘要。包 ID 为 SHA256，输入为 ASCII `ndpsim-static-ir/1`、一个 NUL，再拼接 manifest、index、operations 三个 SHA256 的原始 32 字节。尾记录计数与实际值独立核对。执行配置记录此包 ID，Profile 引用使用文件原始 SHA256。
 
@@ -83,6 +83,6 @@ Measurement 的时间统一整数 ns，墙钟必须单调，CPU 区间来自线�
 
 Profile 按算子与桶记录训练 Measurement 哈希、训练 query ID、拟合报告身份、样本数、误差和选型规则。记录 CPU/OS/内存、构建/编译选项、准备上下文、维度、记录数及 worker。特征声明单位与闭区间。线性模型按有序特征数组给出非负系数与截距，分段表使用单特征递增闭上界，从下一整数接续，覆盖全部声明范围。返回有限非负整数 ns，向上取整，检查 uint64 上界，允许零服务异步完成。缺模型、身份不符或越界须在使用点拒绝。预检校验文档内部一致性，Profile 覆盖、训练来源完整性、实际条件绑定及范围门控由模型和 Validator 实现。tuning32 的原始 ID 须与 evaluation128 独立比对，禁止评价数据回流训练。fixture Profile 只用于夹具。
 
-有效配置 schema 冻结新增控制字段。旧配置仍以动态 ir、SSD 和 legacy 费用为默认。静态使用 replay + ir_input。host_memory 首版要求 replay、Host placement、显式 CPU Profile 和 worker-fifo/1；SSD 使用 legacy-ssd/1，native_workers=1 为未启用 worker 策略的规范化值。content_backend 继续单独表达 mmap 或 memory。CPU Profile 可显式用于 replay SSD，准备条件须与 SSD 返回缓冲匹配。mapping_sha256 引用本次完整资源/布局/设备及映射配置，其他继承参数沿用原有效配置和 manifest。配置校验器检查组合，运行接线须进一步核验引用哈希与实际输入。
+有效配置 schema 冻结新增控制字段。旧配置仍以动态 ir、SSD 和 legacy 费用为默认。静态使用 replay + ir_input。host_memory 首版要求 replay、Host placement、显式 CPU Profile 和 worker-fifo/1；SSD 使用 legacy-ssd/1，native_workers=1 为未启用 worker 策略的规范化值。content_backend 继续单独表达 mmap 或 memory。CPU Profile 可显式用于 replay SSD，准备条件须与 SSD 返回缓冲匹配。mapping_sha256 引用本次完整资源/布局/设备及映射配置，其他继承参数沿用原有效配置和 manifest。配置校验器检查组合，运行接线须进一步核验引用哈希与实际输入。驻留 2/4 worker 诊断复用经过单 worker 适用性核验的冻结服务需求，并显式记录诊断用途和实际运行配额。
 
 同语义包可改变合法 Profile、worker/slots/接纳、驻留、布局、设备配置和评分放置并重新调度。数据、图、query 内容/集合/顺序、搜索参数（含语义 chunk）、算法、数值规则、容器/计数或其他影响语义的构建变化必须重采。训练与评价独立采集。detail8、旧动态 IR/events 和采集时序均不能替代全查询静态包。真实 SSD、PCIe、Controller 继续为 configured_unvalidated。
