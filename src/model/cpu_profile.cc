@@ -146,9 +146,13 @@ CpuProfile CpuProfile::load(const std::string& path,
     require(measured == profile.contains("merge_append_table"), "missing or unexpected merge append table");
     if (measured) {
         const auto& table = profile.at("merge_append_table");
+        // The same per-query calls may reuse single-worker service demands
+        // in the fixed diagnostic configurations.
+        const bool matched = replay_workers == 1 && max_inflight == 1;
+        const bool diagnostic = (replay_workers == 2 || replay_workers == 4) && max_inflight == 32;
         require(table.at("package_sha256") == package_sha256 &&
                     actual.preparation_context == "resident_random" &&
-                    replay_workers == 1 && max_inflight == 1,
+                    (matched || diagnostic),
                 "merge append table applicability mismatch", Code::VersionMismatch);
         require((table.at("split") == "fixture") == (training["split"] == "fixture"),
                 "merge append table split mismatch");

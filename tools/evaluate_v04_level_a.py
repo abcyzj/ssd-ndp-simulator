@@ -291,7 +291,8 @@ def verify_append_billing(events, ids, table):
     return dict(calls=calls, cpu_ns=cpu_ns, cpu_fraction=cpu_ns/total_ns if total_ns else None)
 
 
-def replay_billing(args, config, label, data, capture, bound, profile_path, table, row):
+def replay_billing(args, config, label, data, capture, bound, profile_path, table, row, *,
+                   workers=1, concurrency=1):
     # The Level A ledger run only checks charging. Level B/C require separate
     # uninstrumented baselines, repetitions and comparisons.
     output = (args.output/f'{label}-replay').resolve()
@@ -299,8 +300,8 @@ def replay_billing(args, config, label, data, capture, bound, profile_path, tabl
     config_path = output.with_suffix('.json')
     config = dict(config, index=str(Path(config['index']).resolve()),
                   truth=str(Path(config['truth']).resolve()), execution_engine='replay', placement='host', data_provider='host_memory',
-                  order_policy='worker-fifo/1', native_workers=1, max_inflight=1,
-                  host=dict(slots=1, distance_setup=3, distance_rate=4, control_setup=1,
+                  order_policy='worker-fifo/1', native_workers=workers, max_inflight=concurrency,
+                  host=dict(slots=workers, distance_setup=3, distance_rate=4, control_setup=1,
                             control_rate=1, check_units=1, comparison_units=1),
                   parameter_source='configured_unvalidated', event_log=True, device_profile='native-small',
                   output_budget_bytes=2*GIB, simulation_timeout_seconds=600,
@@ -321,7 +322,7 @@ def replay_billing(args, config, label, data, capture, bound, profile_path, tabl
     effective = read(artifact(output, manifest, 'effective-config.json'))
     same((effective['execution_engine'], effective['data_provider'], effective['placement'],
           effective['native_workers'], effective['cpu_slots'], effective['max_inflight']),
-         ('replay', 'host_memory', 'host', 1, 1, 1), label, 'resident replay conditions')
+         ('replay', 'host_memory', 'host', workers, workers, concurrency), label, 'resident replay conditions')
     same((effective['ir_input']['sha256'], effective['cpu_profile']['sha256']),
          (table['package_sha256'], file_hash(profile_path)), label, 'replay package/Profile')
     row['billing'] = verify_append_billing(rows(artifact(output, manifest, 'events.jsonl')),

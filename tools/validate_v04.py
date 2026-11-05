@@ -232,7 +232,43 @@ def command_ok(command, scope):
             f'{scope}: missing or failed process')
 
 
-def native_run(directory, mode, binding, input_identity, split, report, *, stride=1):
+def peak_overlap(intervals):
+    # End before start at the same tick. Zero-duration intervals consume no time.
+    changes = [(tick, delta) for start, end in intervals if start < end
+               for tick, delta in ((start, 1), (end, -1))]
+    active = peak = 0
+    for _, delta in sorted(changes):
+        active += delta
+        peak = max(peak, active)
+    return peak
+
+
+def worker_timeline(results, workers, concurrency, scope):
+    ends = sorted(r['visible_ns'] for r in results)
+    last_start = 0
+    worker_end = [0]*workers
+    for i, row in enumerate(results):
+        offered, admission, start, end = (row[key] for key in
+            ('offered_ns', 'admission_ns', 'worker_start_ns', 'visible_ns'))
+        worker = row['worker']
+        require(0 <= worker < workers and offered == 0 and
+                max(admission, worker_end[worker], last_start) <= start <= end,
+                f'{scope}: invalid worker ownership or FIFO start at query {i}')
+        same(admission, ends[i-concurrency] if i >= concurrency else 0, scope, 'FIFO admission')
+        same((row['worker_wait_ns'], row['latency_ns'], row['admission_wait_ns'],
+              row['offered_latency_ns']), (start-admission, end-admission, admission, end),
+             scope, 'query waiting and latency')
+        last_start = start
+        worker_end[worker] = end
+    peak_admitted = peak_overlap((r['admission_ns'], r['visible_ns']) for r in results)
+    peak_workers = peak_overlap((r['worker_start_ns'], r['visible_ns']) for r in results)
+    require(peak_admitted <= concurrency and peak_workers <= workers, f'{scope}: query quota exceeded')
+    return dict(peak_admitted=peak_admitted, peak_workers=peak_workers, drain_end_ns=ends[-1],
+                worker_wait_ns=sum(r['worker_wait_ns'] for r in results),
+                admission_wait_ns=sum(r['admission_wait_ns'] for r in results))
+
+
+def native_run(directory, mode, binding, input_identity, split, report, *, stride=1, workers=1, concurrency=1):
     manifest = read(directory/'manifest.json')
     scope = f'native {mode}'
     report['inputs'][scope] = dict(manifest_sha256=file_hash(directory/'manifest.json'),
@@ -255,7 +291,7 @@ def native_run(directory, mode, binding, input_identity, split, report, *, strid
     same((measurement['mode'], measurement['split'], measurement['build'], measurement['identity']),
          (mode, split, binding['build'], binding['identity']), scope, 'measurement identity')
     same((measurement['workers'], measurement['max_inflight'], batch['workers'], batch['concurrency']),
-         (1, 1, 1, 1), scope, 'worker/admission quota')
+         (workers, concurrency, workers, concurrency), scope, 'worker/admission quota')
     require(measurement['complete'] is True and measurement['dropped'] == 0 and
             measurement['sample_stride'] == manifest['sample_stride'] == stride and
             measurement['preparation_context'] == 'resident_random' and
@@ -321,6 +357,9 @@ def singleton(records, kind):
 
 def validate(args, report):
     replay, capture = args.replay, args.capture
+    worker_count = getattr(args, 'workers', 1)
+    diagnostic = worker_count > 1
+    concurrency = 32 if diagnostic else 1
     binding_path = capture/'binding.json'
     package = capture/'package'
     receipt = validate_package(package, binding_path)
@@ -382,11 +421,11 @@ def validate(args, report):
     same((effective['execution_engine'], manifest['execution_engine'], effective['placement'],
           effective['data_provider'], effective['native_workers'], effective['cpu_slots'],
           effective['max_inflight'], config['search']),
-         ('replay', 'replay', 'host', 'host_memory', 1, 1, 1, search), 'replay', 'effective config')
+         ('replay', 'replay', 'host', 'host_memory', worker_count, worker_count, concurrency, search), 'replay', 'effective config')
     same((config['execution_engine'], config['placement'], config['data_provider'],
           config['native_workers'], config['max_inflight'], config['host']['slots'], config['order_policy'],
           config['ir_input'], config['cpu_profile']),
-         ('replay', 'host', 'host_memory', 1, 1, 1, effective['order_policy'],
+         ('replay', 'host', 'host_memory', worker_count, concurrency, worker_count, effective['order_policy'],
           effective['ir_input'], effective['cpu_profile']), 'replay', 'recorded/effective configuration')
     same((effective['ir_input']['sha256'], effective['cpu_profile']['sha256']),
          (receipt['package_sha256'], profile_sha), 'replay', 'package/Profile SHA256')
@@ -415,7 +454,8 @@ def validate(args, report):
     native = {}
     baseline_mode = getattr(args, 'baseline_mode', 'uninstrumented')
     for mode, path in [('static_capture', capture), (baseline_mode, args.baseline), ('cpu_sample', args.samples)]:
-        native[mode], measurement = native_run(path, mode, binding, input_identity, split, report)
+        quota = dict(workers=worker_count, concurrency=concurrency) if mode == baseline_mode else {}
+        native[mode], measurement = native_run(path, mode, binding, input_identity, split, report, **quota)
     inventory = compare_inventory(package/'operations.jsonl', identity, measurement)
     report['checks'].append(dict(name='identity_and_contracts', status='passed', sampling_inventory=inventory))
 
@@ -437,9 +477,9 @@ def validate(args, report):
     if detail_refs:
         detail = dict(inputs={})
         for engine, directory in zip(('direct', 'ir'), detail_refs, strict=True):
-            diagnostic = reference(directory, engine, search, input_identity, manifest['element_sha256'],
-                                   detail, subset=subset)
-            for query, (result, trace) in diagnostic.items():
+            detail_rows = reference(directory, engine, search, input_identity, manifest['element_sha256'],
+                                    detail, subset=subset)
+            for query, (result, trace) in detail_rows.items():
                 full_result, full_trace = refs[engine][query]
                 same(trace, full_trace, f'{engine} query {query}', 'detail8 semantic trace')
                 for key in ('top_k', 'expanded', 'insufficient'):
@@ -523,8 +563,9 @@ def validate(args, report):
             n = native[baseline_mode][i]
             same(result['recall_at_k'], n['recall_at_k'], where, 'recall')
             same(result['latency_ns'], result['visible_ns']-result['admission_ns'], where, 'latency')
-            same((result['worker'], result['worker_wait_ns'], result['admission_ns']),
-                 (0, 0, results[i-1]['visible_ns'] if i else 0), where, 'FIFO admission')
+            if not diagnostic:
+                same((result['worker'], result['worker_wait_ns'], result['admission_ns']),
+                     (0, 0, results[i-1]['visible_ns'] if i else 0), where, 'FIFO admission')
             query_report.append(dict(query=query, operations=len(operations[query]), reads=reads,
                 logical_bytes=size, work=work, reference_work=reference_work, expanded=expanded, scored=scored,
                 top_k=result['top_k'], native_cpu_ns=n['thread_cpu_ns'], replay_cpu_ns=cpu,
@@ -547,18 +588,31 @@ def validate(args, report):
             'replay ledger: unexpected device or failure record')
     replay_cpu = sum(r['replay_cpu_ns'] for r in query_report)
     same(workers['cpu_busy_ns'], replay_cpu, 'replay ledger', 'CPU busy time')
+    worker_wait = 0
+    if diagnostic:
+        timeline = worker_timeline(results, worker_count, concurrency, 'replay')
+        cpu_peak = peak_overlap((r['start_ns'], r['end_ns']) for group in services.values() for r in group)
+        same((timeline['peak_admitted'], timeline['peak_workers'], cpu_peak),
+             (summary['peak_inflight'], workers['peak_workers'], workers['cpu_peak_slots']),
+             'replay ledger', 'independent resource peaks')
+        require(0 < cpu_peak <= worker_count, 'replay: CPU slots exceeded or unused')
+        same(summary['admission_limit'], concurrency, 'replay ledger', 'admission limit')
+        worker_wait = timeline['worker_wait_ns']
+        report['worker_resources'] = dict(timeline=timeline, ledger=workers)
+        report['checks'].append(dict(name='worker_and_cpu_slot_quota', status='passed'))
     same([workers[k] for k in ('workers_idle', 'cpu_busy_slots', 'cpu_queued', 'pending_admissions',
                                'cpu_queue_wait_ns', 'cpu_dependency_wait_ns', 'worker_wait_ns')],
-         [1, 0, 0, 0, 0, 0, 0], 'replay ledger', 'worker drain/wait')
+         [worker_count, 0, 0, 0, 0, 0, worker_wait], 'replay ledger', 'worker drain/wait')
     same((workers['workers'], workers['cpu_slots'], workers['max_inflight'], workers['profile_workers'],
           workers['profile_use'], workers['order_policy']),
-         (1, 1, 1, 1, 'matched', effective['order_policy']), 'replay ledger', 'worker configuration')
+         (worker_count, worker_count, concurrency, 1,
+          'diagnostic' if diagnostic else 'matched', effective['order_policy']), 'replay ledger', 'worker configuration')
     same((summary['drain_end_ns'], summary['live_results'], summary['live_content'],
           summary['useful_bytes'], summary['sector_bytes']),
          (summary['end_ns'], 0, 0, 0, 0), 'replay ledger', 'drain and storage bytes')
     same(result_doc['summary'], summary, 'replay ledger', 'batch summary')
     same((summary['queries'], summary['origin_ns'], summary['end_ns'], summary['services']),
-         (len(ids), 0, results[-1]['visible_ns'], sum(map(len, services.values()))),
+         (len(ids), 0, max(r['visible_ns'] for r in results), sum(map(len, services.values()))),
          'replay ledger', 'window/service count')
     report['checks'].append(dict(name='independent_access_service_and_drain_ledger', status='passed'))
     native_rows = native[baseline_mode]
@@ -571,7 +625,7 @@ def validate(args, report):
     for label, window, cpu in [('native', native_ns, native_cpu), ('replay', replay_ns, replay_cpu)]:
         latencies = [r[label+'_latency_ns'] for r in query_report]
         metrics[label] = dict(qps=len(ids)*1e9/window if window else None, window_ns=window, cpu_ns=cpu,
-                              occupancy=cpu/window if window else None,
+                              occupancy=cpu/(window*worker_count) if window else None,
                               p50_ns=quantile(latencies, .5), p95_ns=quantile(latencies, .95))
     metrics['relative_error'] = {
         key: abs(metrics['replay'][key]/metrics['native'][key]-1)
@@ -579,7 +633,8 @@ def validate(args, report):
     metrics['occupancy_delta'] = (metrics['replay']['occupancy']-metrics['native']['occupancy']
                                   if replay_ns else None)
     errors = metrics['relative_error']
-    metrics['single_run_level_c_thresholds_met'] = level_c_thresholds_met(errors)
+    if not diagnostic:
+        metrics['single_run_level_c_thresholds_met'] = level_c_thresholds_met(errors)
     metrics['timing_status'] = 'diagnostic' if native_cpu and replay_ns else 'not_applicable'
 
 

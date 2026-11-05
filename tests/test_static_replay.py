@@ -169,6 +169,9 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
     if invalid == 'profile':
         assert process.returncode != 0 and b'applicability mismatch: workers' in process.stdout
         return
+    if invalid == 'measured quota':
+        assert process.returncode != 0 and b'merge append table applicability mismatch' in process.stdout
+        return
     records = rows(out/'records.jsonl')
     events = rows(out/'events.jsonl')
     if invalid == 'missing measured call':
@@ -365,6 +368,12 @@ def verify(build, output):
     assert slow_count == service_count and [x * 7 for x in fast] == [x * 2 for x in slow]
     measured_top, _, measured_count = run(build, output/'measured-append', 2, measured=True)
     assert measured_top == top and measured_count == service_count
+    for worker_count in (2, 4):
+        parallel_top, _, parallel_count = run(build, output/f'measured-append-w{worker_count}', 2,
+                                              measured=True, workers=worker_count, inflight=32)
+        assert parallel_top == top and parallel_count == service_count
+    run(build, output/'wrong-measured-quota', 2, measured=True, workers=2, inflight=3,
+        invalid='measured quota')
     run(build, output/'missing-measured-append', 2, measured=True, invalid='missing measured call')
     run(build, output/'wrong-value', 2, 'value')
     run(build, output/'wrong-work', 2, 'work')

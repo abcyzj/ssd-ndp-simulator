@@ -155,3 +155,7 @@ CTest `sst_static_replay` 经 SST 验证 Profile 成本切换、零时长服务�
 ## V04-3d worker 调度回归
 
 CTest `sst_static_replay` 增加同一原生采集包的 1/2/4 worker 回放、手算服务时间线、同刻及零时长、分片重排、配额和 Profile 拒绝、并发失败排空。运行口径及证据见 [V04-3d 收口](replay-v0.4.md#worker-与-cpu-顺序)。
+
+## V04-4d 多 worker 诊断
+
+`sst_static_replay` 核对 v4 绑定表在 2/2/32 和 4/4/32 中的逐调用计费，并拒绝诊断配额失配。`v04_validator` 核对乱序完成、同刻释放、错误接纳、同一 worker 重叠、错误等待时间和诊断性能无百分比门槛。全规模验证和报告入口见 [V04-4d](workers-v0.4.md)。

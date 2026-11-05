@@ -21,7 +21,7 @@ python3 tools/bind_v04_merge_append.py \
   --output <new-profile.json>
 ```
 
-在回放配置的 `cpu_profile.path` 和 `cpu_profile.sha256` 显式绑定新文件。表以包 hash、切分、原始 query ID、对应的原生 merge 操作号及 chunk 分段索引定位，核验 chunk 大小及拼接 Work。服务时间取扣除空探针开销后有符号重复值的下中位数。短调用的低信号重复仍保留，若下中位数为负或有符号和低于一计时刻度则拒绝制表。源 Measurement 保留原始重复及质量标记。查表限与采集条件相同的单 worker、单接纳驻留回放。
+在回放配置的 `cpu_profile.path` 和 `cpu_profile.sha256` 显式绑定新文件。表以包 hash、切分、原始 query ID、对应的原生 merge 操作号及 chunk 分段索引定位，核验 chunk 大小及拼接 Work。服务时间取扣除空探针开销后有符号重复值的下中位数。短调用的低信号重复仍保留，若下中位数为负或有符号和低于一计时刻度则拒绝制表。源 Measurement 保留原始重复及质量标记。正式精度查表使用与采集条件相同的单 worker、单接纳驻留回放。D01/D02 可按绑定包复用同一份单 worker 服务需求作诊断，见 [V04-4d](workers-v0.4.md)。
 
 单点 Validator 使用重复的 `--merge-append-measurement` 参数重建表，并按独立搜索与 Work 核对实际服务。整机原生基准另跑。现有独立模型误差入口仍对应 v3 历史报告，正式矩阵的 Level A 汇总分流待接线。
 

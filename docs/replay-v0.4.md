@@ -43,10 +43,10 @@
 
 V04-3d 实现 [PRD §6.4 和 §7.1](prd-v0.4.md#64-静态-ir-输入依赖执行与资源调度) 的驻留调度。前置契约、HostCpu 模型接口、单 worker 回放及原生 worker 行为分别由 V04-2a、V04-3a、V04-3c、V04-1b 提供。
 
-- `worker-fifo/1` 支持 1、2、4 个 worker，`host.slots` 等于 `native_workers`，`max_inflight` 至少为 worker 数。严格单线程配置为 1/1/1，D01/D02 的计划配置为 2/2/32 和 4/4/32。
+- `worker-fifo/1` 支持 1、2、4 个 worker，`host.slots` 等于 `native_workers`，`max_inflight` 至少为 worker 数。严格单线程配置为 1/1/1，D01/D02 的诊断配置为 2/2/32 和 4/4/32。
 - 批次开闸时所有查询已供给，按绑定顺序接纳到上限。每有一条结果可见就接纳下一条。空闲 worker 从队首领取并占有查询直到结果可见。初始空闲 worker 按编号领取，同刻完成的 worker 按 EventBridge 的 continuation 顺序归还。原生线程的实际分配由 OS 决定，原生和模拟分别记录分配。
 - 每个 worker 同时只有一个待完成的 CPU 阶段。评分准备、L2 和拼接逐 chunk 串行，整批得分核验后才允许后继。静态分片按索引读取，活跃查询状态受 worker 数限制。采集线程及物理分片次序独立于运行调度。
 - `results.json` 和 `queries.csv` 记录实际 worker、接纳、领取、结果可见和 worker 等待。驻留 `latency_ns` 从接纳算起，包含 worker 等待。`worker_summary` 汇总配额、峰值、累计 CPU 服务/依赖/排队时间、worker 等待和排空，导出至 `observation.json` 与资源统计。首次失配保留原始 query、批次和 op，清空待领取查询，在途 CPU 服务排空，其他查询停止后继及结果发布。
-- 多 worker 使用冻结单 worker Profile 的阶段服务需求，仍检查来源、身份及模型范围。报告记录 `profile_workers=1` 和 `profile_use=diagnostic`。该配置不建模 OS 抢占、缓存争用或异构核分配。正式 2/4 worker 诊断、独立 CPU 精度验收和 B/C 静态 SSD 实验分别见任务清单。
+- 多 worker 使用冻结单 worker Profile 的阶段服务需求，仍检查来源、身份及模型范围。报告记录 `profile_workers=1` 和 `profile_use=diagnostic`。该配置不建模 OS 抢占、缓存争用或异构核分配。正式 2/4 worker 诊断见 [V04-4d](workers-v0.4.md)，独立 CPU 精度验收和 B/C 静态 SSD 实验见任务清单。
 
 本轮使用 11 查询合成夹具，原生 4 worker 采集后由独立 Python oracle 核对，再以 1/1/1、2/2/3 和 4/4/5 回放。常数夹具每条查询 28 段 × 2 ns，三种批次窗口为 616、336、168 ns，累计 CPU 服务均为 616 ns，累计 worker 等待分别为 0、280、112 ns。夹具核对同 worker 串行、整批门控、同刻分配、零时长、重排后记录逐字节一致、配额和 Profile 失配、并发中止及排空。根 CTest 覆盖继承的 HostCpu 依赖与 SSD 映射。本轮证据见 `results/v0.4/workers-v043d/run1/`。

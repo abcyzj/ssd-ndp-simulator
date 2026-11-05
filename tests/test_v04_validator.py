@@ -21,7 +21,7 @@ from evaluate_v04_level_bc import check_repeats, reduce_metrics
 from simulation_input import load_v2
 from test_benchmark_artifacts import fixture
 from test_static_replay import modified_package
-from validate_v04 import level_c_thresholds_met
+from validate_v04 import level_c_thresholds_met, peak_overlap, worker_timeline
 from v04_contract import STAGES, file_hash, package_hash
 
 
@@ -51,7 +51,32 @@ def admit_fixture_capture(capture):
     return binding_path, package, bound, tail
 
 
+def check_worker_diagnostic():
+    def query(worker, admission, start, end):
+        return dict(worker=worker, offered_ns=0, admission_ns=admission, worker_start_ns=start,
+                    visible_ns=end, worker_wait_ns=start-admission, latency_ns=end-admission,
+                    admission_wait_ns=admission, offered_latency_ns=end)
+
+    # Query 1 (the second offered query) completes before query 0.
+    timeline = [query(0, 0, 0, 10), query(1, 0, 0, 4), query(1, 4, 4, 7)]
+    assert worker_timeline(timeline, 2, 2, 'fixture') == dict(
+        peak_admitted=2, peak_workers=2, drain_end_ns=10, worker_wait_ns=0, admission_wait_ns=4)
+    assert peak_overlap([(0, 4), (0, 10), (4, 7), (4, 4)]) == 2
+    for altered, expected in [
+        ([*timeline[:2], query(1, 0, 4, 7)], 'FIFO admission'),
+        ([*timeline[:2], query(0, 4, 4, 7)], 'worker ownership'),
+        ([*timeline[:2], dict(timeline[2], worker_wait_ns=1)], 'waiting and latency'),
+    ]:
+        try:
+            worker_timeline(altered, 2, 2, 'fixture')
+        except ValueError as error:
+            assert expected in str(error), error
+        else:
+            raise AssertionError(f'accepted invalid worker timeline: {expected}')
+
+
 def run(out, build):
+    check_worker_diagnostic()
     assert level_c_thresholds_met(dict(qps=.01, cpu_ns=.10))
     assert not level_c_thresholds_met(dict(qps=.01, cpu_ns=.16))
     assert not level_c_thresholds_met(dict(qps=.01, cpu_ns=None))
@@ -63,6 +88,9 @@ def run(out, build):
     assert verdict['native_median']['qps'] == 100
     assert verdict['relative_error']['qps'] == 0
     assert (verdict['B'], verdict['C']) == ('failed', 'failed')
+    diagnostic = reduce_metrics(native, measured, diagnostic=True)
+    assert 'B' not in diagnostic and 'C' not in diagnostic
+    assert math.isclose(diagnostic['replay_minus_native_fraction']['cpu_ns'], .16)
     boundary = reduce_metrics(native, dict(native[1], qps=90, cpu_ns=115, p50_ns=85, p95_ns=240))
     assert (boundary['B'], boundary['C']) == ('passed', 'passed')
     commands = []
