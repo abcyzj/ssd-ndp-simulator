@@ -110,7 +110,7 @@ def run(out, build):
     index = inputs/'index'
     index.mkdir()
     graph = index/'adjacency.u32'
-    graph.write_bytes(struct.pack('<16I', 3, 1, 1, 0, 1, 2, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0))
+    graph.write_bytes(struct.pack('<16I', 3, 1, 2, 3, 1, 2, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0))
     mapping = index/'nodes.u32'
     mapping.write_bytes((data/'base.ids.u32').read_bytes())
     lock = load(LOCK)
@@ -214,6 +214,46 @@ def run(out, build):
         cfg = out/(engine+'-config.json')
         write_json(cfg, settings)
         call('run_graph.py', '--config', cfg, '--data', data, '--build', build, '--output', out/engine)
+
+    # Old-cost SSD replay exercises the static gates without changing the
+    # physical timing or charged resource ledger of either legacy engine.
+    def physical_signature(directory):
+        result = load(directory/'results.json')
+        per_query = ('query', 'start_ns', 'end_ns', 'latency_ns', 'expanded', 'top_k',
+                     'decision_digest_fnv1a64')
+        signature = {'summary': result['summary'],
+                     'queries': [[r[k] for k in per_query] for r in result['queries']]}
+        shared = {'device_profile', 'initial_state', 'ordinary_storage', 'local_request',
+                  'local_storage', 'buffer_summary', 'link_summary', 'path_summary',
+                  'read_submit', 'read_complete', 'link', 'message', 'credit',
+                  'service', 'controller_service', 'decision', 'score_visible'}
+        with (directory/'events.jsonl').open() as stream:
+            for row in map(json.loads, stream):
+                kind = row['type']
+                if kind in shared:
+                    row.pop('task', None)  # Runtime handles are run-local.
+                    if kind == 'score_visible':
+                        row = {k: row[k] for k in ('query', 'time_ns', 'scores')}
+                    signature.setdefault(kind, []).append(row)
+        return signature
+
+    controller = load(ROOT/'configs/experiments/controller.json')['controller']
+    for placement in ('host', 'controller'):
+        legacy = {}
+        for engine in ('direct', 'ir', 'replay'):
+            label = f'legacy-{placement}-{engine}'
+            cfg = out/(label+'-config.json')
+            settings = dict(config, placement=placement, controller=controller, execution_engine=engine)
+            if engine == 'replay':
+                settings.update(data_provider='ssd', order_policy='legacy-ssd/1', native_workers=1,
+                                allow_replay_fixture=True, fixture_host=host, ir_binding=str(binding_path),
+                                ir_input=dict(path=str(package), sha256=tail['package_sha256']))
+            write_json(cfg, settings)
+            call('run_config.py', '--config', cfg, '--data', data, '--build', build, '--output', out/label)
+            legacy[engine] = physical_signature(out/label)
+        for key in legacy['replay']:
+            assert legacy['replay'][key] == legacy['ir'][key], (placement, key)
+            assert legacy['replay'][key] == legacy['direct'][key], (placement, key)
 
     replay = out/'replay'
     repeat = out/'replay-repeat'

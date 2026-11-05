@@ -160,6 +160,28 @@ int main(int argc, char** argv) {
     };
     for (const auto* version : {"ndpsim-cpu-profile/1", "ndpsim-cpu-profile/2"})
         changed("retired version", [version](auto& d) { d["format"] = version; });
+    auto ssd_binding = actual;
+    ssd_binding.preparation_context = "ssd_return_buffer";
+    auto configured = fixture;
+    configured["applicability"]["preparation_context"] = "ssd_return_buffer";
+    configured["models"][0]["samples"] = 0;
+    configured["models"][0]["error"] = nullptr;
+    auto configured_profile = load_raw(configured.dump(), ssd_binding);
+    check(configured_profile.estimate("SCORE_L2", "score_prepare", {}, {{"vectors", 1}}) == 3,
+          "configured SSD preparation");
+    auto resident_configured = configured;
+    resident_configured["applicability"]["preparation_context"] = "resident_random";
+    rejects("unmeasured resident preparation", [&] { load(resident_configured); });
+    for (bool invalid_error : {false, true}) {
+        auto bad = configured;
+        if (invalid_error)
+            bad["models"][0]["error"] = fixture["models"][0]["error"];
+        else {
+            bad["models"][1]["samples"] = 0;
+            bad["models"][1]["error"] = nullptr;
+        }
+        rejects("invalid configured CPU provenance", [&] { load_raw(bad.dump(), ssd_binding); });
+    }
     auto boosted = fixture;
     auto& dedup = boosted["models"][2];
     dedup["features"] = table["features"];

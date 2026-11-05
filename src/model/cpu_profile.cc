@@ -173,6 +173,12 @@ CpuProfile CpuProfile::load(const std::string& path,
         require(stages.count(key) &&
                     (actual.preparation_context != "resident_random" || key.second != "state"),
                 label + ": invalid model key for preparation context");
+        const bool configured = row.at("samples") == 0;
+        require(configured == row.at("error").is_null() &&
+                    (!configured || (actual.preparation_context == "ssd_return_buffer" &&
+                                     (key.second == "state" || key.second == "score_prepare" ||
+                                      key.second == "adjacency_prepare"))),
+                label + ": invalid CPU cost sample provenance");
         auto [it, inserted] = data->models.try_emplace(key);
         require(inserted, label + ": duplicate model key");
         auto& entry = it->second;

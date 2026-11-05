@@ -74,6 +74,27 @@ class ContractTest(unittest.TestCase):
         self.reseal(lambda index, shards: None)
         self.assertEqual(self.validate(), report)
 
+    def test_configured_ssd_cpu_provenance(self):
+        profile = load(self.root/'cpu-profile.json')
+        profile['applicability']['preparation_context'] = 'ssd_return_buffer'
+        preparation = profile['models'][0]
+        self.assertEqual(preparation['stage'], 'score_prepare')
+        preparation.update(samples=0, error=None)
+        validate_profile(profile)
+        for context, stage, samples, error in [
+            ('resident_random', 'score_prepare', 0, None),
+            ('ssd_return_buffer', 'score_l2', 0, None),
+            ('ssd_return_buffer', 'score_prepare', 1, None),
+            ('ssd_return_buffer', 'score_prepare', 0,
+             dict(mae_ns=0, relative_p50=0, relative_p95=0)),
+        ]:
+            altered = copy.deepcopy(profile)
+            altered['applicability']['preparation_context'] = context
+            altered['models'][0].update(stage=stage, samples=samples, error=error)
+            with self.subTest(context=context, stage=stage, samples=samples, error=error):
+                with self.assertRaisesRegex(ValueError, 'provenance'):
+                    validate_profile(altered)
+
     def test_bound_content_changes(self):
         with (self.root/'base.bin').open('r+b') as stream:
             stream.write(b'\x01')

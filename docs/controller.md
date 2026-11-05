@@ -44,3 +44,7 @@ admission_limit = min(max_inflight, floor((C - W) / Q))
 
 失败注入覆盖 Open 到达、query staging 完成、Score 到达、input staging 完成、功能执行、result-write 完成六个安全边界。失败发送一次有计费的 Error，停止本块后续服务；相关资源在安全边界释放，Error 到达后传播真实失败根因。早 Close 仍等同 query 其他 chunk 排空。LocalReads 在提交前拒绝的参数/能力错误也走块失败清理；提交后的 BackendFailure 保持终止实验语义，不在活跃 NAND 事务下伪造回滚或继续运行。
 
+
+## V0.4 静态接线
+
+[V04-5a](offload-v0.4.md)将静态语义批次接入上述 Open/Score/Close 路径。可选逐批 Work 回调用于汇总本次真实算子计数，实际分块继续由 Controller 的容量规则产生。旧调用者省略该回调。Host Profile 只计 Host 阶段，Controller 算术和缓冲服务继续使用显式硬件参数。

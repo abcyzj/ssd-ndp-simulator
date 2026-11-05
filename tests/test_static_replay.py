@@ -70,7 +70,8 @@ def modified_package(source, path, field):
 
 def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'binding.json',
         package=FIXTURE/'package', stale=False, expected_operations=38, expected_reads=10,
-        workers=1, inflight=1, profile_workers=1, invalid=None, measured=False):
+        workers=1, inflight=1, profile_workers=1, invalid=None, measured=False,
+        ssd=None, capacity=16384, legacy=False):
     out.mkdir()
     binding = read(binding_path)
     if field:
@@ -98,6 +99,10 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
     # A constant model still needs a declared, bounded feature.
     for model in profile['models']:
         model['features'] = [dict(name='dimensions', unit='count', minimum=base['width'], maximum=base['width'])]
+    if ssd and invalid != 'resident profile on ssd':
+        profile['applicability']['preparation_context'] = 'ssd_return_buffer'
+        for op in ('MARK_SCORED', 'MARK_EXPANDED'):
+            profile['models'].append(dict(profile['models'][0], operator=op, stage='state'))
     if measured:
         profile['format'] = 'ndpsim-cpu-profile/4'
         profile['models'] = [row for row in profile['models'] if row['stage'] != 'merge_append']
@@ -132,6 +137,11 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
                   vector_file=paths['base'], graph_file=paths['graph'], query_file=paths['queries'],
                   content_backend=backend, output_budget_bytes=2**20, event_log=1,
                   records=str(out/'records.jsonl'), output=str(out/'events.jsonl'))
+    if legacy:
+        del config['cpu_profile']
+    if ssd:
+        config.update(placement=ssd, data_provider='ssd', order_policy='legacy-ssd/1')
+        params.update(placement=ssd, capacity_bytes=capacity)
     snapshot = out/'snapshot'
     snapshot.mkdir()
     if invalid == 'quota':
@@ -166,6 +176,9 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=45)
     (out/'sst.log').write_bytes(process.stdout)
     write(out/'command.json', dict(argv=argv, exit_code=process.returncode))
+    if invalid == 'resident profile on ssd':
+        assert process.returncode != 0 and b'applicability mismatch: preparation_context' in process.stdout
+        return
     if invalid == 'profile':
         assert process.returncode != 0 and b'applicability mismatch: workers' in process.stdout
         return
@@ -189,8 +202,15 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
         assert max(r['op'] for r in submissions if r['query'] == 1) == target['op']
         assert set(r['query'] for r in submissions) == set(range(1, workers+1))
         assert not any(r['type'] == 'query_result' for r in records)
+        if ssd == 'controller':
+            messages = [row for row in records if row['type'] == 'message']
+            assert [m['kind'] for m in messages] == [1, 2, 3, 4, 5, 6]
+            assert [r['used'] for r in records if r['type'] == 'credit'][-1] == 0
         return
     assert process.returncode == 0, process.stdout
+    if ssd:
+        return records, events
+
     resident = next(row for row in records if row['type'] == 'resident_summary')
     assert resident['ssd_requests'] == resident['active_sessions'] == 0
     assert resident['peak_sessions'] == min(len(ids), workers)
@@ -357,6 +377,61 @@ def worker_replay(build, output):
                 concurrent_failure_drained=True, quota_and_profile_mismatch_rejected=True)
 
 
+def ssd_replay(build, output):
+    host, host_events = run(build, output/'ssd-host', 2, ssd='host')
+    controller, controller_events = run(build, output/'ssd-controller', 2, ssd='controller')
+    semantic = lambda events: [{k: v for k, v in row.items() if k != 'time_ns'}
+                               for row in events if row['type'] == 'replay_verified']
+    assert semantic(host_events) == semantic(controller_events)
+    host_reads = [r for r in host_events if r['type'] == 'read_complete']
+    assert host_reads and not any(r['type'] == 'message' for r in host)
+    assert not any(r['type'] == 'read_submit' and r['kind'] == 'vector' for r in controller_events)
+    assert not any(r['type'] == 'service' and r['kind'] == 'distance' for r in controller)
+    for q in (1, 2):
+        messages = [r for r in controller if r['type'] == 'message' and r['query'] == q]
+        score_times = [r['time_ns'] for r in controller_events if r['type'] == 'score_visible'
+                       and r['query'] == q]
+        assert all(m['arrived_ns'] <= t for m, t in zip(
+            (m for m in messages if m['kind'] == 4), score_times, strict=True))
+        assert messages[-1]['kind'] == 6
+        if q == 1:
+            assert messages[-1]['arrived_ns'] <= next(
+                r['start_ns'] for r in controller if r['type'] == 'query_result' and r['query'] == 2)
+    run(build, output/'ssd-wrong-context', 2, ssd='host', invalid='resident profile on ssd')
+    run(build, output/'ssd-host-bad-work', 2, field='work', ssd='host')
+    run(build, output/'ssd-controller-bad-return', 2, field='value', ssd='controller')
+    run(build, output/'ssd-legacy-bad-return', 2, field='value', ssd='controller', legacy=True)
+
+    # One physical vector per Controller chunk, with semantic chunks of two.
+    capture = output/'ssd-remap-capture'
+    capture.mkdir()
+    files, expected, truth, ids = native_fixture(capture)
+    binary = build/'ndpsim_native'
+    shape = dict(count=6, dimensions=2, queries=11, degree=4)
+    search = dict(entry=0, k=4, width=4, batch=2, budget=3, chunk=2)
+    binding = binding_for(build_identity(binary, digest(binary.read_bytes())),
+                          list(zip(map(Path, files[::2]), files[1::2])), shape, search)
+    binding['source'] = 'synthetic-fixture'
+    shards = capture/'shards'
+    shards.mkdir()
+    argv = [str(binary), *map(str, (6, 2, 11, 4, 4, 0, 4, 4, 2, 3, 2, 1, 1)), *files,
+            'static_capture', str(shards), str(2**20), str(2**16), '2']
+    process = subprocess.run(argv, capture_output=True, timeout=30)
+    write(capture/'command.json', dict(argv=argv, exit_code=process.returncode))
+    assert process.returncode == 0, process.stderr
+    report = json.loads(process.stdout)
+    package = seal(capture, shards, binding, report, Budget(2**20))
+    kwargs = dict(binding_path=capture/'binding.json', package=package)
+    _, host_events = run(build, output/'ssd-remap-host', 2, ssd='host', **kwargs)
+    records, controller_events = run(build, output/'ssd-remap-controller', 2, ssd='controller',
+                                     capacity=600, **kwargs)
+    assert semantic(host_events) == semantic(controller_events)
+    assert next(r for r in records if r['type'] == 'buffer_summary')['chunk_size'] == 1
+    assert any(r['chunks'] > 1 for r in controller_events if r['type'] == 'replay_controller_work')
+    assert all(r['top_k'] == q['top_k'] for r, q in zip(
+        (r for r in records if r['type'] == 'query_result'), report['queries'], strict=True))
+
+
 def verify(build, output):
     top, fast, service_count = run(build, output/'fast', 2)
     slow_top, slow, slow_count = run(build, output/'slow', 7, backend='memory')
@@ -378,6 +453,7 @@ def verify(build, output):
     run(build, output/'wrong-value', 2, 'value')
     run(build, output/'wrong-work', 2, 'work')
     recapture(build, output)
+    ssd_replay(build, output)
     workers = worker_replay(build, output)
     write(output/'checks.json', dict(top_k=top, fast_ns=fast, slow_ns=slow,
                                     cpu_services=service_count, value_and_work_fail_drained=True, workers=workers))

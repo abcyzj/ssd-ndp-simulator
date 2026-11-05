@@ -484,6 +484,11 @@ def validate_profile(profile):
                 'duplicate or invalid model key')
         require(profile['applicability']['preparation_context'] != 'resident_random'
                 or stage != 'state', 'resident preparation already owns scored/expanded insertion')
+        configured = entry['samples'] == 0
+        require(configured == (entry['error'] is None) and
+                (not configured or (profile['applicability']['preparation_context'] == 'ssd_return_buffer'
+                                    and stage in ('state', 'score_prepare', 'adjacency_prepare'))),
+                'invalid CPU cost sample provenance')
         seen.add(key)
         features, model = entry['features'], entry['model']
         require(key not in split_keys or model['kind'] == 'linear', 'split merge requires linear models')
@@ -549,6 +554,8 @@ def validate_config(config):
             'invalid order policy for data provider')
     require((resident and config['cpu_slots'] == workers <= config['max_inflight']) or
             (not resident and workers == 1), 'worker/slot/admission mismatch')
+    require(not replay or resident or config['cpu_slots'] == config['max_inflight'] == 1,
+            'SSD replay requires one Host slot and one admission slot')
     require(replay or config['cpu_profile'] is None, 'CPU Profile requires explicit replay')
     return dict(engine=config['execution_engine'], order_policy=config['order_policy'])
 

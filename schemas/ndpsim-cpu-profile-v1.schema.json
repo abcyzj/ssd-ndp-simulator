@@ -510,31 +510,38 @@
           },
           "samples": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 0,
             "maximum": 18446744073709551615
           },
           "error": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "mae_ns",
-              "relative_p50",
-              "relative_p95"
-            ],
-            "properties": {
-              "mae_ns": {
-                "type": "number",
-                "minimum": 0
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "mae_ns",
+                  "relative_p50",
+                  "relative_p95"
+                ],
+                "properties": {
+                  "mae_ns": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "relative_p50": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "relative_p95": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
               },
-              "relative_p50": {
-                "type": "number",
-                "minimum": 0
-              },
-              "relative_p95": {
-                "type": "number",
-                "minimum": 0
+              {
+                "const": null
               }
-            }
+            ]
           },
           "selection_rule": {
             "type": "string",

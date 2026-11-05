@@ -25,3 +25,7 @@ Graph CLI 的 direct 和动态 IR 拒绝显式 Profile。[V04-3c](replay-v0.4.md
 同一评分 Work 切换 Profile 得到 4 和 3 ns。缺模型的任务和依赖任务失败，独立任务完成 3 ns 与 0 ns 两笔服务，失败任务无 CPU 服务账本记录。另用锁定 Python 预检三模型 Profile 和 replay 有效配置，并分别通过 Graph CLI、SST 对省略 engine、显式 direct、显式动态 ir 验证六个拒绝实例。
 
 证据目录为 `results/v0.4/cpu-profile-v043a/run2/`，保存命令及退出码、构建和测试日志、负例输出、输入/源码/依赖/构建及产物 SHA256。证据范围为接口、失败关闭和继承回归。真实拟合、独立精度、全量静态执行及完整 AC-04-09 仍待相应任务。
+
+## SSD 返回缓冲条件预测
+
+[V04-5a](offload-v0.4.md)在显式 SSD 静态路径启用 preparation_context=ssd_return_buffer。准备与 state 阶段的配置假设用 samples=0、error=null、明确的 selection_rule 标识，允许的阶段为 score_prepare、adjacency_prepare、state。Python 和 C++ 拒绝其他阶段、驻留上下文或 sample/error 不一致的组合。已有实测模型继续保留正样本数与误差对象。模型的构建、硬件和特征范围仍须匹配。

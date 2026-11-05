@@ -311,7 +311,7 @@ void Controller::fail_chunk(const std::shared_ptr<Session>& s,
     });
 }
 runtime::Handle Controller::chunk(const std::shared_ptr<Session>& s,
-                                  std::vector<content::Selection> selections) {
+                                  std::vector<content::Selection> selections, ScoreWork observe_work) {
     ++s->outstanding;
     auto c = std::make_shared<Chunk>();
     c->query = s->query;
@@ -325,7 +325,7 @@ runtime::Handle Controller::chunk(const std::shared_ptr<Session>& s,
     op.query = s->query;
     op.inputs = {s->opened};
     op.needs_return = true;
-    op.evaluate = [this, s, c](const auto&) {
+    op.evaluate = [this, s, c, observe_work = std::move(observe_work)](const auto&) {
         try {
             inject("evaluate", {s->query, c->task, now_()});
             auto vectors =
@@ -339,6 +339,8 @@ runtime::Handle Controller::chunk(const std::shared_ptr<Session>& s,
                 throw Error(Code::InvalidArgument, "L2 work/buffer bound mismatch");
             if (observe_score)
                 observe_score(s->query, c->chunk, result);
+            if (observe_work)
+                observe_work(result.work);
             c->result = std::move(result.bytes);
             return c->result;
         } catch (const std::exception& e) {
@@ -480,7 +482,8 @@ runtime::Handle Controller::chunk(const std::shared_ptr<Session>& s,
     };
     return runtime_.submit(std::move(op));
 }
-runtime::Handle Controller::score(uint64_t q, const std::vector<content::Selection>& selections) {
+runtime::Handle Controller::score(uint64_t q, const std::vector<content::Selection>& selections,
+                                  ScoreWork observe_work) {
     auto it = sessions_.find(q);
     if (it == sessions_.end() || it->second->closing || selections.empty())
         throw Error(Code::InvalidArgument, "score without open/after close/empty");
@@ -498,7 +501,7 @@ runtime::Handle Controller::score(uint64_t q, const std::vector<content::Selecti
     std::vector<runtime::Handle> chunks;
     for (size_t i = 0; i < selections.size(); i += chunk_size_) {
         auto end = std::min(selections.size(), i + size_t(chunk_size_));
-        chunks.push_back(chunk(s, {selections.begin() + i, selections.begin() + end}));
+        chunks.push_back(chunk(s, {selections.begin() + i, selections.begin() + end}, observe_work));
     }
     runtime::Operation op;
     op.query = q;

@@ -20,6 +20,7 @@ V0.4 新路径已修订为原生真实搜索插桩采集完整静态 IR，随后
 | V0.4 Profiler 四档、采样和完整静态包 | [V04-2b收口](profiler-v0.4.md) |
 | V0.4 全规模训练采集与 A/B/A | [V04-2c收口](training-v0.4.md) |
 | V0.4 CPU Profile 估计、身份绑定与失败关闭 | [V04-3a收口](cpu-profile-v0.4.md) |
+| V0.4 静态 SSD B/C 与盘控算力扫描 | [V04-5a 条件预测](offload-v0.4.md) |
 | V0.4 训练拟合、模型选择与冻结 | [V04-3b收口](cpu-fit-v0.4.md) |
 | V0.4 静态回放、内存驻留及 worker 调度 | [V04-3c收口](replay-v0.4.md)、[V04-3d收口](replay-v0.4.md#worker-与-cpu-顺序) |
 | V0.4 单点 Validator、报告及对抗夹具 | [V04-4a收口](validator-v0.4.md) |

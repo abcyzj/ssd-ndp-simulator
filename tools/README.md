@@ -66,3 +66,7 @@ build/delivery/bench_host_cpu
 `generate_ir_schema.py --check` 核对 schema/能力目录；`compare_engines.py` 独立比较同 placement 的 direct/ir 或 statistics/detail；`ir_frontend.py`、`stream_statistics.py` 是现行共用模块。
 
 V0.3 阶段工具的职责、完整52条门槛和复现入口统一见 [V0.3 工具索引](archive/v0.3/README.md)。这些工具仍在原路径供 CTest、导入和 V0.4 继承回归调用；不按版本名迁移有效实现。新 V0.4 验收入口尚待实现。
+
+## V0.4 SSD 条件预测
+
+evaluate_v04_offload.py 运行并核验固定 O01～O04，保存同包 SSD Host 参照与 Controller 0.5×/1×/2× 算力扫描。需要已准备完整输入、冻结后主配置采集包、冻结 tuning32 v3 模型及拟合报告、模拟构建。正式条件预测另传两点 Level A/B/C 前提报告。配置成本来源、命令及产物见 [V04-5a](../docs/offload-v0.4.md)。

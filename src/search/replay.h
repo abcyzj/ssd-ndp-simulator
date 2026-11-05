@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ir/schema.h"
+#include "model/controller.h"
 #include "model/host_cpu.h"
 #include "search/graph.h"
 #include <fstream>
@@ -24,6 +25,9 @@ public:
            ir::Json index,
            std::function<content::Bytes()> load_query,
            Read,
+           GraphSearch::Read ssd_read,
+           model::Controller*,
+           bool legacy_cost,
            Observe,
            GraphSearch::Trace,
            GraphSearch::Done,
@@ -38,10 +42,22 @@ private:
     void guard(const std::function<void()>&);
     void advance();
     void score_chunk();
+    void controller_score();
+    void legacy_host_score();
+    void reserve_legacy_control();
+    void score_ready();
+    void init_query();
+    void finish();
+    void append_scores(Bytes, size_t, std::function<void()>);
+    void mark(const std::vector<uint32_t>&, std::set<uint32_t>&);
+    void await(runtime::Handle, std::function<void(Bytes)>);
+    void await_all(std::vector<runtime::Handle>, std::function<void(std::vector<Bytes>)>);
     void verify(const Bytes&, const std::vector<uint32_t>&, size_t, const Work& = {});
     void state(const std::vector<uint32_t>&);
     void access(const char*, const std::vector<uint32_t>&, uint64_t);
     void service(const char* stage, model::CpuFeatures, std::function<operators::Result()>, Next);
+    void service(const char*, model::CpuFeatures, model::HostCpu::Evaluate, Next,
+                 std::vector<runtime::Handle>);
     void emit(ir::Json);
     static std::vector<uint32_t> score_ids(const Bytes&);
 
@@ -55,6 +71,14 @@ private:
     std::function<Bytes()> load_query_;
     Bytes query_bytes_, rank_, batch_, joined_;
     Read read_;
+    GraphSearch::Read ssd_read_;
+    model::Controller* controller_;
+    bool legacy_cost_;
+    struct LegacyControl {
+        runtime::Handle gate, service;
+        model::HostCpu::Evaluate evaluate;
+    };
+    std::shared_ptr<LegacyControl> legacy_control_;
     Observe observe_;
     GraphSearch::Trace trace_;
     GraphSearch::Done done_;
@@ -69,5 +93,7 @@ private:
     std::vector<Bytes> vectors_;
     std::vector<std::vector<uint32_t>> neighbors_;
     Work score_work_;
+    Bytes returned_scores_;
+    std::vector<Bytes> returned_adjacency_;
 };
 } // namespace ndpsim::search

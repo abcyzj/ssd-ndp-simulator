@@ -131,7 +131,8 @@ public:
     // Passive semantic batch -> actual chunk Runtime task association.
     std::function<void(uint64_t, uint64_t)> bind_chunk;
     std::function<void(uint64_t, uint64_t, const operators::Result&)> observe_score;
-    runtime::Handle score(uint64_t query, const std::vector<content::Selection>&);
+    using ScoreWork = std::function<void(const operators::Work&)>;
+    runtime::Handle score(uint64_t query, const std::vector<content::Selection>&, ScoreWork = {});
     runtime::Handle close(uint64_t query);
     // Trusted composite failure boundary: wait for every issued chunk/reply.
     // Does not close/upload the session or add target service. Always asynchronous.
@@ -236,7 +237,7 @@ private:
     transport::Message message(transport::Kind, const Session&, uint64_t task) const;
     void stage(content::Context, const std::string&, uint64_t, std::function<void()>);
     void inject(const std::string&, content::Context);
-    runtime::Handle chunk(const std::shared_ptr<Session>&, std::vector<content::Selection>);
+    runtime::Handle chunk(const std::shared_ptr<Session>&, std::vector<content::Selection>, ScoreWork);
     void fail_chunk(const std::shared_ptr<Session>&,
                     const std::shared_ptr<Chunk>&,
                     const std::exception&);

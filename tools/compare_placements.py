@@ -21,12 +21,12 @@ def event_rows(path):
             yield json.loads(line)
 
 
-def inspect(path):
+def inspect(path, *, check_host_service=None):
     with ExitStack() as files:
-        return _inspect(path, files)
+        return _inspect(path, files, check_host_service)
 
 
-def _inspect(path, files):
+def _inspect(path, files, check_host_service):
     path = Path(path)
     c = json.loads((path/'config.json').read_text())
     manifest = json.loads((path/'manifest.json').read_text())
@@ -84,6 +84,10 @@ def _inspect(path, files):
     from simulation_input import FileRows
     graph = files.enter_context(FileRows(graph_path, m['degree']+1, adjacency=True))
     cfg, decisions, expected_nodes, chunks = c['search'], [], {}, {}
+    visible_by_query = defaultdict(list)
+    results_by_query = {r['query']: r for r in by('query_result')}
+    for event in by('score_visible'):
+        visible_by_query[event['query']].append(event)
     for q, query in enumerate(queries, 1):
         seen, expanded = {}, set()
         batches = [[cfg['entry']]]
@@ -101,7 +105,7 @@ def _inspect(path, files):
             chosen = [v['id'] for v in ranking[:cfg['width']] if v['id'] not in expanded][:min(cfg['batch'], cfg['budget']-len(expanded))]
             decisions.append(dict(query=q, candidates=ranking[:cfg['width']], expand=chosen))
             if not chosen:
-                result = next(e for e in by('query_result') if e['query']==q)
+                result = results_by_query[q]
                 scores_equal(result['top_k'], ranking[:cfg['k']])
                 assert result['expanded']==len(expanded) and result['insufficient']==(len(seen)<cfg['k'])
                 assert result['latency_ns']==result['end_ns']-result['start_ns']>0
@@ -118,7 +122,7 @@ def _inspect(path, files):
             size = min(cfg['chunk'], (cc['capacity_bytes']-4*m['dimensions']-64-cc['scratch_bytes'])//per)
             assert size>0
             chunks[q] = [batch[i:i+size] for batch in batches for i in range(0, len(batch), size)]
-            visible = [e for e in by('score_visible') if e['query']==q]
+            visible = visible_by_query[q]
             assert len(visible)==len(batches)
             for e, batch in zip(visible, batches):
                 scores_equal(e['scores'], [dict(id=n, distance=seen[n]) for n in batch])
@@ -163,10 +167,13 @@ def _inspect(path, files):
     assert summary['live_results']==summary['live_content']==0
     assert summary['sector_bytes']==ordinary and summary['useful_bytes']==useful
     assert by('path_summary')[0]['ordinary_dma_bytes']==ordinary
-    for e in by('service'):
-        h = c['host']; units = e['flops'] if e['kind']=='distance' else e['checks']*h['check_units']+e['comparisons']*h['comparison_units']
-        rate = h[e['kind']+'_rate']
-        assert e['end_ns']-e['start_ns']==h[e['kind']+'_setup']+(units+rate-1)//rate
+    if check_host_service is None:
+        for e in by('service'):
+            h = c['host']; units = e['flops'] if e['kind']=='distance' else e['checks']*h['check_units']+e['comparisons']*h['comparison_units']
+            rate = h[e['kind']+'_rate']
+            assert e['end_ns']-e['start_ns']==h[e['kind']+'_setup']+(units+rate-1)//rate
+    else:
+        check_host_service(by('service'))
     # Every actual link transfer has precisely one enqueue/start/arrival and one fee.
     assert len(platforms)==len(by('message'))
     local_sectors = 0
@@ -176,18 +183,37 @@ def _inspect(path, files):
     else:
         assert not host_vectors, 'controller issued ordinary vector DMA'
         assert not any(e['kind']=='distance' for e in by('service'))
-        all_chunks = [(q, nodes) for q, batches in chunks.items() for nodes in batches]
         msgs = by('message')
+        query_messages, requests_by_task = defaultdict(list), defaultdict(list)
+        services_by_task, credit_by_task = defaultdict(list), defaultdict(list)
+        for e in by('controller_service'):
+            services_by_task[e['task']].append(e)
+        for e in by('credit'):
+            credit_by_task[e['task']].append(e)
+        for e in msgs:
+            query_messages[e['query']].append(e)
+        for e in by('local_request'):
+            requests_by_task[e['task']].append(e)
+        storage_by_task = {e['task']: e for e in by('local_storage')}
+        arithmetic_by_task = {e['task']: e for e in by('controller_service') if e['stage']=='arithmetic'}
+        reply_by_task = {e['task']: e for e in msgs if e['kind']==4}
+
         for q in range(1, len(queries)+1):
-            qm = [e for e in msgs if e['query']==q]
+            qm = query_messages[q]
             assert Counter(e['kind'] for e in qm)==Counter({1:1, 2:1, 3:len(chunks[q]), 4:len(chunks[q]), 5:1, 6:1})
-            assert next(e for e in qm if e['kind']==1)['payload']==64+4*m['dimensions']
+            opened, open_ack = [next(e for e in qm if e['kind']==kind) for kind in (1, 2)]
+            assert opened['payload']==64+4*m['dimensions']
+            query_service, = services_by_task[opened['task']]
+            query_credit = credit_by_task[opened['task']]
+            assert query_service['stage']=='query-write' and query_service['bytes']==4*m['dimensions']
+            assert opened['arrived_ns']<=query_service['start_ns']<=query_service['end_ns']<=open_ack['submitted_ns']
+            assert [(r['reserve'],r['bytes']) for r in query_credit]==[(True,4*m['dimensions']),(False,4*m['dimensions'])]
             for msg, nodes in zip([e for e in qm if e['kind']==3], chunks[q]):
                 assert msg['payload']==64+4*len(nodes) and msg['useful']==4*len(nodes)
-                reply = next(e for e in qm if e['kind']==4 and e['task']==msg['task'])
+                reply = reply_by_task[msg['task']]
                 assert reply['payload']==56+12*len(nodes) and reply['useful']==12*len(nodes)
-                storage = next(e for e in by('local_storage') if e['task']==msg['task'])
-                requests = [e for e in by('local_request') if e['task']==msg['task']]
+                storage = storage_by_task[msg['task']]
+                requests = requests_by_task[msg['task']]
                 observed = Counter(lba for e in requests for lba in range(e['lba'], e['lba']+e['sectors']))
                 expected = Counter(lba for n in nodes for lba in range(n*vs, (n+1)*vs))
                 assert observed==expected and storage['sector_bytes']==sum(observed.values())*512
@@ -197,12 +223,35 @@ def _inspect(path, files):
                     assert storage['submitted_ns']<=e['submitted_ns']<=e['completed_ns']<=storage['completed_ns']
                     assert sum(t['bytes'] for t in e['transactions'])==512*e['sectors']
                     assert all(e['submitted_ns']<=t['time_ns']<=e['completed_ns'] for t in e['transactions'])
-                arithmetic = next(e for e in by('controller_service') if e['task']==msg['task'] and e['stage']=='arithmetic')
+                stages = services_by_task[msg['task']]
+                assert [r['stage'] for r in stages]==['input-write','compute-read','arithmetic',
+                                                      'result-write','result-read']
+                sector_bytes = storage['sector_bytes']
+                output_bytes = len(nodes)*12
+                assert [r['bytes'] for r in stages]==[sector_bytes,sector_bytes+4*m['dimensions'],
+                                                      len(nodes)*m['dimensions']*3,output_bytes,output_bytes]
+                assert storage['completed_ns']<=stages[0]['start_ns']
+                assert all(a['end_ns']<=b['start_ns'] for a,b in zip(stages,stages[1:]))
+                assert stages[-1]['end_ns']<=reply['submitted_ns']
+                block_credit = credit_by_task[msg['task']]
+                input_and_scratch = sector_bytes+64+4*len(nodes)+cc['scratch_bytes']
+                assert [(r['reserve'],r['bytes']) for r in block_credit]==[
+                    (True,input_and_scratch+output_bytes),(False,input_and_scratch),(False,output_bytes)]
+                assert block_credit[0]['time_ns']<=msg['submitted_ns']
+                assert block_credit[1]['time_ns']==stages[2]['end_ns']
+                assert block_credit[2]['time_ns']==reply['arrived_ns']
+                arithmetic = arithmetic_by_task[msg['task']]
                 assert arithmetic['bytes']==len(nodes)*m['dimensions']*3
-                assert any(e['query']==q and e['time_ns']>=reply['arrived_ns'] and set(nodes)<={s['id'] for s in e['scores']} for e in by('score_visible'))
-            result = next(e for e in by('query_result') if e['query']==q)
+                assert any(e['query']==q and e['time_ns']>=reply['arrived_ns'] and set(nodes)<={s['id'] for s in e['scores']} for e in visible_by_query[q])
+            result = results_by_query[q]
             close = next(e for e in qm if e['kind']==5)
             assert close['submitted_ns']>=result['end_ns']
+            ack = next(e for e in qm if e['kind']==6)
+            assert close['arrived_ns'] <= ack['submitted_ns'] <= ack['arrived_ns']
+            if q < len(queries) and c['max_inflight']==1:
+                assert ack['arrived_ns'] <= results_by_query[q+1]['start_ns']
+            assert ack['arrived_ns'] <= summary['drain_end_ns']
+            assert query_credit[-1]['time_ns']==ack['arrived_ns']
         for msg in msgs:
             ar = platforms[msg['id']]
             assert ar['payload']==msg['payload'] and ar['time_ns']==msg['arrived_ns']>=msg['submitted_ns']

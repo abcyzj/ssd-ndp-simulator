@@ -46,3 +46,7 @@ Value的评分payload采用共享不可变packed FP64记录，JSON为延迟诊�
 ## V03-7 交付边界
 
 V03-7完整总验收已通过，日常默认IR，显式direct保留。继承硬件未校准、Unsupported、查询子集、官方并列边界、RSS/磁盘采样及ASan范围全部保留。总入口/失败关闭规则和实际结果见[V03-7](releases/v0.3.md)。
+
+## V0.4 SSD 条件预测范围
+
+[V04-5a](offload-v0.4.md)支持单接纳槽、单 Host slot 的静态 SSD 回放。O01～O04 使用同包和同初态，盘控算术参数为 8/16/32 flop/ns。SSD 返回缓冲 CPU 准备采用显式配置假设，其余 Host 模型的跨准备条件迁移也作为假设披露。结果仅适用于记录条件。硬件仍为 configured_unvalidated，更多 SSD 静态并发、其他硬件初态、实机 SSD/盘控校准为 Unsupported。

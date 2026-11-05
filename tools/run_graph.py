@@ -25,6 +25,7 @@ def run(config, build, output, data=None, *, paired=False):
         raise ValueError('Unsupported: requires supported placement')
     engine = c.get('execution_engine', 'ir')
     replay = engine == 'replay'
+    resident = c.get('data_provider', 'ssd') == 'host_memory'
     if not replay and c.get('cpu_profile') is not None:
         raise ValueError('CPU Profile requires the static replay entry point')
     if engine not in ('direct', 'ir', 'replay'):
@@ -34,7 +35,7 @@ def run(config, build, output, data=None, *, paired=False):
         raise ValueError('static input and resident provider require explicit replay')
     integer(c['max_inflight'], 'max_inflight')
     from device_profiles import profile, preflight
-    selected = None if replay else profile(c['device_profile'])
+    selected = None if resident else profile(c['device_profile'])
     backend = c.get('content_backend', 'mmap')
     if backend not in ('memory', 'mmap'): raise ValueError('Unsupported content backend')
     output_budget = integer(c.get('output_budget_bytes', 2*1024**3), 'output_budget_bytes', 1, 2**64-1)
@@ -95,7 +96,7 @@ def run(config, build, output, data=None, *, paired=False):
                     raise ValueError('invalid truth distance')
     resource_check = (dict(data_provider='host_memory', ssd_requests=0,
                            resource_budget_bytes=integer(c.get('resource_budget_bytes', 4*1024**3),
-                               'resource_budget_bytes', 1, 2**64-1)) if replay
+                               'resource_budget_bytes', 1, 2**64-1)) if resident
                       else preflight(c['device_profile'], m['count'], m['dimensions'], m['degree'],
                                      resource_budget_bytes=c.get('resource_budget_bytes', 4*1024**3)))
     write_json(output/'preflight.json', resource_check)
@@ -137,11 +138,11 @@ def run(config, build, output, data=None, *, paired=False):
     write_json(output / 'config.json', c)
     vs = (4*m['dimensions']+511)//512*512
     ads = (4+4*m['degree']+511)//512*512
-    write_json(output / 'layout.json', dict(data_residency='HostMemory', query_residency='HostMemory') if replay
+    write_json(output / 'layout.json', dict(data_residency='HostMemory', query_residency='HostMemory') if resident
                else dict(sector_bytes=512, vector_base=0, vector_stride=vs,
                adjacency_base=m['count']*vs, adjacency_stride=ads,
                end_lba=m['count']*(vs+ads)//512, query_residency='HostMemory + DeviceBuffer until CloseAck' if c['placement']=='controller' else 'HostMemory', data_residency='SSDStorage'))
-    if not replay:
+    if not resident:
         (output/'ssdconfig.xml').write_text(selected['xml'])
     argv = [paths['sst'], '--add-lib-path='+str(build), str(ROOT / 'configs/sst/graph.py')]
     env = dict(os.environ, NDPSIM_M31_PARAMS=str(output / 'sst-params.json'))
@@ -170,15 +171,15 @@ def run(config, build, output, data=None, *, paired=False):
             for row in events:
                 if row['type'] != 'query_result': stream.write(json.dumps(row)+'\n')
     actual = [e for e in events if e['type'] == 'device_profile']
-    if not replay and (len(actual) != 1 or actual[0]['name'] != selected['name'] or actual[0]['xml_sha256'] != selected['xml_sha256'] or actual[0]['raw_sectors']*512 != selected['raw_bytes'] or actual[0]['page_sectors'] != selected['page_sectors'] or actual[0]['preload_sectors'] != resource_check['preload_sectors'] or actual[0]['namespace_sectors'] < resource_check['preload_sectors']):
+    if not resident and (len(actual) != 1 or actual[0]['name'] != selected['name'] or actual[0]['xml_sha256'] != selected['xml_sha256'] or actual[0]['raw_sectors']*512 != selected['raw_bytes'] or actual[0]['page_sectors'] != selected['page_sectors'] or actual[0]['preload_sectors'] != resource_check['preload_sectors'] or actual[0]['namespace_sectors'] < resource_check['preload_sectors']):
         raise ValueError('compiled device profile/actual namespace mismatch')
-    if replay:
-        resident = [e for e in events if e['type'] == 'resident_summary']
-        if actual or len(resident) != 1 or resident[0]['ssd_requests'] != 0 or any(
+    if resident:
+        resident_rows = [e for e in events if e['type'] == 'resident_summary']
+        if actual or len(resident_rows) != 1 or resident_rows[0]['ssd_requests'] != 0 or any(
                 row['type'] in ('ordinary_storage', 'local_storage', 'ssd_stat', 'link_summary', 'message')
                 for row in events):
             raise ValueError('unexpected resident storage ledger')
-        resource_check['actual'] = resident[0]
+        resource_check['actual'] = resident_rows[0]
     else:
         resource_check['actual'] = actual[0]
     write_json(output/'preflight.json', resource_check)
@@ -229,10 +230,11 @@ def run(config, build, output, data=None, *, paired=False):
         ir=next((r for r in events if r['type']=='ir_summary'), None))
     if replay:
         observation['replay'] = replay_receipt
-        observation['workers'] = next(e for e in events if e['type'] == 'worker_summary')
+        ledger_type = 'worker_summary' if resident else 'ssd_replay_summary'
+        observation['workers' if resident else 'ssd_replay'] = next(e for e in events if e['type'] == ledger_type)
     write_json(output/'observation.json', observation)
     export(output, results, events, wall_seconds)
-    if replay:
+    if resident:
         write_json(output/'capabilities.json', dict(device='NotApplicable', request='NotApplicable',
                                                    channel='NotApplicable', die='NotApplicable',
                                                    provider='host_memory'))
@@ -251,6 +253,11 @@ def run(config, build, output, data=None, *, paired=False):
     names = subprocess.check_output(['git','-C',str(mqsim),'ls-files','--cached','--others','--exclude-standard','-z']).decode().split('\0')
     source_files = [ROOT/'CMakeLists.txt', ROOT/'deps.lock.json', *sorted((ROOT/'src').rglob('*.cc')),
                     *sorted((ROOT/'src').rglob('*.h')), ROOT/'tools/ir_frontend.py', ROOT/'tools/compare_engines.py', ROOT/'tools/stream_statistics.py', ROOT/'schemas/ndpsim-ir-diagnostics-v1.schema.json', ROOT/'schemas/ndpsim-ir-v1.capabilities.json', ROOT/'tools/ann_data.py', Path(__file__), ROOT/'configs/sst/graph.py', ROOT/'tools/run_pair.py', ROOT/'tools/compare_placements.py', ROOT/'tools/experiment_output.py', ROOT/'tools/run_experiment.py', ROOT/'tools/simulation_input.py', ROOT/'tools/benchmark_data.py', ROOT/'tools/benchmark_artifacts.py', ROOT/'tools/device_profiles.py', ROOT/'tools/verify_m0.py', ROOT/'configs/profiles/devices.json', ROOT/'configs/native/ssdconfig.xml']
+    if replay:
+        source_files.extend(ROOT/path for path in (
+            'tools/replay_input.py', 'tools/v04_contract.py',
+            'schemas/ndpsim-cpu-profile-v1.schema.json', 'schemas/ndpsim-effective-config-v1.schema.json',
+            'schemas/ndpsim-static-ir-v1.schema.json'))
     write_json(output / 'manifest.json', dict(observation_schema='ndpsim-observation/1', execution_engine=engine, ir_contract_sha256=digest(output/'ir-manifest.json') if engine == 'ir' else None, data=str(data), dataset=m, config_sha256=digest(config),
         input_identity=identity, device_preflight=resource_check, content_backend=backend, truth_sha256=digest(Path(identity['directories']['truth'])/'truth.json' if identity else data/'truth.json'), code_commit=git('rev-parse', 'HEAD'),
         source_sha256={str(p.relative_to(ROOT)):digest(p) for p in source_files},
@@ -261,11 +268,11 @@ def run(config, build, output, data=None, *, paired=False):
         code_diff_sha256=hashlib.sha256(subprocess.check_output(['git', 'diff', 'HEAD'], cwd=ROOT)).hexdigest(),
         mqsim_commit=git('-C', 'third_party/MQSim', 'rev-parse', 'HEAD'),
         sst_commit=git('-C', 'third_party/sst-core', 'rev-parse', 'HEAD'), parameter_source=c['parameter_source'],
-        artifacts_sha256={name:digest(output/name) for name in ('observation.json','config.json','layout.json','preflight.json',*(['ssdconfig.xml'] if not replay else []),'results.json','statistics.json','capabilities.json','sst-params.json', 'sst-measurement.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []), *(['semantic.jsonl'] if semantic_log else []), *(['ir-manifest.json'] if engine == 'ir' else []), *(['effective-config.json', 'replay-preflight.json', 'replay-admission.json'] if replay else []))},
+        artifacts_sha256={name:digest(output/name) for name in ('observation.json','config.json','layout.json','preflight.json',*(['ssdconfig.xml'] if not resident else []),'results.json','statistics.json','capabilities.json','sst-params.json', 'sst-measurement.json', *sorted(p.name for p in output.glob('*.csv')), *(['events.jsonl'] if event_log else []), *(['semantic.jsonl'] if semantic_log else []), *(['ir-manifest.json'] if engine == 'ir' else []), *(['effective-config.json', 'replay-preflight.json', 'replay-admission.json', 'command.json', 'sst.log'] if replay else []))},
         **(dict(replay=replay_receipt, replay_config_sha256=digest(output/'effective-config.json'),
                 replay_tool_sha256=digest(ROOT/'tools/replay_input.py')) if replay else {}),
         assumptions=(['host_memory with no device or PCIe path',
-                      'worker-fifo/1, CPU service from explicit single-worker Profile'] if replay else ['single SSD/'+c['device_profile']+'/SIMPLE/TURNED_OFF; CMT retained',
+                      'worker-fifo/1, CPU service from explicit single-worker Profile'] if resident else ['single SSD/'+c['device_profile']+'/SIMPLE/TURNED_OFF; CMT retained',
                      'deterministic page preload drained before measurement; no cross-query object cache',
                      'all queries offered at measurement origin, FIFO bounded admission; slots retire after CloseAck; host control; distance placement='+c['placement'],
                      'MQSim owns ordinary PCIe; no platform transfer fee',

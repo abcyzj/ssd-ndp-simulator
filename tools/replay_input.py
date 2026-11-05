@@ -1,4 +1,4 @@
-"""Bind an independently selected workload and CPU Profile to resident replay."""
+"""Bind an independently selected workload and CPU Profile to static replay."""
 import platform
 import shutil
 import subprocess
@@ -19,7 +19,7 @@ def prepare(config, config_dir, output, snapshot, params, query_ids, timeout):
                      data_provider=config['data_provider'], order_policy=config['order_policy'],
                      native_workers=config['native_workers'], max_inflight=params['max_inflight'],
                      cpu_slots=params['slots'], ir_input=dict(config['ir_input']),
-                     cpu_profile=dict(config['cpu_profile']))
+                     cpu_profile=config.get('cpu_profile'))
     params.update(data_provider=effective['data_provider'], native_workers=effective['native_workers'],
                   order_policy=effective['order_policy'])
     effective['mapping_sha256'] = digest(canonical({
@@ -27,8 +27,6 @@ def prepare(config, config_dir, output, snapshot, params, query_ids, timeout):
         if key not in ('records', 'output', 'data', 'semantic_output', 'event_log')
     }))
     validate_config(effective)
-    require(effective['data_provider'] == 'host_memory',
-            'Unsupported: replay currently requires host_memory')
     fixture = config.get('allow_replay_fixture', False)
     require(type(fixture) is bool, 'allow_replay_fixture must be boolean')
     binding_path = resolve(config['ir_binding'])
@@ -50,7 +48,7 @@ def prepare(config, config_dir, output, snapshot, params, query_ids, timeout):
                 f'replay actual object/shape mismatch: {name}')
         payload_bytes += path.stat().st_size
     require(payload_bytes < params.get('resource_budget_bytes', 4*1024**3),
-            'replay input exceeds resident RSS budget')
+            'replay input exceeds configured RSS budget')
     require(identity['search'] == {target: params[key] for target, key in
             zip(('entry', 'k', 'L', 'B', 'E', 'chunk'),
                 ('entry', 'k', 'width', 'batch', 'budget', 'chunk'))}, 'replay search mismatch')
@@ -78,23 +76,24 @@ def prepare(config, config_dir, output, snapshot, params, query_ids, timeout):
     require(receipt['package_sha256'] == ir['sha256'], 'configured replay package hash mismatch')
     require(file_hash(binding_path) == digest(binding_raw), 'replay binding changed')
     profile = effective['cpu_profile']
-    profile_path = resolve(profile['path'])
+    host = None
     if fixture:
         host = config['fixture_host']
-    else:
+    elif profile:
         def sysctl(key):
             return subprocess.check_output(['sysctl', '-n', key], text=True, timeout=10).strip()
         host = dict(hardware=sysctl('machdep.cpu.brand_string'), os=platform.platform(),
                     memory_bytes=int(sysctl('hw.memsize')), frequency='Unsupported',
                     affinity='uncontrolled')
-    admission = dict(package=str(snapshot), allow_fixture=fixture, profile_sha256=profile['sha256'],
+    admission = dict(package=str(snapshot), allow_fixture=fixture, profile_sha256=profile['sha256'] if profile else None,
                      package_sha256=receipt['package_sha256'],
                      query_ids=query_ids, order_policy=effective['order_policy'],
                      objects={name: obj['sha256'] for name, obj in identity['objects'].items()},
-                     applicability=dict(host, build=binding['build']))
+                     applicability=dict(host, build=binding['build']) if profile else None)
     write_json(output/'replay-admission.json', admission)
     write_json(output/'effective-config.json', effective)
     write_json(output/'replay-preflight.json', dict(receipt, binding_sha256=digest(binding_raw)))
-    params.update(cpu_profile=str(profile_path),
-                  replay_config=str(output/'replay-admission.json'))
+    if profile:
+        params['cpu_profile'] = str(resolve(profile['path']))
+    params['replay_config'] = str(output/'replay-admission.json')
     return receipt

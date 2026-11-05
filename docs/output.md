@@ -37,3 +37,7 @@ V03-7 交付接口：`execution_engine` 省略时有效值为 `ir`，显式 `dir
 ## V0.4 参考语义诊断
 
 模拟实验可显式设置 `semantic_log: true`，在共享输出预算内额外生成 `semantic.jsonl`。独立原生入口的 `--semantic-log` 将评分分块和扩展序列随 `batch.json` 输出。记录格式与比较入口见 [V04-1c 参考语义](reference-semantics-v0.4.md)。
+
+## V0.4 静态 SSD 输出
+
+[V04-5a](offload-v0.4.md)的静态 SSD 回放输出 ssd_replay_summary 与 ssd_replay_logical，分别记录 Host CPU 服务/等待及排空、逻辑访问。SSD 请求量仍从 ordinary_storage / local_storage 统计，ssd_replay_logical 的 ssd_requests 为 null。observation.json 的 ssd_replay 保存 Host 调度摘要，replay 保存静态包预检身份。Controller 的缓冲、端口、算术、请求与消息沿用既有资源记录，replay_controller_work 另记实际物理 L2 分块工作量。

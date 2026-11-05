@@ -135,20 +135,25 @@ public:
         if (!d_ || !nq_ || r_ >= cfg_.count)
             throw std::invalid_argument("invalid dimensions/queries/degree");
         const auto provider = p.find<std::string>("data_provider", "ssd");
+        legacy_replay_cost_ = replay_mode_ && !p.contains("cpu_profile");
         const auto workers = p.find<uint64_t>("native_workers", 1);
         const auto slots = p.find<uint64_t>("slots", 1);
-        if (replay_mode_ ? provider != "host_memory" || controller_mode_ ||
-                               (workers != 1 && workers != 2 && workers != 4) ||
-                               slots != workers || max_inflight_ < workers ||
-                               p.find<std::string>("order_policy", "") != "worker-fifo/1"
-                         : provider != "ssd" || p.contains("replay_config"))
+        resident_ = provider == "host_memory";
+        const auto policy = resident_ ? "worker-fifo/1" : "legacy-ssd/1";
+        if ((provider != "ssd" && !resident_) ||
+            (resident_ && (!replay_mode_ || controller_mode_ || legacy_replay_cost_)) ||
+            (!replay_mode_ && p.contains("replay_config")) ||
+            (replay_mode_ && (slots != workers || max_inflight_ < workers ||
+                             (resident_ ? workers != 1 && workers != 2 && workers != 4
+                                        : workers != 1 || max_inflight_ != 1) ||
+                             p.find<std::string>("order_policy", "") != policy)))
             throw std::invalid_argument(
                 "Unsupported replay provider/placement/worker/slot combination or order policy");
         ir::Json replay_config;
         if (replay_mode_) {
             replay_config = ir::read_json(p.find<std::string>("replay_config", ""));
             replay_query_ids_ = replay_config.at("query_ids").get<std::vector<uint32_t>>();
-            if (replay_query_ids_.size() != nq_ || replay_config.at("order_policy") != "worker-fifo/1")
+            if (replay_query_ids_.size() != nq_ || replay_config.at("order_policy") != policy)
                 throw std::invalid_argument("replay query inventory or order policy mismatch");
             const auto package = replay_config.at("package").get<std::string>();
             std::ifstream index(package + "/index.jsonl", std::ios::binary);
@@ -190,7 +195,7 @@ public:
         }
         auto dir = p.find<std::string>("data", "");
         const auto* profile =
-            replay_mode_ ? nullptr
+            resident_ ? nullptr
                          : &device_profile(p.find<std::string>("device_profile", "native-small"));
         auto resource_budget =
             p.find<uint64_t>("resource_budget_bytes", uint64_t(4) * 1024 * 1024 * 1024);
@@ -266,7 +271,7 @@ public:
         } else
             throw std::invalid_argument("Unsupported content backend");
         handles_ = std::make_unique<content::Handles>(*store_);
-        if (!replay_mode_) {
+        if (!resident_) {
             layout_ = std::make_unique<content::Layout>(*store_, ann_.end_lba, ann_, cfg_.count);
             device_ = std::make_unique<OrdinaryDevice>(preload, profile->name, resource_budget);
         }
@@ -307,7 +312,7 @@ public:
                 link_->send(delay, new GraphWake(g));
             },
             100000,
-            replay_mode_ ? EventBridge::BackendMode::PlatformOnly
+            resident_ ? EventBridge::BackendMode::PlatformOnly
                          : EventBridge::BackendMode::MQSim);
         rt_ = std::make_unique<runtime::Runtime>(*bridge_, now);
         model::HostConfig c;
@@ -316,7 +321,7 @@ public:
         c.control = {p.find<uint64_t>("control_setup", 1), p.find<uint64_t>("control_rate", 1)};
         c.check_units = p.find<uint64_t>("check_units", 1);
         c.comparison_units = p.find<uint64_t>("comparison_units", 1);
-        if (replay_mode_) {
+        if (replay_mode_ && !legacy_replay_cost_) {
             const auto& a = replay_config.at("applicability");
             const auto& b = a.at("build");
             // Diagnostic runs reuse single-worker demands without claiming multicore applicability.
@@ -331,7 +336,7 @@ public:
                                            b.at("flags").get<std::vector<std::string>>(),
                                            d_,
                                            cfg_.count,
-                                           "resident_random",
+                                           resident_ ? "resident_random" : "ssd_return_buffer",
                                            1};
             c.cpu_profile = std::make_shared<model::CpuProfile>(
                 model::CpuProfile::load(p.find<std::string>("cpu_profile", ""),
@@ -563,17 +568,20 @@ public:
         if (device_)
             device_->start();
         bridge_->start();
-        if (replay_mode_)
+        if (resident_)
             bridge_->enqueue(
                 getCurrentSimTimeNano(), EventBridge::ContinueSubmit, "resident start", [this] {
                     measuring_ = true;
                     origin_ = getCurrentSimTimeNano();
                     query_wall_start_ = std::chrono::steady_clock::now();
-                    for (; replay_admitted_ < std::min(max_inflight_, nq_); ++replay_admitted_)
-                        replay_admissions_.push_back(origin_);
-                    peak_active_ = replay_admitted_;
+                    admit_replay();
                     next();
                 });
+    }
+    void admit_replay() {
+        for (; replay_admitted_ < std::min(max_inflight_, nq_); ++replay_admitted_)
+            replay_admissions_.push_back(origin_);
+        peak_active_ = replay_admitted_;
     }
     void finish() override {
         auto wall_end = std::chrono::steady_clock::now();
@@ -592,6 +600,12 @@ public:
                              free_workers_.size() != replay_workers_ || cpu_->queued() ||
                              rt_->task_records() || rt_->wait_records() || handles_->lease_records()))
             throw std::logic_error("replay resources leaked");
+        if (controller_ &&
+            (controller_->buffer().used() || controller_->buffer().waiting() ||
+             controller_->port().pending() || controller_->compute().pending() ||
+             controller_->sessions() || controller_->pending_protocol() || local_->pending() ||
+             transport_->pending()))
+            throw std::logic_error("controller graph resources leaked");
         if (!replay_error_.empty()) {
             records_ << ir::Json({{"type", "replay_failure"},
                                   {"detail", replay_error_},
@@ -650,11 +664,6 @@ public:
                  << ",\"admission_limit\":" << controller_->admission_limit()
                  << ",\"chunk_size\":" << controller_->chunk_size()
                  << ",\"block_bound\":" << controller_->block_bound() << "}\n";
-            if (controller_->buffer().used() || controller_->buffer().waiting() ||
-                controller_->port().pending() || controller_->compute().pending() ||
-                controller_->sessions() || controller_->pending_protocol() || local_->pending() ||
-                transport_->pending())
-                throw std::logic_error("controller graph resources leaked");
         }
         for (auto& [q, v] : read_totals_)
             out_ << "{\"type\":\"ordinary_storage\",\"query\":" << q << ",\"requests\":" << v[0]
@@ -664,13 +673,14 @@ public:
                  << ",\"transfers\":" << v[0] << ",\"payload_bytes\":" << v[1]
                  << ",\"wire_bytes\":" << v[2] << ",\"service_ns\":" << v[3] << "}\n";
         if (replay_mode_) {
-            records_ << ir::Json({{"type", "worker_summary"},
-                                  {"order_policy", "worker-fifo/1"},
+            records_ << ir::Json({{"type", resident_ ? "worker_summary" : "ssd_replay_summary"},
+                                  {"order_policy", resident_ ? "worker-fifo/1" : "legacy-ssd/1"},
                                   {"workers", replay_workers_},
                                   {"cpu_slots", replay_workers_},
                                   {"max_inflight", limit()},
                                   {"profile_workers", 1},
-                                  {"profile_use", replay_workers_ == 1 ? "matched" : "diagnostic"},
+                                  {"profile_use", legacy_replay_cost_ ? "legacy" : !resident_ ? "conditional" :
+                                      replay_workers_ == 1 ? "matched" : "diagnostic"},
                                   {"peak_workers", peak_workers_},
                                   {"workers_idle", free_workers_.size()},
                                   {"pending_admissions", replay_admissions_.size()},
@@ -681,10 +691,10 @@ public:
                                   {"cpu_queue_wait_ns", replay_queue_ns_},
                                   {"cpu_dependency_wait_ns", replay_dependency_ns_},
                                   {"worker_wait_ns", replay_worker_wait_ns_}}).dump() << '\n';
-            records_ << ir::Json({{"type", "resident_summary"},
+            records_ << ir::Json({{"type", resident_ ? "resident_summary" : "ssd_replay_logical"},
                                   {"reads", replay_reads_},
                                   {"logical_bytes", replay_bytes_},
-                                  {"ssd_requests", 0},
+                                  {"ssd_requests", resident_ ? ir::Json(0) : ir::Json(nullptr)},
                                   {"active_sessions", 0},
                                   {"peak_sessions", peak_workers_}})
                             .dump()
@@ -858,7 +868,7 @@ private:
         auto start = getCurrentSimTimeNano();
         decision_digest_[q] = 14695981039346656037ULL;
         search::GraphSearch::Score scorer;
-        if (controller_ && !ir_mode_) {
+        if (controller_ && !ir_mode_ && !replay_mode_) {
             // Decode the validated FP32 query without giving the search state machine content access.
             std::vector<float> values;
             for (size_t i = 0; i < qb.size(); i += 4) {
@@ -939,11 +949,11 @@ private:
             out_ << row.str();
             if (controller_ || ir_mode_) {
                 auto closed = ir_mode_ ? mapping_->close(q) : controller_->close(q);
-                rt_->when_all({closed}, q, [this, q, closed](auto o) {
+                rt_->when_all({closed}, q, [this, q, worker, closed](auto o) {
+                    rt_->release(closed);
                     if (o.failure)
                         throw std::runtime_error(o.failure->detail);
-                    rt_->release(closed);
-                    retired(q);
+                    retired(q, worker);
                 });
             } else
                 retired(q, worker);
@@ -978,6 +988,10 @@ private:
                         throw;
                     }
                 },
+                resident_ ? search::GraphSearch::Read{} : search::GraphSearch::Read(
+                    [this, q](auto kind, auto node) { return read(q, kind, node); }),
+                controller_.get(),
+                legacy_replay_cost_,
                 [this](const auto& event) {
                     if (event.at("type") == "replay_read") {
                         replay_bytes_ += event.at("bytes").template get<uint64_t>();
@@ -992,7 +1006,16 @@ private:
                         replay_error_ = std::move(error);
                         replay_admissions_.clear();
                     }
-                    retired(q, worker);
+                    if (controller_ && controller_->has_session(q)) {
+                        auto closed = controller_->close(q);
+                        rt_->when_all({closed}, q, [this, q, worker, closed](auto outcome) {
+                            rt_->release(closed);
+                            if (outcome.failure)
+                                throw std::runtime_error(outcome.failure->detail);
+                            retired(q, worker);
+                        });
+                    } else
+                        retired(q, worker);
                 },
                 [this] { return !replay_error_.empty(); });
             replay_sessions_.at(q)->start();
@@ -1068,6 +1091,8 @@ private:
                          << ",\"cmt_retained\":true,\"time_reset\":false}\n";
                 observation_->reset_window();
                 query_wall_start_ = std::chrono::steady_clock::now();
+                if (replay_mode_)
+                    admit_replay();
                 next();
             }
             rt_->require_progress();
@@ -1081,7 +1106,8 @@ private:
     }
     std::chrono::steady_clock::time_point wall_start_ = std::chrono::steady_clock::now(),
                                           query_wall_start_;
-    bool ir_mode_ = false, replay_mode_ = false;
+    bool ir_mode_ = false, replay_mode_ = false, resident_ = false;
+    bool legacy_replay_cost_ = false;
     std::ifstream replay_ops_;
     std::map<uint32_t, ir::Json> replay_index_;
     std::vector<uint32_t> replay_query_ids_;
