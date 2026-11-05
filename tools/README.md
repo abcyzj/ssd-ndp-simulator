@@ -2,7 +2,7 @@
 
 从仓库根目录执行。V03-7 已完成总交付，支持显式 direct/ir，日常默认 ir，旧自动化参考显式 direct；以下包含数据准备、IR阶段验证及继承回归工具；阶段编号保留兼容，不表示当前开发任务。
 
-V0.4常规验收规划为 [12个模拟配置](../docs/validation-matrix-v0.4.md)，新入口尚待实现。下列 `verify_ir_matrix.py` / `verify_v03.py` 仍保持完整52条及配套门槛，仅在V0.4需要深度回归时调用；不提供12配置开关，也不把旧工具的缺项失败改成通过。
+V0.4常规验收为 [12个模拟配置](../docs/validation-matrix-v0.4.md)，总入口为 `verify_v04.py --output NEW_DIRECTORY`，使用锁定 Python；[复现与边界](../docs/releases/v0.4.md)。下列 `verify_ir_matrix.py` / `verify_v03.py` 仍保持完整52条及配套门槛，仅在V0.4需要深度回归时调用；不提供12配置开关，也不把旧工具的缺项失败改成通过。
 
 | 日常与准备工具 | 用途 |
 | --- | --- |
@@ -65,7 +65,7 @@ build/delivery/bench_host_cpu
 
 `generate_ir_schema.py --check` 核对 schema/能力目录；`compare_engines.py` 独立比较同 placement 的 direct/ir 或 statistics/detail；`ir_frontend.py`、`stream_statistics.py` 是现行共用模块。
 
-V0.3 阶段工具的职责、完整52条门槛和复现入口统一见 [V0.3 工具索引](archive/v0.3/README.md)。这些工具仍在原路径供 CTest、导入和 V0.4 继承回归调用；不按版本名迁移有效实现。新 V0.4 验收入口尚待实现。
+V0.3 阶段工具的职责、完整52条门槛和复现入口统一见 [V0.3 工具索引](archive/v0.3/README.md)。这些工具仍在原路径供 CTest、导入和 V0.4 继承回归调用；不按版本名迁移有效实现。V0.4 独立入口为 `verify_v04.py`；它不会调用旧52条入口来冒称12配置完整覆盖。
 
 ## V0.4 SSD 条件预测
 
@@ -74,3 +74,7 @@ evaluate_v04_offload.py 运行并核验固定 O01～O04，保存同包 SSD Host 
 ## V0.4 兼容与继承回归
 
 verify_v04_regression.py 在新目录执行 R01～R04、detail8、默认 smoke 与冻结对拍，以及完整 V0.1 AC、T3/T4/T5、IR/静态回放 ASan。需要锁定 Python、完整现有准备输入及发布参考。入口保存 source、dependency、command、assertion 和 artifact 身份，按本轮约束关闭深度执行，触发深度要求时拒绝通过。实际命令、范围和限制见 [V04-5b](../docs/regression-v0.4.md)。
+
+## V0.4 总交付
+
+`verify_v04.py --output NEW_DIRECTORY` 从根 CMake 构建和 CTest 开始，执行12配置的16次最低正式模拟、12次原生基准、三组A/B/A、detail8、单独无CPU探针语义对照、Level A计费和完整继承。采集包、实测表及模型是显式冻结输入，逐项复核，改变相关身份时先重采/重拟合。输出计划、配置、AC矩阵、命令、资源、依赖、hash及报告。无quick或缺项成功模式；深度要求触发时失败关闭。`verify_v04_regression.py --semantic-host` 只在兼容Host运行增加语义观测，便于总交付跨路径核对。

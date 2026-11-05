@@ -138,3 +138,7 @@ Open 失败返回 Error(token=0)；Score 失败返回 Error 而非部分 ScoreRe
 ## V0.2 T5 受信回收边界
 
 生产观测不保留已完成任务/lease/消息历史；结果 owner/pin、依赖与发布 continuation、服务/返回 completion 全部解除后才删除 Runtime 任务。Controller 只在已有安全失败边界排空本地读取、staging/compute 及 Error 返回后调用 `fail_after_drain`；不能将该入口用于任意在途取消。详情见 [T5 观测与生命周期](observation-lifecycle.md)。不改变 SST/MQSim 时间、可见性或唯一计费者。
+
+## V0.4 显式成本与驻留契约
+
+只有显式启用新 Profile 才切换到互斥阶段计费，规则见 [计时与计费契约](contract-v0.4.md)、[CPU Profile](cpu-profile-v0.4.md)。内存驻留须使用 `replay` + `host_memory` + Host，并按 [静态执行接口](replay-v0.4.md) 配置 worker 顺序；`content_backend=memory` 继续是原功能内容后端，不免除SSD请求。静态包的期望值和Work只作核验，真实重算、服务和必要返回完成后才能发布。SST仍是唯一模拟时间权威。SSD静态路径、取数准备适用条件和收费归属见 [B/C条件预测](offload-v0.4.md)，不将内存随机取数重复计入SSD路径。

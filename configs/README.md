@@ -1,6 +1,6 @@
 # 配置入口
 
-当前可运行基线 V0.3 继承现有模型、数据和查询身份；省略 `execution_engine` 默认 IR，显式 `direct` 保留对照。V0.4 新 Profile/驻留配置尚待实现。版本名标识冻结来源，不表示已失效；不为归档重排查询、改参数或重算锁。
+V0.3 兼容配置继续继承现有模型、数据和查询身份；省略 `execution_engine` 默认 IR，显式 `direct` 保留对照。V0.4 的 `replay`、`cpu_profile`、`data_provider=host_memory` 和 worker 策略须显式启用，实际字段见 [静态回放](../docs/replay-v0.4.md) 和 [CPU Profile](../docs/cpu-profile-v0.4.md)。总验收按 [12配置](../docs/validation-matrix-v0.4.md) 生成逐次有效配置，见 [交付入口](../docs/releases/v0.4.md)。版本名标识冻结来源，不表示已失效；不为归档重排查询、改参数或重算锁。
 
 | 分类 | 现行用途 |
 | --- | --- |

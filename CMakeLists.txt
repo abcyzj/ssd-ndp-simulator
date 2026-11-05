@@ -528,3 +528,8 @@ if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
     add_test(NAME v04_regression_gates COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_v04_regression.py")
 endif()
+
+if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
+    add_test(NAME v04_delivery_gates COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_v04_delivery.py")
+endif()

@@ -41,3 +41,7 @@ V03-7 交付接口：`execution_engine` 省略时有效值为 `ir`，显式 `dir
 ## V0.4 静态 SSD 输出
 
 [V04-5a](offload-v0.4.md)的静态 SSD 回放输出 ssd_replay_summary 与 ssd_replay_logical，分别记录 Host CPU 服务/等待及排空、逻辑访问。SSD 请求量仍从 ordinary_storage / local_storage 统计，ssd_replay_logical 的 ssd_requests 为 null。observation.json 的 ssd_replay 保存 Host 调度摘要，replay 保存静态包预检身份。Controller 的缓冲、端口、算术、请求与消息沿用既有资源记录，replay_controller_work 另记实际物理 L2 分块工作量。
+
+## V0.4 总交付输出
+
+`tools/verify_v04.py` 写 `plan.json`（固定12配置与最低16次正式模拟）、`configurations.json`（实际参数/重复/全128查询/包）、`ac-matrix.json`（12项AC及证据）、`commands.json`（命令/退出码/墙钟/RSS）、`report.json`/`report.md` 和带递归产物hash的 `manifest.json`。输入、依赖、校准来源、构建、源码前后快照与资源预算另存。任何必需命令、精度或身份失败保留部分证据并退出1；只有完整通过时 manifest.passed=true。原生实测、冻结拟合、实测表、SST模拟与B/C条件预测分列；D组只作诊断，深度未运行不作通过。复现与解释见 [交付记录](releases/v0.4.md)。

@@ -8,6 +8,8 @@
 
 V0.3 总入口为 `tools/verify_v03.py --all`，方法及本轮状态见[V03-7交付记录](releases/v0.3.md)。历史成功记录不能替代 V0.3 direct 参考冻结或 direct/ir 等价验证。
 
+V0.4 独立总验收使用锁定 Python 运行 `tools/verify_v04.py --output NEW_DIRECTORY`；12配置、采集与基准分离、规定重复、失败关闭及本机证据见 [V04-5c 交付记录](releases/v0.4.md)。此入口复核冻结采集和模型，并新跑原生基准及模拟，不从头重新拟合。
+
 ## 复建与运行
 
 日常只运行实验使用 `python3 tools/run_experiment.py --build build/delivery --output results/experiment`。该入口复用已有构建，支持 `--mode pair|host|controller`、`--config`、`--data` 和 `--event-log`；两种模式共享数据，但不做一致性核对，也不触发编译、CTest、AC 或原生回归。具体参数和输出见 [README](../README.md)。下述 `run.py` 继续用于构建、测试与交付。

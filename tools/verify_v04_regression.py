@@ -150,6 +150,8 @@ def main():
     p.add_argument('--source-dir', type=Path, default=ROOT/'.cache/v0.2-m0/data/sift')
     p.add_argument('--builder-evidence', type=Path, default=ROOT/'results/v0.2-t2/builder')
     p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--semantic-host', action='store_true',
+                   help='record Host semantics for the V0.4 delivery cross-path Validator')
     a = p.parse_args()
     lock = load(ROOT/'deps.lock.json')
     require(not sys.flags.optimize and Path(sys.executable).resolve() ==
@@ -251,6 +253,8 @@ def main():
             for label, engine, mode in POINTS:
                 old = matrix/f'{engine}-evaluation-l64-e128-c1-{mode}'
                 c = load(old/'config.json')
+                if a.semantic_host and mode == 'host':
+                    c['semantic_log'] = True
                 # R03/R04 exercise the actual omitted-engine daily entry.
                 if engine == 'ir':
                     c.pop('execution_engine')

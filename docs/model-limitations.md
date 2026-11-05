@@ -50,3 +50,7 @@ V03-7完整总验收已通过，日常默认IR，显式direct保留。继承硬�
 ## V0.4 SSD 条件预测范围
 
 [V04-5a](offload-v0.4.md)支持单接纳槽、单 Host slot 的静态 SSD 回放。O01～O04 使用同包和同初态，盘控算术参数为 8/16/32 flop/ns。SSD 返回缓冲 CPU 准备采用显式配置假设，其余 Host 模型的跨准备条件迁移也作为假设披露。结果仅适用于记录条件。硬件仍为 configured_unvalidated，更多 SSD 静态并发、其他硬件初态、实机 SSD/盘控校准为 Unsupported。
+
+## V0.4 总交付解释
+
+严格CPU精度只适用于记录的Mac、构建、SIFT1M/NSG、单worker内存驻留及两个L/E点。`merge_append` 使用对应evaluation128逐调用实测服务表，其余阶段使用tuning32冻结模型；查表复用不是预测误差证据，原生基准另跑。既有评价暴露按现行PRD披露，评价数据没有回流拟合。2/4 worker是诊断；核绑定、频率控制和硬件缓存计数器为Unsupported。B/C收益仅用SSD Host与Controller模拟计算，SSD/PCIe/Controller仍为configured_unvalidated，不能推作实机加速。12配置不等同V0.3的52条全交叉验收；深度未触发记未执行。完整来源、失败样本与复现依赖见 [V0.4交付记录](releases/v0.4.md)。
