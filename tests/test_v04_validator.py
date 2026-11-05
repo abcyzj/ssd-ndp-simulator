@@ -132,6 +132,13 @@ def run(out, build):
     assert point['stages']['merge_append']['total'] > 0
     assert point['stages']['merge_finalize']['total'] > 0
     assert all(row['unsupported_calls'] == 0 for row in point['stages'].values())
+    model_only = {stage: row for stage, row in classification.items() if stage != 'merge_append'}
+    without_append = {key: row for key, row in models.items() if key[1] != 'merge_append'}
+    point = assess_point(bound, shape, payloads, [(batch, samples)], without_append, model_only, level_a)
+    assert 'merge_append' not in point['stages']
+    assert all(row['stage'] != 'merge_append' for row in point['shapes'])
+    assert point['operators']['MERGE_CANDIDATES']['total'] == point['stages']['merge_finalize']['total']
+    assert not (level_a/'unsupported.jsonl').read_text()
     missing = dict(samples, samples=samples['samples'][1:])
     try:
         assess_point(bound, shape, payloads, [(batch, missing)], models, classification, level_a)

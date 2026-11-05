@@ -44,7 +44,7 @@ python3 tools/bind_v04_merge_append.py \
 
 - dedup 的 2,692 条范围内四折留出样本相对误差 P50/P90 为 1.64%/5.90%。merge 的 8,297 条范围内留出样本 MAE 为 983 ns，短调用 MAE 为 25 ns，整体相对误差 P50/P90 为 3.36%/23.03%。merge 训练剔除 3 条低信号样本，留出统计排除 2 条越界样本。
 - v3 直接重拟合的九个模型、范围、样本数和训练误差与此前 v3 逐项一致。配套报告更新了复现入口及源码身份，Profile 哈希随之更新。本机证据位于 `results/v0.4/cpu-fit-v043b/v3-only/`。
-- evaluation128 的测量未进入本次冻结。此前 dedup 开发前已披露 evaluation128 结果，复用该批查询的结果仍作为诊断。独立 Level A 与 AC-04-04 待验收。适用条件仍由 Profile 绑定到原采集硬件、构建、驻留数据及单 worker。
+- evaluation128 的测量未进入本次冻结。此前 dedup 开发前已披露 evaluation128 结果，按现行 AC-04-04 允许复用该批结果并披露既有暴露。两点验收结果见 [V04-4b](level-a-v0.4.md)。适用条件仍由 Profile 绑定到原采集硬件、构建、驻留数据及单 worker。
 - 历史冻结和验证分别位于本机 `results/v0.4/cpu-fit-v043b/run1/`、`dedup-gbdt-v2/` 和 `split-merge-v3/`。v1/v2 属于历史证据，现行加载器拒绝这两个版本。
 
 根 CTest 91/91、拟合定向测试 4/4，覆盖 v1/v2 拒绝、缺失模型、范围与身份检查。两次从训练输入生成的 v3 Profile 和报告逐字节一致。SIFT1M tuning32 L/E=32/64 驻留回放与此前 v3 的 13,230 笔服务、语义日志、top-k 和驻留账本逐字节一致。

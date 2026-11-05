@@ -12,6 +12,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'tools'))
 
+from evaluate_v04_level_a import verify_append_billing
 from native_observation import Budget, binding_for, build_identity, seal
 from replay_input import prepare
 from v04_contract import STAGES, canonical, digest, package_hash
@@ -196,6 +197,16 @@ def run(build, out, ns, field=None, backend='mmap', binding_path=FIXTURE/'bindin
     lifecycle = next(row for row in records if row['type'] == 'lifecycle')
     assert all(lifecycle[k] == 0 for k in ('runtime_tasks', 'waiters', 'leases'))
     services = {row['task']: row for row in records if row['type'] == 'service'}
+    if measured:
+        charges = verify_append_billing(records + events, ids, calls)
+        assert (charges['calls'], charges['cpu_ns']) == (len(calls), 19*len(calls))
+        assert 0 < charges['cpu_fraction'] <= 1
+        try:
+            verify_append_billing(records + events + [next(iter(services.values()))], ids, calls)
+        except ValueError as exc:
+            assert 'duplicate service task' in str(exc)
+        else:
+            raise AssertionError('duplicate service charge passed')
     visible = {(row['query'], row['op']): row['time_ns'] for row in events
                if row['type'] == 'replay_verified'}
     submitted = {(row['query'], row['op']): row['time_ns'] for row in events

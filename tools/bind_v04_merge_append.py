@@ -9,6 +9,19 @@ from v04_contract import (ROOT, WORK, bounded_read, decode, digest, require, val
                           validate_package, validate_profile)
 
 
+def append_calls(package, identity):
+    calls = {}
+    chunk = identity['search']['chunk']
+    with (package/'operations.jsonl').open('rb') as stream:
+        for line in stream:
+            row = decode(line)
+            if row['operator'] == 'SCORE_L2':
+                count = len(row['expected']['ids'])
+                for segment, offset in enumerate(range(0, count, chunk)):
+                    calls[row['query'], row['op']+1, segment] = min(chunk, count-offset)
+    return calls
+
+
 def build_table(profile, package, binding_path, measurements):
     receipt = validate_package(package, binding_path)
     binding = decode(bounded_read(binding_path))
@@ -19,15 +32,7 @@ def build_table(profile, package, binding_path, measurements):
             (base['records'], base['width']) == (conditions['records'], conditions['dimensions']),
             'Profile and capture build/shape mismatch')
     require(len(measurements) >= 3, 'at least three independent CPU samples required')
-    calls = {}
-    with (package/'operations.jsonl').open('rb') as stream:
-        for line in stream:
-            row = decode(line)
-            if row['operator'] == 'SCORE_L2':
-                count = len(row['expected']['ids'])
-                chunk = identity['search']['chunk']
-                for segment, offset in enumerate(range(0, count, chunk)):
-                    calls[row['query'], row['op']+1, segment] = min(chunk, count-offset)
+    calls = append_calls(package, identity)
     repeats = {key: [] for key in calls}
     hashes, run_ids = [], set()
     split = None
@@ -68,7 +73,7 @@ def build_table(profile, package, binding_path, measurements):
     training_ids = profile['training']['query_ids']
     ids = identity['query_ids']
     if split != 'fixture':
-        selection = decode(bounded_read(ROOT/'configs/benchmarks/v0.2-query-selection.json'))
+        selection = decode(bounded_read(ROOT/'configs/benchmarks/v0.2-query-selection.json'))['datasets']['sift1m']
         expected = selection['tuning_ids' if split == 'tuning32' else 'evaluation_ids']
         require(training_ids == selection['tuning_ids'] and ids == expected,
                 'measurement split IDs mismatch')
@@ -83,20 +88,23 @@ def build_table(profile, package, binding_path, measurements):
                 split=split, rows=rows)
 
 
+def bind_profile(profile, package, binding, measurements):
+    validate_profile(profile)
+    require(profile['format'] == 'ndpsim-cpu-profile/3', 'expected frozen v3 source Profile')
+    result = dict(profile, format='ndpsim-cpu-profile/4',
+                  merge_append_table=build_table(profile, package, binding, measurements),
+                  models=[row for row in profile['models'] if row['stage'] != 'merge_append'])
+    validate_profile(result)
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('profile', 'package', 'binding', 'output'):
         parser.add_argument('--'+name, type=Path, required=True)
     parser.add_argument('--measurement', action='append', type=Path, required=True)
     args = parser.parse_args()
-    profile = decode(bounded_read(args.profile))
-    validate_profile(profile)
-    require(profile['format'] == 'ndpsim-cpu-profile/3', 'expected frozen v3 source Profile')
-    table = build_table(profile, args.package, args.binding, args.measurement)
-    profile['format'] = 'ndpsim-cpu-profile/4'
-    profile['merge_append_table'] = table
-    profile['models'] = [row for row in profile['models'] if row['stage'] != 'merge_append']
-    validate_profile(profile)
+    profile = bind_profile(decode(bounded_read(args.profile)), args.package, args.binding, args.measurement)
     with args.output.open('x') as stream:
         json.dump(profile, stream, separators=(',', ':'), allow_nan=False)
         stream.write('\n')

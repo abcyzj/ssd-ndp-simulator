@@ -7,20 +7,23 @@ import json
 from math import ceil
 from pathlib import Path
 from statistics import mean, median
+import subprocess
 import sys
 
 from ann_data import write_json
-from collect_v04_training import POINTS
+from bind_v04_merge_append import append_calls, bind_profile
+from collect_v04_training import GIB, POINTS, resources
 from native_observation import FEATURES, binding_for, records
 from compare_reference_paths import chunks, oracle, score_pairs
-from validate_v04 import (artifact, expected_operations, native_run, read,
-                          same, search_config, service_demand)
+from validate_v04 import (artifact, command_ok, expected_operations, native_run, read,
+                          rows, same, search_config, service_demand)
 from simulation_input import FileRows, load_v2
 from v04_contract import ROOT, WORK, file_hash, require, validate_profile
 from verify_m0 import inventory
 
 PROFILE_SHA = '1f52e9333a501a2f078504cf4794099712dd8bdf79c2666e70d8d5b5ef3e66ec'
 START_SHA = 'f5f461cb2edc584d5e5b27bb89882c9c26cf7245aa333d7a47189de6e8606110'
+AC_POINTS = ((32, 64), (64, 128))
 REPEATS = 3
 STRIDE = 16
 LIMITS = dict(relative_p50=.10, relative_p90=.20)
@@ -119,15 +122,18 @@ def assess_point(binding, shape, paths, runs, models, classification, output):
                 bucket = key[2]
                 sampled = eligible[bucket] % stride == 0
                 eligible[bucket] += 1
-                stage_calls[stage] += 1
-                shape_calls[stage, tuple(features[k] for k in FEATURES[bucket])] += 1
+                measured_stage = stage == 'merge_append' and stage not in classification
                 predicted = None
-                try:
-                    predicted = service_demand(models, operator, bucket, features, work, str(key))
-                except ValueError as exc:
-                    unsupported[stage] += 1
-                    failure = dict(key=key, stage=stage, sampled=sampled, features=features, work=work, error=str(exc))
-                    failure_stream.write(json.dumps(failure, allow_nan=False) + '\n')
+                if not measured_stage:
+                    stage_calls[stage] += 1
+                    shape_calls[stage, tuple(features[k] for k in FEATURES[bucket])] += 1
+                    try:
+                        predicted = service_demand(models, operator, bucket, features, work, str(key))
+                    except ValueError as exc:
+                        unsupported[stage] += 1
+                        failure = dict(key=key, stage=stage, sampled=sampled, features=features,
+                                       work=work, error=str(exc))
+                        failure_stream.write(json.dumps(failure, allow_nan=False) + '\n')
                 if not sampled:
                     continue
                 entry = dict(zip(('query', 'op', 'bucket', 'chunk', 'segment'), key),
@@ -142,8 +148,11 @@ def assess_point(binding, shape, paths, runs, models, classification, output):
                     resolution = record['cpu_clock']['resolution_ns']
                     threshold = 4 * max(resolution, sample['overhead_ns'])
                     row = timed(entry, sample['corrected_ns'], threshold, sample['quality'] == 'low_signal')
-                    rows.append(dict(row, repeat=repeat, raw_ns=sample['raw_ns'], overhead_ns=sample['overhead_ns']))
+                    if not measured_stage:
+                        rows.append(dict(row, repeat=repeat, raw_ns=sample['raw_ns'], overhead_ns=sample['overhead_ns']))
                     group.append(row)
+                if measured_stage:
+                    continue
                 combined.append(timed(entry, median(r['measured_ns'] for r in group),
                                       median(r['short_threshold_ns'] for r in group),
                                       sum(r['low_signal'] for r in group) > len(group)//2))
@@ -224,6 +233,197 @@ def verify_raw_samples(directory, manifest, record):
     require(next(observed, None) is None, f'{directory}: measurement has extra CPU samples')
 
 
+def verify_raw_timing(directory, manifest, record):
+    same(manifest['command'], read(directory/'process.json'), str(directory), 'native process receipt')
+    same(file_hash(directory/'process.log'), manifest['command']['log_sha256'],
+         str(directory), 'process log SHA256')
+    raw = read(directory/'process.log')
+    same(raw, read(directory/'batch.json'), str(directory), 'raw native batch')
+    for kind in ('wall', 'cpu'):
+        same(record[f'{kind}_clock'],
+             dict(source=raw[f'{kind}_clock'], resolution_ns=raw[f'{kind}_resolution_ns']),
+             str(directory), f'raw {kind} clock')
+    for key in ('empty_probe_ns', 'empty_probe_count'):
+        same(record[key], raw[key], str(directory), f'raw {key}')
+
+
+
+def verify_append_billing(events, ids, table):
+    expected = {(r['query'], r['op'], r['segment']): r['ns'] for r in table}
+    stages, services = {}, {}
+    segments = Counter()
+    workers = []
+    for event in events:
+        task = event.get('task')
+        if event['type'] == 'service':
+            require(task not in services, f'duplicate service task {task}')
+            services[task] = event
+        elif event['type'] == 'replay_stage':
+            require(task not in stages, f'duplicate stage task {task}')
+            stages[task] = event
+        elif event['type'] == 'worker_summary':
+            workers.append(event)
+    same(len(workers), 1, 'replay', 'worker summary count')
+    total_ns = sum(r['end_ns']-r['start_ns'] for r in services.values())
+    same(total_ns, workers[0]['cpu_busy_ns'], 'replay', 'CPU ledger total')
+    same(set(services), set(stages), 'replay', 'unique CPU task attribution')
+    cpu_ns = calls = 0
+    for task, stage in stages.items():
+        if (stage['operator'], stage['stage']) != ('SCORE_L2', 'merge'):
+            continue
+        service = services[task]
+        query = stage['query']
+        require(1 <= query <= len(ids), f'task {task}: runtime query out of range')
+        same((service['query'], stage['original_query_id']), (query, ids[query-1]), str(task), 'query IDs')
+        key = stage['original_query_id'], stage['op']+1
+        call = (*key, segments[key])
+        segments[key] += 1
+        require(call in expected, f'unexpected billed append {call}')
+        ns = expected.pop(call)
+        same(service['kind'], 'control', str(call), 'service kind')
+        same([service[k] for k in ('flops', 'read_bytes', 'write_bytes', 'checks', 'comparisons')],
+             [0]*5, str(call), 'service Work')
+        same(service['start_ns'], stage['time_ns'], str(call), 'service start')
+        same(service['end_ns']-service['start_ns'], ns, str(call), 'table service demand')
+        cpu_ns += ns
+        calls += 1
+    require(not expected, f'unbilled append {next(iter(expected), None)}')
+    return dict(calls=calls, cpu_ns=cpu_ns, cpu_fraction=cpu_ns/total_ns if total_ns else None)
+
+
+def replay_billing(args, config, label, data, capture, bound, profile_path, table, row):
+    # The Level A ledger run only checks charging. Level B/C require separate
+    # uninstrumented baselines, repetitions and comparisons.
+    output = (args.output/f'{label}-replay').resolve()
+    write_json(output.with_suffix('.resources.json'), resources(args.output, 2*GIB))
+    config_path = output.with_suffix('.json')
+    config = dict(config, index=str(Path(config['index']).resolve()),
+                  truth=str(Path(config['truth']).resolve()), execution_engine='replay', placement='host', data_provider='host_memory',
+                  order_policy='worker-fifo/1', native_workers=1, max_inflight=1,
+                  host=dict(slots=1, distance_setup=3, distance_rate=4, control_setup=1,
+                            control_rate=1, check_units=1, comparison_units=1),
+                  parameter_source='configured_unvalidated', event_log=True, device_profile='native-small',
+                  output_budget_bytes=2*GIB, simulation_timeout_seconds=600,
+                  ir_binding=str((capture/'binding.json').resolve()),
+                  ir_input=dict(path=str((capture/'package').resolve()), sha256=table['package_sha256']),
+                  cpu_profile=dict(path=str(profile_path.resolve()), sha256=file_hash(profile_path)))
+    write_json(config_path, config)
+    cmd = [sys.executable, '-B', str(ROOT/'tools/run_graph.py'), '--build', str(args.replay_build),
+           '--config', str(config_path), '--data', str(args.prepared/data), '--output', str(output)]
+    log_path = output.with_suffix('.log')
+    with log_path.open('wb') as stream:
+        process = subprocess.run(cmd, stdout=stream, stderr=subprocess.STDOUT, cwd=ROOT)
+    row['replay_command'] = dict(argv=cmd, exit_code=process.returncode, log_sha256=file_hash(log_path))
+    require(process.returncode == 0, f'{label}: replay failed, see {log_path}')
+    manifest_path = output/'manifest.json'
+    manifest = read(manifest_path)
+    command_ok(read(artifact(output, manifest, 'sst-measurement.json')), label)
+    effective = read(artifact(output, manifest, 'effective-config.json'))
+    same((effective['execution_engine'], effective['data_provider'], effective['placement'],
+          effective['native_workers'], effective['cpu_slots'], effective['max_inflight']),
+         ('replay', 'host_memory', 'host', 1, 1, 1), label, 'resident replay conditions')
+    same((effective['ir_input']['sha256'], effective['cpu_profile']['sha256']),
+         (table['package_sha256'], file_hash(profile_path)), label, 'replay package/Profile')
+    row['billing'] = verify_append_billing(rows(artifact(output, manifest, 'events.jsonl')),
+                                           bound['identity']['query_ids'], table['rows'])
+    row.update(replay_billing='passed', replay_manifest_sha256=file_hash(manifest_path))
+
+
+
+def assess_tables(args, report, profile, frozen, *, points=AC_POINTS,
+                  splits=(('tuning', 'tuning32'), ('evaluation', 'evaluation128'))):
+    collection = args.measured_collection.resolve()
+    tables = report['measured_merge_append'] = {}
+    if not (collection/'collection.json').is_file():
+        report['table_collection_status'] = 'incomplete'
+        return
+    receipt_path = collection/'collection.json'
+    receipt = read(receipt_path)
+    report['measured_collection_sha256'] = file_hash(receipt_path)
+    same((receipt['profile_sha256'], receipt['start_manifest_sha256']),
+         (PROFILE_SHA, START_SHA), 'collection', 'freeze identities')
+    hashes = receipt['artifacts_sha256']
+    for data, split in splits:
+        for width, budget in points:
+            label = f'{data}-l{width}-e{budget}'
+            row = tables[label] = dict(split=split, source='measured_table', status='failed',
+                                       replay_billing='not_run')
+            try:
+                capture = collection/f'{label}-capture'
+                binding = capture/'binding.json'
+                if args.capture_retry and capture.name in receipt['failed_runs']:
+                    retry = args.capture_retry.resolve()/capture.name
+                    if retry.is_dir():
+                        capture = retry
+                        binding = capture/'binding.json'
+                if capture.parent == collection:
+                    bound = checked(binding, hashes[str(binding.relative_to(collection))])
+                else:
+                    bound = read(binding)
+                row['capture'] = str(capture)
+                row['capture_manifest_sha256'] = file_hash(capture/'manifest.json')
+                ids = frozen['query_groups'][data]
+                identity = bound['identity']
+                index = read(args.prepared/'index/index.json')
+                same(search_config(identity), dict(entry=index['entry'], width=width,
+                     budget=budget, k=10, batch=1, chunk=16), label, 'search point')
+                same(identity['query_ids'], ids, label, 'query IDs')
+                locks = frozen['preparation']['files_sha256']
+                for key, name in [('base', f'{data}/base.f32'), ('queries', f'{data}/query.f32'),
+                                  ('graph', 'index/adjacency.u32')]:
+                    same(identity['objects'][key]['sha256'], locks[name], label, f'{key} SHA256')
+                config_path = collection/f'{label}.json'
+                config = checked(config_path, hashes[config_path.name])
+                _, _, input_identity = load_v2(args.prepared/data, config, collection.resolve())
+                native_run(capture, 'static_capture', bound, input_identity, split, dict(inputs={}))
+                calls = append_calls(capture/'package', identity)
+                paths = []
+                repeat_quality = []
+                process_hashes = set()
+                for repeat in range(1, REPEATS+1):
+                    directory = collection/f'{label}-r{repeat}'
+                    path = directory/'measurement.json'
+                    same(file_hash(path), hashes[str(path.relative_to(collection))], label, 'measurement SHA256')
+                    batch, record = native_run(directory, 'cpu_sample', bound, input_identity, split, dict(inputs={}))
+                    same((record['identity'], record['split'], record['run_id']),
+                         (identity, split, directory.name), label, 'measurement identity')
+                    manifest_path = directory/'manifest.json'
+                    manifest = checked(manifest_path, hashes[str(manifest_path.relative_to(collection))])
+                    verify_raw_samples(directory, manifest, record)
+                    verify_raw_timing(directory, manifest, record)
+                    log_hash = manifest['command']['log_sha256']
+                    require(log_hash not in process_hashes, f'{directory}: reused process log')
+                    process_hashes.add(log_hash)
+                    appends = [r for r in record['samples']
+                               if r['bucket'] == 'merge' and (r['query'], r['op'], r['segment']) in calls]
+                    cpu = sum(max(0, r['corrected_ns']) for r in record['samples'])
+                    append_cpu = sum(max(0, r['corrected_ns']) for r in appends)
+                    repeat_quality.append(dict(calls=len(appends), cpu_ns=append_cpu,
+                                               low_signal=sum(r['quality'] == 'low_signal' for r in appends),
+                                               sampled_cpu_fraction=append_cpu/cpu if cpu else None))
+                    paths.append(path)
+                    del batch, record, appends
+                row['repeats'] = repeat_quality
+                bound_profile = bind_profile(profile, capture/'package', binding, paths)
+                table = bound_profile['merge_append_table']
+                same([r['calls'] for r in repeat_quality], [len(table['rows'])]*REPEATS,
+                     label, 'append call counts')
+                out = args.output/f'{label}-profile.json'
+                write_json(out, bound_profile)
+                row.update(status='table_verified', calls=len(table['rows']),
+                           cpu_ns=sum(r['ns'] for r in table['rows']), profile_sha256=file_hash(out),
+                           package_sha256=table['package_sha256'], measurement_sha256=table['measurement_sha256'])
+                if args.replay_build:
+                    row['replay_billing'] = 'failed'
+                    replay_billing(args, config, label, data, capture, bound, out, table, row)
+            except (ValueError, OSError, KeyError, TypeError) as exc:
+                row['error'] = str(exc)
+            finally:
+                write_json(args.output/'table-points.json', tables)
+    report['table_gate'] = ('passed' if all(r['replay_billing'] == 'passed' for r in tables.values())
+                            else 'failed')
+
+
 def evaluate(args, report):
     profile = checked(args.profile, PROFILE_SHA)
     validate_profile(profile)
@@ -244,13 +444,20 @@ def evaluate(args, report):
     report['independence'] = 'diagnostic_prior_evaluation_exposure'
     report['frozen_classification'] = {row['stage']: row['classification'] for row in fit['stages']}
     classification = report['frozen_classification']
+    if args.measured_collection:
+        classification = {name: row for name, row in classification.items() if name != 'merge_append'}
+        report['stage_sources'] = {**dict.fromkeys(classification, 'frozen_model'),
+                                   'merge_append': 'measured_table'}
+        assess_tables(args, report, profile, frozen)
     models = {(row['operator'], row['stage']): row for row in profile['models']}
     prepared = args.prepared.resolve()
     locks = frozen['preparation']['files_sha256']
     for name, sha in locks.items():
         if name.startswith(('evaluation/', 'evaluation-truth/', 'index/')):
             same(file_hash(prepared/name), sha, name, 'frozen input SHA256')
-    for width, budget in POINTS:
+    points = AC_POINTS if args.measured_collection else POINTS
+    report['scope_points'] = [f'l{width}-e{budget}' for width, budget in points]
+    for width, budget in points:
         label = f'l{width}-e{budget}'
         config_path = args.collection/f'{label}.json'
         config = read(config_path)
@@ -290,16 +497,7 @@ def evaluate(args, report):
             receipt = run_report['inputs']['native cpu_sample']
             require(record['run_id'] == directory.name and receipt['command']['log_sha256'] not in hashes,
                     f'{directory}: reused or mismatched repeat')
-            same(file_hash(directory/'process.log'), receipt['command']['log_sha256'], label, 'process log SHA256')
-            same(manifest['command'], read(directory/'process.json'), label, 'native process receipt')
-            raw = read(directory/'process.log')
-            same(raw, read(directory/'batch.json'), label, 'raw native batch')
-            for kind in ('wall', 'cpu'):
-                same(record[f'{kind}_clock'],
-                     dict(source=raw[f'{kind}_clock'], resolution_ns=raw[f'{kind}_resolution_ns']),
-                     label, f'raw {kind} clock')
-            for key in ('empty_probe_ns', 'empty_probe_count'):
-                same(record[key], raw[key], label, f'raw {key}')
+            verify_raw_timing(directory, manifest, record)
             hashes.add(receipt['command']['log_sha256'])
             point['inputs'][directory.name] = dict(receipt, resource_sha256=file_hash(
                 args.collection/f'{directory.name}-resources.json'))
@@ -319,6 +517,16 @@ def markdown(report):
         lines.extend([report['evaluation_disclosure'], ''])
     if report.get('error'):
         lines.extend([f"失败原因 · {report['error']}", ''])
+    if report.get('table_collection_status') == 'incomplete':
+        lines.extend(['实测表采集尚无完整收据。', ''])
+    if report.get('measured_merge_append'):
+        lines.extend(['## merge_append 实测表', '',
+                      '| 切分与配置 | 调用 | 实测 CPU ns | 表核验 | 回放计费 |',
+                      '| --- | ---: | ---: | --- | --- |'])
+        for point, row in report['measured_merge_append'].items():
+            lines.append(f"| {point} | {row.get('calls', '—')} | {row.get('cpu_ns', '—')} | "
+                         f"{row['status']} | {row['replay_billing']} |")
+        lines.append('')
     for point, result in report['points'].items():
         lines.extend([f'## {point}', '',
                       '| 算子 | 相对 P50 | 相对 P90 | 短样本 | 状态 |',
@@ -335,7 +543,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for key in ('profile', 'fit-report', 'start-manifest', 'prepared', 'collection', 'output'):
         parser.add_argument('--'+key, type=Path, required=True)
+    parser.add_argument('--measured-collection', type=Path)
+    parser.add_argument('--replay-build', type=Path)
+    parser.add_argument('--capture-retry', type=Path,
+                        help='directory with new runs replacing failed static captures only')
+
     args = parser.parse_args()
+    if (args.replay_build or args.capture_retry) and not args.measured_collection:
+        parser.error('--replay-build and --capture-retry require --measured-collection')
     args.output.mkdir(parents=True)
     report = dict(format='ndpsim-v04-level-a/1', argv=sys.argv, status='failed',
                   ac_04_04='not_passed', numeric_gate='not_run', exit_code=1,
@@ -343,7 +558,8 @@ def main():
     try:
         write_json(args.output/'sources.json', inventory())
         evaluate(args, report)
-        if report['numeric_gate'] == 'passed':
+        if report['numeric_gate'] == 'passed' and (
+                not args.measured_collection or report.get('table_gate') == 'passed'):
             report.update(status='diagnostic', exit_code=2)
     except (ValueError, OSError, KeyError, TypeError) as exc:
         report['error'] = str(exc)

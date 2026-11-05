@@ -317,7 +317,7 @@ def validate(args, report):
     require(not set(ids).intersection(training['query_ids']), 'training/evaluation original query ID overlap')
     if args.scope == 'evaluation':
         require('merge_append_table' in profile, 'evaluation requires measured merge_append Profile')
-        selection = read(ROOT/SELECTION)
+        selection = read(ROOT/SELECTION)['datasets']['sift1m']
         same((training['split'], training['query_ids'], ids, base['records'], dim),
              ('tuning32', selection['tuning_ids'], selection['evaluation_ids'], 1_000_000, 128),
              'evaluation', 'frozen split/shape')

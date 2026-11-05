@@ -1,6 +1,6 @@
 # 文档入口
 
-当前开发目标为 [V0.4 PRD](prd-v0.4.md)：现有图搜索的独立原生程序、Profiler、CPU Cost Model、内存驻留单线程精度验证及盘控条件预测。需求与[18项实施清单](implementation-plan-v0.4.md)已整理，V04-0开工冻结、V04-1a纯算法核心、V04-1b原生构建与运行、V04-1c参考路径语义出口、V04-2a契约、V04-2b Profiler与静态IR采集、V04-2c训练采集与 A/B/A 、V04-3a 模型接口与失败关闭、V04-3b 训练拟合与冻结、V04-3c 静态执行与内存驻留及 V04-3d worker 与 CPU 顺序、V04-4a Validator 框架已完成。V04-4b 已实现，独立验收未关闭，其余5项待实施；[定向复核](source-audit-v0.4.md)记录此前核查与当前commit一致及证据边界。2/4 worker 为诊断项，真实 SSD/盘控硬件校准不在本版范围。
+当前开发目标为 [V0.4 PRD](prd-v0.4.md)：现有图搜索的独立原生程序、Profiler、CPU Cost Model、内存驻留单线程精度验证及盘控条件预测。需求与[18项实施清单](implementation-plan-v0.4.md)已整理，V04-0开工冻结、V04-1a纯算法核心、V04-1b原生构建与运行、V04-1c参考路径语义出口、V04-2a契约、V04-2b Profiler与静态IR采集、V04-2c训练采集与 A/B/A 、V04-3a 模型接口与失败关闭、V04-3b 训练拟合与冻结、V04-3c 静态执行与内存驻留及 V04-3d worker 与 CPU 顺序、V04-4a Validator 框架已完成。V04-4b 已完成，AC-04-04 按两点口径通过，其余5项待实施；[定向复核](source-audit-v0.4.md)记录此前核查与当前commit一致及证据边界。2/4 worker 为诊断项，真实 SSD/盘控硬件校准不在本版范围。
 
 当前可运行交付为 [V0.3](releases/v0.3.md)，继承语义先读 [PRD](prd-v0.3.md) 与 [IR 规范](ir-v0.3.md)。V0.3 阶段历史统一从[归档索引](archive/v0.3/README.md)追溯；下表只列现行开发与接口入口。V0.4 按实施清单分项推进，历史通过不替代本轮验收。
 
