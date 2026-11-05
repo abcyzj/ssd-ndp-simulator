@@ -15,7 +15,9 @@ sys.path.insert(0, str(ROOT/'tools'))
 
 from ann_data import write_json
 from benchmark_artifacts import binding, exact, graph_check, LOCK, PARAMETERS, record, VERSION
+from benchmark_data import convert
 from evaluate_v04_level_a import accuracy, assess_point, summary, timed, verify_raw_samples
+from evaluate_v04_level_bc import check_repeats, reduce_metrics
 from simulation_input import load_v2
 from test_benchmark_artifacts import fixture
 from test_static_replay import modified_package
@@ -35,10 +37,34 @@ def register(directory, *names):
     write_json(path, manifest)
 
 
+def admit_fixture_capture(capture):
+    binding_path = capture/'binding.json'
+    package = capture/'package'
+    bound = load(binding_path)
+    # Use explicit fixture admission so the test does not need hardware sysctls.
+    for path in (binding_path, package/'manifest.json'):
+        write_json(path, dict(load(path), source='synthetic-fixture'))
+    tail = dict(load(package/'tail.json'), manifest_sha256=file_hash(package/'manifest.json'))
+    tail['package_sha256'] = package_hash(tail)
+    write_json(package/'tail.json', tail)
+    register(capture, 'binding.json', 'package/manifest.json', 'package/tail.json')
+    return binding_path, package, bound, tail
+
+
 def run(out, build):
     assert level_c_thresholds_met(dict(qps=.01, cpu_ns=.10))
     assert not level_c_thresholds_met(dict(qps=.01, cpu_ns=.16))
     assert not level_c_thresholds_met(dict(qps=.01, cpu_ns=None))
+    native = [dict(qps=qps, cpu_ns=cpu, p50_ns=100, p95_ns=200,
+                   window_ns=window, occupancy=cpu/window)
+              for qps, cpu, window in [(75, 200, 250), (100, 100, 200), (125, 90, 150)]]
+    measured = dict(native[1], cpu_ns=116, p50_ns=116)
+    verdict = reduce_metrics(native, measured)
+    assert verdict['native_median']['qps'] == 100
+    assert verdict['relative_error']['qps'] == 0
+    assert (verdict['B'], verdict['C']) == ('failed', 'failed')
+    boundary = reduce_metrics(native, dict(native[1], qps=90, cpu_ns=115, p50_ns=85, p95_ns=240))
+    assert (boundary['B'], boundary['C']) == ('passed', 'passed')
     commands = []
 
     def call(tool, *args, expected=0):
@@ -79,16 +105,7 @@ def run(out, build):
              '--output', out/mode, '--mode', mode, *extra)
 
     capture = out/'static_capture'
-    binding_path = capture/'binding.json'
-    package = capture/'package'
-    bound = load(binding_path)
-    # Use explicit fixture admission so the test does not need hardware sysctls.
-    for path in (binding_path, package/'manifest.json'):
-        write_json(path, dict(load(path), source='synthetic-fixture'))
-    tail = dict(load(package/'tail.json'), manifest_sha256=file_hash(package/'manifest.json'))
-    tail['package_sha256'] = package_hash(tail)
-    write_json(package/'tail.json', tail)
-    register(capture, 'binding.json', 'package/manifest.json', 'package/tail.json')
+    binding_path, package, bound, tail = admit_fixture_capture(capture)
     host = dict(hardware='fixture', os='fixture', memory_bytes=64,
                 frequency='Unsupported', affinity='uncontrolled')
     profile = load(ROOT/'examples/v04-contract/cpu-profile.json')
@@ -169,6 +186,22 @@ def run(out, build):
         cfg = out/(engine+'-config.json')
         write_json(cfg, settings)
         call('run_graph.py', '--config', cfg, '--data', data, '--build', build, '--output', out/engine)
+
+    replay = out/'replay'
+    repeat = out/'replay-repeat'
+    call('run_graph.py', '--config', out/'replay-config.json', '--data', data,
+         '--build', build, '--output', repeat)
+    check_repeats([replay, repeat], dict(replay_runs=[]))
+    statistics = load(repeat/'statistics.json')
+    statistics['measurement_window_ns'] += 1
+    write_json(repeat/'statistics.json', statistics)
+    register(repeat, 'statistics.json')
+    try:
+        check_repeats([replay, repeat], dict(replay_runs=[]))
+    except ValueError as exc:
+        assert 'simulated statistics' in str(exc)
+    else:
+        raise AssertionError('modified simulated statistics passed repeat verification')
 
     schema = load(ROOT/'schemas/ndpsim-validator-report-v1.schema.json')
     paths = dict(capture=capture, baseline=out/'uninstrumented', samples=out/'cpu_sample',
@@ -276,6 +309,57 @@ def run(out, build):
     write_json(measurement, content)
     register(altered, 'measurement.json')
     check('missing-sample', 'missing/unplanned CPU samples', samples=altered)
+
+    # Change a real vector and update its legal dataset/index/truth identities.
+    # The old package must fail admission before a new search is submitted.
+    perturbed = out/'perturbed'
+    perturbed.mkdir()
+    raw_base = perturbed/'base'
+    raw = bytearray((inputs/'base').read_bytes())
+    struct.pack_into('<f', raw, 8, 50.)
+    raw_base.write_bytes(raw)
+    spec = load(inputs/'spec.json')
+    spec['files']['base']['sha256'] = file_hash(raw_base)
+    shutil.copyfile(inputs/'query', perturbed/'query')
+    write_json(perturbed/'spec.json', spec)
+    new_data = perturbed/'data'
+    dataset = convert(perturbed/'spec.json', new_data)
+    new_index = perturbed/'index'
+    shutil.copytree(index, new_index)
+    index_manifest = load(new_index/'index.json')
+    index_manifest['binding'] = binding(dataset, ('base',))
+    write_json(new_index/'index.json', index_manifest)
+    new_truth = perturbed/'truth'
+    exact(new_data, new_truth, 4)
+    new_config = dict(config, index=str(new_index), truth=str(new_truth))
+    new_config_path = perturbed/'config.json'
+    write_json(new_config_path, new_config)
+    stale_cfg = dict(load(out/'replay-config.json'), index=str(new_index), truth=str(new_truth))
+    write_json(perturbed/'stale-config.json', stale_cfg)
+    stale = perturbed/'stale'
+    call('run_graph.py', '--config', perturbed/'stale-config.json', '--data', new_data,
+         '--build', build, '--output', stale, expected=1)
+    assert 'replay actual object/shape mismatch: base' in commands[-1]['stderr'], commands[-1]
+    assert not (stale/'sst-measurement.json').exists()
+
+    for mode in ('static_capture', 'uninstrumented', 'cpu_sample'):
+        call('run_native.py', '--config', new_config_path, '--data', new_data,
+             '--binary', build/'ndpsim_native', '--output', perturbed/mode, '--mode', mode)
+    new_capture = perturbed/'static_capture'
+    new_binding, new_package, _, new_tail = admit_fixture_capture(new_capture)
+    for engine in ('direct', 'ir', 'replay'):
+        cfg = dict(new_config, execution_engine=engine)
+        if engine == 'replay':
+            cfg = dict(stale_cfg, ir_binding=str(new_binding),
+                       ir_input=dict(path=str(new_package), sha256=new_tail['package_sha256']))
+        cfg_path = perturbed/f'{engine}-config.json'
+        write_json(cfg_path, cfg)
+        call('run_graph.py', '--config', cfg_path, '--data', new_data,
+             '--build', build, '--output', perturbed/engine)
+    changed = check('perturbed-validated', capture=new_capture, baseline=perturbed/'uninstrumented',
+                    samples=perturbed/'cpu_sample', replay=perturbed/'replay',
+                    direct=perturbed/'direct', ir=perturbed/'ir')
+    assert [r['top_k'] for r in changed['queries']] != [r['top_k'] for r in positive['queries']]
 
 
 if __name__ == '__main__':

@@ -4,13 +4,13 @@
 
 ## 输入与运行
 
-一次核对一个搜索点。所有运行使用同一 dataset-v2、图、真值、原始查询顺序和搜索参数。原生无插桩、静态采集及独立 CPU 采样各用单 worker、单接纳和同一原生构建。用显式 `uninstrumented`、`static_capture`、`cpu_sample` 模式产生清单，CPU 采样使用 stride 1。采集目录中的 `package/` 必须覆盖全部查询，可附带 `--detail8`。只有无插桩批次进入基准时间比较。
+一次核对一个搜索点。所有运行使用同一 dataset-v2、图、真值、原始查询顺序和搜索参数。原生无插桩、静态采集及独立 CPU 采样各用单 worker、单接纳和同一原生构建。用显式 `benchmark`、`static_capture`、`cpu_sample` 模式产生清单，CPU 采样使用 stride 1。采集目录中的 `package/` 必须覆盖全部查询，可附带 `--detail8`。正式整机对拍使用只读取查询外层 CPU 时钟的 `benchmark`，并保留 `uninstrumented` 作为语义对照。见 [V04-4c](level-bc-v0.4.md)。
 
 模拟回放使用 1 worker、1 slot、单接纳、Host、`host_memory`、显式 Profile 和 `event_log: true`。提供同搜索点的单接纳 Host direct 和动态 ir 原始产物，两条参考路径均开启 `semantic_log`，并与回放使用同一模拟库构建。
 
 ```sh
 /opt/homebrew/Caskroom/miniconda/base/bin/python3.13 tools/validate_v04.py \
-  --scope evaluation --capture CAPTURE --baseline NATIVE_UNINSTRUMENTED \
+  --scope evaluation --baseline-mode benchmark --capture CAPTURE --baseline NATIVE_BENCHMARK \
   --samples CPU_SAMPLE --profile CPU_PROFILE.json --fit-report FIT_REPORT.json \
   --replay RESIDENT_REPLAY --direct DIRECT_HOST --ir DYNAMIC_IR_HOST \
   --output NEW_REPORT_DIRECTORY

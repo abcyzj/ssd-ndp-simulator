@@ -42,7 +42,7 @@
           "work": {"$ref": "#/$defs/work"},
           "reference_work": {
             "type": "object",
-            "required": ["direct", "ir"],
+            "dependentRequired": {"direct": ["ir"], "ir": ["direct"]},
             "properties": {"direct": {"$ref": "#/$defs/work"}, "ir": {"$ref": "#/$defs/work"}},
             "additionalProperties": false
           },

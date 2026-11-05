@@ -41,8 +41,9 @@ def rows(path):
 
 
 def same(actual, expected, scope, field):
-    require(actual == expected, f'{scope}: {field} differs (actual {str(actual)[:240]}, '
-                                 f'expected {str(expected)[:240]})')
+    if actual != expected:
+        raise ValueError(f'{scope}: {field} differs (actual {str(actual)[:240]}, '
+                         f'expected {str(expected)[:240]})')
 
 
 def grouped(path, key):
@@ -275,18 +276,41 @@ def native_run(directory, mode, binding, input_identity, split, report, *, strid
     return batch['queries'], measurement
 
 
-def reference(directory, engine, search, identity, element, report):
+def reference(directory, engine, search, identity, element, report, *, subset=None):
     manifest = read(directory/'manifest.json')
     command = read(artifact(directory, manifest, 'sst-measurement.json'))
     command_ok(command, engine)
+    same(file_hash(directory/'sst-measurement.log'), command['log_sha256'], engine, 'SST process log')
     report['inputs'][engine] = dict(manifest_sha256=file_hash(directory/'manifest.json'),
                                     command=command, element_sha256=manifest['element_sha256'])
     config = read(artifact(directory, manifest, 'config.json'))
     same((config['execution_engine'], manifest['execution_engine'], config['placement'],
-          config['search'], config['max_inflight'], manifest['input_identity'], manifest['element_sha256']),
-         (engine, engine, 'host', search, 1, identity, element), engine, 'config/input/build identity')
-    return (read(artifact(directory, manifest, 'results.json'))['queries'],
-            grouped(artifact(directory, manifest, 'semantic.jsonl'), 'query'))
+          config['search'], config['max_inflight'], manifest['element_sha256']),
+         (engine, engine, 'host', search, 1, element), engine, 'config/build identity')
+    if subset is None:
+        same(manifest['input_identity'], identity, engine, 'input identity')
+        ids = None
+    else:
+        data = Path(manifest['data'])
+        _, paths, ref_identity = load_v2(data, config, directory)
+        same(ref_identity, manifest['input_identity'], engine, 'revalidated workload')
+        same((ref_identity['dataset']['files']['base'], ref_identity['index']),
+             (identity['dataset']['files']['base'], identity['index']), engine, 'base/graph identity')
+        mapping = data/ref_identity['dataset']['files']['query']['mapping']
+        ids = [q for q, in struct.iter_unpack('<I', mapping.read_bytes())]
+        require(ids == list(subset)[:8], f'{engine}: detail8 IDs')
+        vectors = Path(paths['query_file']).read_bytes()
+        same(vectors, b''.join(subset[q] for q in ids), engine, 'detail8 query bytes')
+        report['inputs'][engine]['subset_query_ids'] = ids
+    results = read(artifact(directory, manifest, 'results.json'))['queries']
+    trace = grouped(artifact(directory, manifest, 'semantic.jsonl'), 'query')
+    if ids is None:
+        ids = [r['original_query_id'] for r in results]
+    same(len(results), len(set(ids)), engine, 'reference coverage')
+    for i, (row, query) in enumerate(zip(results, ids, strict=True), 1):
+        same((row['query'], row['original_query_id']), (i, query), engine, 'reference order')
+    same(set(trace), set(range(1, len(ids)+1)), engine, 'reference trace coverage')
+    return {q: (results[i-1], trace[i]) for i, q in enumerate(ids, 1)}
 
 
 def singleton(records, kind):
@@ -389,13 +413,38 @@ def validate(args, report):
     mapping = Path(manifest['data'])/input_identity['dataset']['files']['query']['mapping']
     same([q for q, in struct.iter_unpack('<I', mapping.read_bytes())], ids, 'workload', 'original ID mapping')
     native = {}
-    for mode, path in [('static_capture', capture), ('uninstrumented', args.baseline), ('cpu_sample', args.samples)]:
+    baseline_mode = getattr(args, 'baseline_mode', 'uninstrumented')
+    for mode, path in [('static_capture', capture), (baseline_mode, args.baseline), ('cpu_sample', args.samples)]:
         native[mode], measurement = native_run(path, mode, binding, input_identity, split, report)
     inventory = compare_inventory(package/'operations.jsonl', identity, measurement)
     report['checks'].append(dict(name='identity_and_contracts', status='passed', sampling_inventory=inventory))
 
-    refs = {engine: reference(path, engine, search, input_identity, manifest['element_sha256'], report)
+    detail_refs = getattr(args, 'detail8_references', None)
+    subset = None
+    if getattr(args, 'reference_detail8', False) or detail_refs:
+        raw = Path(paths['query_file']).read_bytes()
+        subset = {q: raw[i*dim*4:(i+1)*dim*4] for i, q in enumerate(ids)}
+    subset_only = getattr(args, 'reference_detail8', False)
+    if subset_only:
+        same((args.scope, search['width'], search['budget']), ('evaluation', 32, 64),
+             'reference', 'subset applicability')
+    refs = {engine: reference(path, engine, search, input_identity, manifest['element_sha256'], report,
+                              subset=subset if subset_only else None)
             for engine, path in [('direct', args.direct), ('ir', args.ir)]}
+    same(list(refs['direct']), list(refs['ir']), 'reference', 'matching query order')
+    if not subset_only:
+        same(list(refs['direct']), ids, 'reference', 'full query order')
+    if detail_refs:
+        detail = dict(inputs={})
+        for engine, directory in zip(('direct', 'ir'), detail_refs, strict=True):
+            diagnostic = reference(directory, engine, search, input_identity, manifest['element_sha256'],
+                                   detail, subset=subset)
+            for query, (result, trace) in diagnostic.items():
+                full_result, full_trace = refs[engine][query]
+                same(trace, full_trace, f'{engine} query {query}', 'detail8 semantic trace')
+                for key in ('top_k', 'expanded', 'insufficient'):
+                    same(result[key], full_result[key], f'{engine} query {query}', f'detail8 {key}')
+        report['inputs']['detail8_references'] = detail['inputs']
     operations = grouped(package/'operations.jsonl', 'query')
     events = defaultdict(list)
     records = []
@@ -463,16 +512,15 @@ def validate(args, report):
                 same(captured['expansion_trace'], [chosen for _, chosen in decisions],
                      where, 'capture detail expansion')
             reference_work = {}
-            for engine, (ref_results, trace) in refs.items():
-                same(len(ref_results), len(ids), engine, 'query coverage')
-                r = ref_results[i]
-                same((r['query'], r['original_query_id']), (i+1, query), f'{where} {engine}', 'query identity')
-                reference_work[engine] = check_sim(trace.pop(i+1, []), r, expected, score_chunks, dim, 'host',
-                                                   f'{where} {engine}', False)
-                same(reference_work[engine], work, f'{where} {engine}', 'reference Work')
+            for engine, reference_rows in refs.items():
+                if query in reference_rows:
+                    r, trace = reference_rows.pop(query)
+                    reference_work[engine] = check_sim(trace, r, expected, score_chunks, dim, 'host',
+                                                       f'{where} {engine}', False)
+                    same(reference_work[engine], work, f'{where} {engine}', 'reference Work')
             same((score_pairs(result['top_k']), result['expanded'], result['insufficient']),
                  (top, expanded, len(top) < search['k']), where, 'replay top-k/terminal')
-            n = native['uninstrumented'][i]
+            n = native[baseline_mode][i]
             same(result['recall_at_k'], n['recall_at_k'], where, 'recall')
             same(result['latency_ns'], result['visible_ns']-result['admission_ns'], where, 'latency')
             same((result['worker'], result['worker_wait_ns'], result['admission_ns']),
@@ -482,7 +530,7 @@ def validate(args, report):
                 top_k=result['top_k'], native_cpu_ns=n['thread_cpu_ns'], replay_cpu_ns=cpu,
                 cpu_delta_ns=cpu-n['thread_cpu_ns'], native_latency_ns=n['latency_ns'],
                 replay_latency_ns=result['latency_ns'], latency_delta_ns=result['latency_ns']-n['latency_ns']))
-    require(not replay_decisions and all(not trace for _, trace in refs.values()), 'extra decision/reference events')
+    require(not replay_decisions and all(not reference_rows for reference_rows in refs.values()), 'extra decision/reference events')
     report['checks'].append(dict(name='independent_search_numeric_and_work', status='passed'))
     ledger = singleton(records, 'resident_summary')
     workers = singleton(records, 'worker_summary')
@@ -513,7 +561,7 @@ def validate(args, report):
          (len(ids), 0, results[-1]['visible_ns'], sum(map(len, services.values()))),
          'replay ledger', 'window/service count')
     report['checks'].append(dict(name='independent_access_service_and_drain_ledger', status='passed'))
-    native_rows = native['uninstrumented']
+    native_rows = native[baseline_mode]
     native_ns = max(r['visible_ns'] for r in native_rows)-min(r['admission_ns'] for r in native_rows)
     native_cpu = sum(r['native_cpu_ns'] for r in query_report)
     replay_ns = summary['end_ns']
@@ -539,6 +587,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('capture', 'baseline', 'samples', 'profile', 'replay', 'direct', 'ir', 'output'):
         parser.add_argument('--'+name, type=Path, required=True)
+    parser.add_argument('--baseline-mode', choices=('uninstrumented', 'benchmark'), default='uninstrumented')
+    parser.add_argument('--reference-detail8', action='store_true')
     parser.add_argument('--fit-report', type=Path)
     parser.add_argument('--merge-append-measurement', action='append', type=Path, default=[])
     parser.add_argument('--scope', choices=('quick', 'evaluation'), required=True)
