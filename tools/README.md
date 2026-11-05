@@ -70,3 +70,7 @@ V0.3 阶段工具的职责、完整52条门槛和复现入口统一见 [V0.3 工
 ## V0.4 SSD 条件预测
 
 evaluate_v04_offload.py 运行并核验固定 O01～O04，保存同包 SSD Host 参照与 Controller 0.5×/1×/2× 算力扫描。需要已准备完整输入、冻结后主配置采集包、冻结 tuning32 v3 模型及拟合报告、模拟构建。正式条件预测另传两点 Level A/B/C 前提报告。配置成本来源、命令及产物见 [V04-5a](../docs/offload-v0.4.md)。
+
+## V0.4 兼容与继承回归
+
+verify_v04_regression.py 在新目录执行 R01～R04、detail8、默认 smoke 与冻结对拍，以及完整 V0.1 AC、T3/T4/T5、IR/静态回放 ASan。需要锁定 Python、完整现有准备输入及发布参考。入口保存 source、dependency、command、assertion 和 artifact 身份，按本轮约束关闭深度执行，触发深度要求时拒绝通过。实际命令、范围和限制见 [V04-5b](../docs/regression-v0.4.md)。
