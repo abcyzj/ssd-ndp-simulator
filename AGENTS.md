@@ -1,5 +1,7 @@
 # 仓库协作约定
 
+- 下一版为用户指定的 V0.4.5，正式需求见 docs/prd-v0.4.5.md；需求、源码核查（docs/source-audit-v0.4.5.md）和22项实施计划（docs/implementation-plan-v0.4.5.md）已完成规划，全部实现任务未开始，当前可运行交付仍为 V0.4。开展 V0.4.5 工作先读新 PRD、源码核查和实施计划，按 P00～P21 依赖及证据出口推进，其 §2 明确替代下列 V0.4 的旧路径兼容、模拟侧功能重算、原生构建入口及历史回归义务；未替代的时间、资源、独立核对、数据隔离与证据约束继续适用。以下 V0.4 条目用于理解现状和复现旧版，不得据此阻止新 PRD 已明确授权的迁移，也不得把旧版通过计为 V0.4.5 完成。
+
 - 当前可运行交付为 V0.4，正式范围、复现证据与限制见 docs/releases/v0.4.md；V0.3 为继承基线。先读 README.md、docs/prd-v0.4.md、docs/implementation-plan-v0.4.md 和 docs/source-audit-v0.4.md；继承 IR 语义先读 docs/prd-v0.3.md、docs/ir-v0.3.md，再按 docs/README.md 选读现行接口与测试。
 - V0.4 任务按实施清单的依赖推进，每项保存需求来源、输入/配置/源码/构建身份、命令/退出码、输出、断言和 hash 后更新状态。规划、静态核查、PoC、quick、历史通过与完整 AC 分开；局部精度未达时继续不依赖它的工作，不能记总通过。
 - V0.4 只做现有 SIFT1M/NSG 图及 ndpsim-ranked-expansion-v1 的独立原生程序、Profiler、CPU Profile、真实搜索插桩采集完整静态 IR、依赖驱动执行与内存驻留、Validator 和现有 L2 下沉条件预测。严格精度出口为当前 Mac 的内存驻留单线程 Host；2/4 worker 仅诊断。不得加入 DiskANN/PQ、第二负载、Deep10M、新计算位置、精细 Cache/DRAM 模型或真实 SSD/盘控校准。
