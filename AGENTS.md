@@ -11,7 +11,7 @@
 - 直接修改并编译 third_party/MQSim；不维护构建时patch栈或另一份集成源码。原生oracle从 deps.lock.json 锁定原生commit独立导出。SST Core不修改，依赖改动最小并保留许可证。
 - 依赖记录完整commit、MQSim相对原生diff和实际源码hash。提交时先保存MQSim fork commit，再更新主仓gitlink，不遗漏子模块实现；不自动提交、推送、升级或初始化Git。
 - 模拟构建以根CMake为入口，由 tools/prepare_sst.py 在 .cache/sst 固定源码副本准备SST；NDPSIM_SST_CACHE_DIR可覆盖，SST_ROOT可复用安装，不依赖旧阶段安装。原生仅构建使用根 CMake 的 `-DNDPSIM_NATIVE_ONLY=ON`，运行入口见 docs/native-v0.4.md。
-- V0.4常规完整规模验收采用 docs/validation-matrix-v0.4.md 的14个模拟配置；原生/模拟重复、采集和定向/继承测试另计。52条及配套效率/Q梯度为按需深度回归，影响不明或触发而未通过时阻塞相关交付；保留旧工具的52条完整性断言，不把14配置冒称完整V0.3验收。
+- V0.4常规完整规模验收采用 docs/validation-matrix-v0.4.md 的12个模拟配置；原生/模拟重复、采集和定向/继承测试另计。52条及配套效率/Q梯度为按需深度回归，影响不明或触发而未通过时阻塞相关交付；保留旧工具的52条完整性断言，不把12配置冒称完整V0.3验收。
 - 常规验证：`cmake -S . -B build/delivery -DBUILD_TESTING=ON`、`cmake --build build/delivery -j2`、`ctest --test-dir build/delivery --output-on-failure`。完整AC用锁定Python运行 tools/verify_acceptance.py；完整继承与V0.4出口见 docs/testing.md 和实施清单。保持 tests/、configs/regression/ 及有效独立断言，不因归档或版本名弱化回归。
 - 完整规模采集前重新核验输入、RAM/磁盘/输出预算和超时；保留失败样本，新目录重跑。CPU精度只适用于记录条件；SSD/PCIe/Controller仍 configured_unvalidated，Unsupported 明示，不预设下沉更快。
 - docs/releases/v0.2.md 用于继承证据；docs/prd-v0.1.md 保留需求基线。docs/archive/v0.1/、v0.2/ 和旧阶段计划按需追溯，阶段指令不继续生效；configs/benchmarks/、configs/experiments/v0.2/、tools/verify_t2.py～verify_t6.py仍是有效继承基线。需求、现行文档与代码冲突时说明差异及影响，不用历史方案覆盖现状。

@@ -23,6 +23,8 @@ cmake --build build/v042c-native -j2
 
 L/E=128/256 顺序执行三组 A/B/A，每组保留前后无插桩 A、低干扰基准 B，以及 QPS、延迟、缺页和 A 漂移。门槛是三组 `abs(B - mean(A_before, A_after)) / mean(A_before, A_after)` 的中位数 ≤5%。分类规则先写入 `plan.json`，再由四个训练点的 CPU 样本冻结主要、短和次要桶。报告保留每桶可用样本数、形状范围及估算 CPU 占比。低信号样本保留供审计，训练排除。估算占比仅用于分类，实际 CPU 训练目标来自独立采样。
 
+现行 [验收矩阵](validation-matrix-v0.4.md) 将 AC-04-03 的 A/B/A 主配置改为 64/128。下列 128/256 结果保留为历史证据，64/128 待补测。
+
 ## A/B/A 实测
 
 本机 Apple M4、16 GiB、macOS arm64。L/E=128/256 的 QPS 及相对扰动如下。

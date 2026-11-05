@@ -2,11 +2,11 @@
 
 从仓库根目录执行。V03-7 已完成总交付，支持显式 direct/ir，日常默认 ir，旧自动化参考显式 direct；以下包含数据准备、IR阶段验证及继承回归工具；阶段编号保留兼容，不表示当前开发任务。
 
-V0.4常规验收规划为 [14个模拟配置](../docs/validation-matrix-v0.4.md)，新入口尚待实现。下列 `verify_ir_matrix.py` / `verify_v03.py` 仍保持完整52条及配套门槛，仅在V0.4需要深度回归时调用；不提供14配置开关，也不把旧工具的缺项失败改成通过。
+V0.4常规验收规划为 [12个模拟配置](../docs/validation-matrix-v0.4.md)，新入口尚待实现。下列 `verify_ir_matrix.py` / `verify_v03.py` 仍保持完整52条及配套门槛，仅在V0.4需要深度回归时调用；不提供12配置开关，也不把旧工具的缺项失败改成通过。
 
 | 日常与准备工具 | 用途 |
 | --- | --- |
-| `freeze_v04_start.py` | V04-0完整输入/历史参考身份核验、预算和14配置计划冻结、四组合新smoke；[命令与限制](../docs/start-freeze-v0.4.md)，不启动下一任务或完整验收 |
+| `freeze_v04_start.py` | V04-0完整输入/历史参考身份核验、预算和历史14配置计划冻结、四组合新smoke；[命令与限制](../docs/start-freeze-v0.4.md)，不启动下一任务或完整验收 |
 | `collect_v04_level_a.py`、`evaluate_v04_level_a.py` | 冻结模型的四点原生 CPU 采样、覆盖核验和算子误差报告，见 [V04-4b](../docs/level-a-v0.4.md) |
 | `run_experiment.py` | 复用已有构建，只运行实验；见[README](../README.md) |
 | `run.py` | 根构建、CTest、两放置运行 |
