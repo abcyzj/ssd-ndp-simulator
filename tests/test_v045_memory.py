@@ -45,7 +45,7 @@ class Memory(unittest.TestCase):
         return dict(format='ndpsim-memory-run/1',package='package',scratch='scratch'+n+'.sqlite',report='report.json',report_sha256=file_hash(self.root/'report.json'),package_sha256=self.report['package_sha256'],registry='registry.json',registry_sha256=self.reg.sha256,allow_fixture=True,profile=pp.name,profile_sha256=file_hash(pp),target=TARGET,context='fixture/1',workers=workers,slots=slots or workers,admission=admission or workers,output='trace'+n+'.jsonl')
     def run_config(self,c,good=True):
         cp=self.root/('config'+str(self.count)+'.json');cp.write_bytes(canonical(c))
-        run=subprocess.run([self.sst,'--add-lib-path='+str(BUILD),str(ROOT/'configs/memory_timing.py'),'--',str(cp)],cwd='/tmp',capture_output=True,text=True)
+        run=subprocess.run([self.sst,'--add-lib-path='+str(BUILD),str(ROOT/'configs/memory_timing.py'),'--',json.dumps(str(cp),ensure_ascii=False)],cwd='/tmp',capture_output=True,text=True)
         (cp.with_suffix('.stdout')).write_text(run.stdout);(cp.with_suffix('.stderr')).write_text(run.stderr)
         self.assertEqual(run.returncode==0,good,run.stdout+run.stderr)
         out=self.root/c['output']

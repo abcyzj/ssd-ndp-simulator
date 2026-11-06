@@ -251,8 +251,10 @@ struct Profile::Data {
         std::map<CallKey, Row> rows;
     };
     Json target;
+    std::string source_sha256;
     std::map<RuleKey, Rule> rules;
 };
+const std::string& Profile::source_sha256() const { return data_->source_sha256; }
 Profile Profile::parse(const std::string& raw,
                        const std::string& expected,
                        const Registry& registry,
@@ -283,6 +285,7 @@ Profile Profile::parse(const std::string& raw,
         check_hashes(doc);
     }
     auto data = std::make_shared<Data>();
+    data->source_sha256 = expected;
     data->target = target_json(target);
     need(doc["target"] == data->target, "target hardware identity mismatch");
     for (const auto& row : doc["rules"]) {

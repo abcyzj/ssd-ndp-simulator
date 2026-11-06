@@ -115,6 +115,19 @@ void BufferModel::unpin(uint64_t id) {
     --c.pins;
     collect(id);
 }
+void BufferModel::release_part(uint64_t id, uint64_t bytes) {
+    auto& c = live_.at(id);
+    if (!c.owner || !c.delivered || c.pins || bytes > c.bytes)
+        throw std::logic_error("invalid partial credit release");
+    c.bytes -= bytes;
+    auto lifetime = c.lifetime;
+    bridge_.enqueue(now_(), EventBridge::ResourceCompleteRelease, "metadata partial credit release",
+                    [this, id, bytes, lifetime] {
+        used_ -= bytes;
+        records_.push_back({now_(), id, bytes, used_, false, lifetime});
+        arm();
+    });
+}
 void BufferModel::release(uint64_t id) {
     auto& c = live_.at(id);
     if (!c.owner || !c.delivered) throw std::logic_error("duplicate/ungranted credit release");

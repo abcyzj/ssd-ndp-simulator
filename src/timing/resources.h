@@ -59,6 +59,8 @@ public:
     bool cancel(uint64_t id);
     void pin(uint64_t id);
     void unpin(uint64_t id);
+    // Release a drained subrange of an unpinned atomic block; remaining owner persists.
+    void release_part(uint64_t id, uint64_t bytes);
     void release(uint64_t id); // Marks owner released; pinned credit remains charged.
     uint64_t used() const { return used_; }
     uint64_t peak() const { return peak_; }

@@ -2624,6 +2624,817 @@
       "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
       "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
       "reason": "PRD FR01/07/10；P11 内存 timing-only"
+    },
+    {
+      "name": "controller_timing_v045",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_reserved",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "reserved"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_command",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "command"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_local-read",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "local-read"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_staged",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "staged"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_compute-ready",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "compute-ready"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_computed",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "computed"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_result",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "result"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_input-flight",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "input-flight"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_compute-flight",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "compute-flight"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_return-flight",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "return-flight"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_delay-input",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "delay-input"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_delay-compute",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "delay-compute"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_delay-return",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "delay-return"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "sst_controller_timing_base",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller_timing.py"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P12 Controller PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "sst_controller_timing_input-flight",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller_timing.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_CONTROLLER_MODE=input-flight"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P12 Controller PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "sst_controller_timing_compute-flight",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller_timing.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_CONTROLLER_MODE=compute-flight"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P12 Controller PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "sst_controller_timing_return-flight",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller_timing.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_CONTROLLER_MODE=return-flight"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P12 Controller PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "sst_controller_timing_delay-input",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller_timing.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_CONTROLLER_MODE=delay-input"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P12 Controller PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "sst_controller_timing_delay-compute",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller_timing.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_CONTROLLER_MODE=delay-compute"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P12 Controller PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "sst_controller_timing_delay-return",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller_timing.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_CONTROLLER_MODE=delay-return"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P12 Controller PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_zero-compute",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "zero-compute"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_credit-wait",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "credit-wait"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "controller_timing_credit-failure",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${BUILD}/controller_timing_probe",
+        "credit-failure"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "sst_controller_timing_zero-compute",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller_timing.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_CONTROLLER_MODE=zero-compute"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P12 Controller PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "sst_controller_timing_credit-wait",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller_timing.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_CONTROLLER_MODE=credit-wait"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P12 Controller PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "name": "sst_controller_timing_credit-failure",
+      "sources": [
+        "tests/controller_timing_probe.cc",
+        "tests/controller_timing_scenario.h",
+        "tests/controller_timing_sst.cc",
+        "configs/regression/controller_timing.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller_timing.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_CONTROLLER_MODE=credit-failure"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P12 Controller PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
+      "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
+      "reason": "P12元数据Controller及实际SST服务出口"
     }
   ],
   "standalone_tests": [

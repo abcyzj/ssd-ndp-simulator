@@ -58,6 +58,7 @@ public:
                          const Target& target,
                          bool allow_fixture = false);
     Ns demand(const Input&) const;
+    const std::string& source_sha256() const;
 
 private:
     struct Data;

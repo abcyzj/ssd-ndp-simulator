@@ -264,6 +264,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "configs/regression/controller_timing.py",
+      "policy": "metadata-controller",
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "显式消息大小/方向/PCIe取整、无payload本地读、credit/FIFO/compute/返回门控与失败排空；独立手算及实际SST",
+      "deletion_gate": "保留当前资源与错误断言；P20移除旧功能实现时保留新接口和定向验证",
+      "reason": "P12 FR01/05/07 元数据传输与Controller资源，替代旧功能payload接口"
+    },
+    {
       "path": "configs/regression/event_bridge.py",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -1614,6 +1623,51 @@
       "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
     },
     {
+      "path": "src/timing/controller.cc",
+      "policy": "metadata-controller",
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "显式消息大小/方向/PCIe取整、无payload本地读、credit/FIFO/compute/返回门控与失败排空；独立手算及实际SST",
+      "deletion_gate": "保留当前资源与错误断言；P20移除旧功能实现时保留新接口和定向验证",
+      "reason": "P12 FR01/05/07 元数据传输与Controller资源，替代旧功能payload接口"
+    },
+    {
+      "path": "src/timing/controller.h",
+      "policy": "metadata-controller",
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "显式消息大小/方向/PCIe取整、无payload本地读、credit/FIFO/compute/返回门控与失败排空；独立手算及实际SST",
+      "deletion_gate": "保留当前资源与错误断言；P20移除旧功能实现时保留新接口和定向验证",
+      "reason": "P12 FR01/05/07 元数据传输与Controller资源，替代旧功能payload接口"
+    },
+    {
+      "path": "src/timing/local_reads.h",
+      "policy": "metadata-controller",
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "显式消息大小/方向/PCIe取整、无payload本地读、credit/FIFO/compute/返回门控与失败排空；独立手算及实际SST",
+      "deletion_gate": "保留当前资源与错误断言；P20移除旧功能实现时保留新接口和定向验证",
+      "reason": "P12 FR01/05/07 元数据传输与Controller资源，替代旧功能payload接口"
+    },
+    {
+      "path": "src/timing/messages.cc",
+      "policy": "metadata-controller",
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "显式消息大小/方向/PCIe取整、无payload本地读、credit/FIFO/compute/返回门控与失败排空；独立手算及实际SST",
+      "deletion_gate": "保留当前资源与错误断言；P20移除旧功能实现时保留新接口和定向验证",
+      "reason": "P12 FR01/05/07 元数据传输与Controller资源，替代旧功能payload接口"
+    },
+    {
+      "path": "src/timing/messages.h",
+      "policy": "metadata-controller",
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "显式消息大小/方向/PCIe取整、无payload本地读、credit/FIFO/compute/返回门控与失败排空；独立手算及实际SST",
+      "deletion_gate": "保留当前资源与错误断言；P20移除旧功能实现时保留新接口和定向验证",
+      "reason": "P12 FR01/05/07 元数据传输与Controller资源，替代旧功能payload接口"
+    },
+    {
       "path": "src/timing/resources.cc",
       "policy": "timing-runtime",
       "decision": "新增保留",
@@ -1738,6 +1792,33 @@
       "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
       "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "path": "tests/controller_timing_probe.cc",
+      "policy": "metadata-controller",
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "显式消息大小/方向/PCIe取整、无payload本地读、credit/FIFO/compute/返回门控与失败排空；独立手算及实际SST",
+      "deletion_gate": "保留当前资源与错误断言；P20移除旧功能实现时保留新接口和定向验证",
+      "reason": "P12 FR01/05/07 元数据传输与Controller资源，替代旧功能payload接口"
+    },
+    {
+      "path": "tests/controller_timing_scenario.h",
+      "policy": "metadata-controller",
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "显式消息大小/方向/PCIe取整、无payload本地读、credit/FIFO/compute/返回门控与失败排空；独立手算及实际SST",
+      "deletion_gate": "保留当前资源与错误断言；P20移除旧功能实现时保留新接口和定向验证",
+      "reason": "P12 FR01/05/07 元数据传输与Controller资源，替代旧功能payload接口"
+    },
+    {
+      "path": "tests/controller_timing_sst.cc",
+      "policy": "metadata-controller",
+      "decision": "保留",
+      "tasks": "P12/P13/P16/P19/P20/P21",
+      "replacement_assertions": "显式消息大小/方向/PCIe取整、无payload本地读、credit/FIFO/compute/返回门控与失败排空；独立手算及实际SST",
+      "deletion_gate": "保留当前资源与错误断言；P20移除旧功能实现时保留新接口和定向验证",
+      "reason": "P12 FR01/05/07 元数据传输与Controller资源，替代旧功能payload接口"
     },
     {
       "path": "tests/cost_model_probe.cc",
