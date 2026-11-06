@@ -753,3 +753,9 @@ if(BUILD_TESTING)
         set_tests_properties(graph_ssd_v045 PROPERTIES TIMEOUT 180)
     endif()
 endif()
+
+if(BUILD_TESTING)
+    add_test(NAME mqsim_oracle_v045 COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_v045_mqsim.py" "${PROJECT_BINARY_DIR}")
+    set_tests_properties(mqsim_oracle_v045 PROPERTIES TIMEOUT 120)
+endif()

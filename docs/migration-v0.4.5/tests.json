@@ -3492,6 +3492,19 @@
       "sources": [
         "tests/test_v045_validation.py"
       ]
+    },
+    {
+      "name": "mqsim_oracle_v045",
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v045_mqsim.py",
+        "${BUILD}"
+      ],
+      "decision": "保留",
+      "tasks": "P16/P20/P21",
+      "replacement_assertions": "新生成真实SST trace的独立请求/初态/页事务账本和缺失/重复/时间/顺序/配置/统计负例、失败证据保留",
+      "deletion_gate": "P16独立对拍断言不可删除，正式原生导出矩阵单独执行",
+      "reason": "新路径必要设备共同字段验证，不要求旧总AC"
     }
   ],
   "standalone_tests": [

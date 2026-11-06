@@ -1,5 +1,7 @@
 # 工具入口
 
+V0.4.5 独立MQSim对拍入口为 `verify_mqsim.py --build BUILD --output NEW_DIRECTORY`，只构建锁定原生oracle并对拍已有真实SST后端；[P16命令、证据与限制](../docs/mqsim-oracle-v0.4.5.md)。不调用旧总AC。
+
 从仓库根目录执行。V03-7 已完成总交付，支持显式 direct/ir，日常默认 ir，旧自动化参考显式 direct；以下包含数据准备、IR阶段验证及继承回归工具；阶段编号保留兼容，不表示当前开发任务。
 
 V0.4常规验收为 [12个模拟配置](../docs/validation-matrix-v0.4.md)，总入口为 `verify_v04.py --output NEW_DIRECTORY`，使用锁定 Python；[复现与边界](../docs/releases/v0.4.md)。下列 `verify_ir_matrix.py` / `verify_v03.py` 仍保持完整52条及配套门槛，仅在V0.4需要深度回归时调用；不提供12配置开关，也不把旧工具的缺项失败改成通过。

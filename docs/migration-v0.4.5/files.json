@@ -2595,6 +2595,15 @@
       "reason": "PRD FR01/07/10；P11 内存 timing-only"
     },
     {
+      "path": "tests/test_v045_mqsim.py",
+      "policy": "current-mqsim-oracle",
+      "decision": "保留",
+      "tasks": "P16/P20/P21",
+      "replacement_assertions": "锁定原生独立导出、显式请求与独立账本、共同配置/初态/完成时间/统计精确对拍、篡改与失败拒绝",
+      "deletion_gate": "P16共同设备行为核对必须保留，平台扩展由P12/P19另验",
+      "reason": "P16独立对拍入口及输入驱动错误的独立核验，不调用旧总AC"
+    },
+    {
       "path": "tests/test_v045_validation.py",
       "policy": "v045-cli",
       "decision": "保留",
@@ -3313,6 +3322,15 @@
       "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
       "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
       "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "path": "tools/verify_mqsim.py",
+      "policy": "current-mqsim-oracle",
+      "decision": "保留",
+      "tasks": "P16/P20/P21",
+      "replacement_assertions": "锁定原生独立导出、显式请求与独立账本、共同配置/初态/完成时间/统计精确对拍、篡改与失败拒绝",
+      "deletion_gate": "P16共同设备行为核对必须保留，平台扩展由P12/P19另验",
+      "reason": "P16独立对拍入口及输入驱动错误的独立核验，不调用旧总AC"
     },
     {
       "path": "tools/verify_t2.py",

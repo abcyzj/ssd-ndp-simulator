@@ -4,10 +4,11 @@ int main(int argc,char** argv) {
     std::unique_ptr<ndpsim::DeviceConfig> runtime;
     unsigned qd=argc>2?32:1;
     if(argc>1 && std::string(argv[1])=="--device-xml") {
-        if(argc!=7 || std::string(argv[3])!="--declaring-file" || std::string(argv[5])!="--qd")throw std::invalid_argument("invalid runtime config arguments");
+        if((argc!=7 && argc!=9) || std::string(argv[3])!="--declaring-file" || std::string(argv[5])!="--qd")throw std::invalid_argument("invalid runtime config arguments");
+        if(argc==9 && std::string(argv[7])!="--requests")throw std::invalid_argument("invalid request manifest argument");
         runtime=std::make_unique<ndpsim::DeviceConfig>(argv[2],argv[4]);qd=std::stoul(argv[6]);
     }
-    OrdinaryFixture fixture(!runtime && argc>1 && std::string(argv[1])=="miss",qd,false,0,runtime.get());
+    OrdinaryFixture fixture(!runtime && argc>1 && std::string(argv[1])=="miss",qd,false,0,runtime.get(),argc==9 && std::string(argv[7])=="--requests"?argv[8]:"");
     bool rejected=false;
     try {fixture.window->read(0,1);} catch(const std::logic_error&) {rejected=true;}
     if(!rejected) throw std::logic_error("early measurement accepted");

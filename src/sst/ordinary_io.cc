@@ -19,7 +19,8 @@ public:
                                SST_ELI_ELEMENT_VERSION(0, 1, 0),
                                "Ordinary NVMe validation",
                                COMPONENT_CATEGORY_UNCATEGORIZED)
-    SST_ELI_DOCUMENT_PARAMS({"device_xml", "External MQSim XML reference", ""},
+    SST_ELI_DOCUMENT_PARAMS({"requests", "Explicit ordinary read request manifest", ""},
+                            {"device_xml", "External MQSim XML reference", ""},
                             {"declaring_file", "Absolute file declaring XML reference", ""},
                             {"observe", "Passive research observation", "0"},
                             {"miss", "Small CMT", "0"},
@@ -32,7 +33,7 @@ public:
         fixture = std::make_unique<OrdinaryFixture>(p.find<int>("miss", 0),
                                                     p.find<unsigned>("qd", 1),
                                                     p.find<int>("single_read", 0),
-                                                    p.find<uint64_t>("read_delay", 0), runtime.get());
+                                                    p.find<uint64_t>("read_delay", 0), runtime.get(),p.find<std::string>("requests", ""));
         if (p.find<int>("observe", 0)) {
             observation = std::make_unique<Observation>();
             fixture->flow->submitted = [this](uint64_t id, uint64_t lba, unsigned n) {

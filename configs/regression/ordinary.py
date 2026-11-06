@@ -6,3 +6,5 @@ component.addParams({'observe':os.environ.get('NDPSIM_OBSERVE','0'),'miss':os.en
 component.addParams({'single_read':os.environ.get('NDPSIM_SINGLE_READ','0'),'read_delay':os.environ.get('NDPSIM_NAND_READ_DELAY','0')})
 
 component.addParams({'device_xml':os.environ.get('NDPSIM_DEVICE_XML',''), 'declaring_file':os.environ.get('NDPSIM_DECLARING_FILE','')})
+
+component.addParams({'requests':os.environ.get('NDPSIM_REQUESTS','')})
