@@ -570,6 +570,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "extensions/graph/fit-recipe.json",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P06/P15/P18/P20/P21",
+      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
+      "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
+      "reason": "PRD FR08；P06独立拟合／制表"
+    },
+    {
       "path": "extensions/graph/operators.json",
       "policy": "capture-extension",
       "decision": "保留",
@@ -577,6 +586,15 @@
       "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
       "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
       "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
+    },
+    {
+      "path": "python/FITTING.md",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P06/P14/P15/P18/P20/P21",
+      "replacement_assertions": "独立拟合／制表的输入契约、质量／隔离、命令、产物及失败关闭限制说明",
+      "deletion_gate": "公开拟合入口和新版契约文档检查通过，保持可复现说明",
+      "reason": "PRD FR08/12；P06使用文档"
     },
     {
       "path": "python/LICENSE",
@@ -615,6 +633,33 @@
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
     },
     {
+      "path": "python/ndpsim/cost_models.py",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P06/P15/P18/P20/P21",
+      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
+      "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
+      "reason": "PRD FR08；P06独立拟合／制表"
+    },
+    {
+      "path": "python/ndpsim/fit_cli.py",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P06/P15/P18/P20/P21",
+      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
+      "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
+      "reason": "PRD FR08；P06独立拟合／制表"
+    },
+    {
+      "path": "python/ndpsim/fitting.py",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P06/P15/P18/P20/P21",
+      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
+      "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
+      "reason": "PRD FR08；P06独立拟合／制表"
+    },
+    {
       "path": "python/ndpsim/schemas/ndpsim-contract-v2.schema.json",
       "policy": "p02-generic-capture",
       "decision": "保留通用SDK/封包校验与回归",
@@ -622,6 +667,15 @@
       "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
       "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/ndpsim/schemas/ndpsim-cost-profile-v1.schema.json",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P06/P15/P18/P20/P21",
+      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
+      "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
+      "reason": "PRD FR08；P06独立拟合／制表"
     },
     {
       "path": "python/ndpsim/schemas/ndpsim-measurement-v2.schema.json",
@@ -1461,6 +1515,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
     },
     {
+      "path": "tests/fit_profile_probe.cc",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P06/P15/P18/P20/P21",
+      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
+      "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
+      "reason": "PRD FR08；P06独立拟合／制表"
+    },
+    {
       "path": "tests/fixtures/m0.4-round.json",
       "policy": "content",
       "decision": "拆分迁移",
@@ -1936,6 +1999,15 @@
       "replacement_assertions": "通用公式独立数值/单位/范围/溢出，表完整键/Work/身份及编译期注册失败关闭",
       "deletion_gate": "新模型接口数值/负例及后续timing-only接线通过；不因旧图Profile迁移删除有效断言",
       "reason": "PRD FR04/07；P05通用模型与注册接口"
+    },
+    {
+      "path": "tests/test_v045_fitting.py",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P06/P15/P18/P20/P21",
+      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
+      "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
+      "reason": "PRD FR08；P06独立拟合／制表"
     },
     {
       "path": "tests/test_v04_contract.py",

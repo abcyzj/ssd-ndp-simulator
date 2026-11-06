@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ndpsim-tools"
-version = "0.4.5.dev2"
+version = "0.4.5.dev6"
 requires-python = ">=3.9"
 dependencies = ["jsonschema>=4.18,<5", "referencing>=0.30,<1"]
-description = "Static IR metadata capture and structural validation tools"
+description = "Metadata capture, independent CPU fitting and measured service tables"
 license = "MIT"
 license-files = ["LICENSE"]
 

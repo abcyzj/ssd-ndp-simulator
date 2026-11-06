@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ndpsim:cost-profile:1",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "ndpsim-cost-profile/1"
+    },
+    "fixture": {
+      "type": "boolean"
+    },
+    "target": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/target"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "operator_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "stage_kind": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "context": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "location": {
+                "enum": [
+                  "host",
+                  "controller"
+                ]
+              },
+              "target_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "feature_ranges": {
+                "type": "array",
+                "items": {
+                  "$ref": "urn:ndpsim:contract:2#/$defs/range"
+                },
+                "minItems": 0
+              },
+              "work_units": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              },
+              "source": {
+                "const": "prediction"
+              },
+              "formula": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "parameter_schema_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "parameters": {
+                "type": "object"
+              },
+              "measurement_sha256": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "minItems": 1
+              },
+              "training_query_ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                },
+                "minItems": 1
+              },
+              "fit_report_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "operator",
+              "operator_version",
+              "stage_kind",
+              "context",
+              "location",
+              "target_id",
+              "feature_ranges",
+              "work_units",
+              "source",
+              "formula",
+              "parameter_schema_sha256",
+              "parameters",
+              "measurement_sha256",
+              "training_query_ids",
+              "fit_report_sha256"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "operator_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "stage_kind": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "context": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "location": {
+                "enum": [
+                  "host",
+                  "controller"
+                ]
+              },
+              "target_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "feature_ranges": {
+                "type": "array",
+                "items": {
+                  "$ref": "urn:ndpsim:contract:2#/$defs/range"
+                },
+                "minItems": 0
+              },
+              "work_units": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              },
+              "source": {
+                "const": "measured-table"
+              },
+              "binding": {
+                "$ref": "urn:ndpsim:contract:2#/$defs/binding"
+              },
+              "measurement_sha256": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "minItems": 3
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "urn:ndpsim:contract:2#/$defs/table_row"
+                },
+                "minItems": 1
+              },
+              "quality_report_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "operator",
+              "operator_version",
+              "stage_kind",
+              "context",
+              "location",
+              "target_id",
+              "feature_ranges",
+              "work_units",
+              "source",
+              "binding",
+              "measurement_sha256",
+              "rows",
+              "quality_report_sha256"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "format",
+    "fixture",
+    "target",
+    "rules"
+  ],
+  "additionalProperties": false
+}

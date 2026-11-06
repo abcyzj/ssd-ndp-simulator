@@ -63,3 +63,9 @@ A successful structural report has `structural_passed=true`,
 Only P04/registered workload-side validation may provide business/Work evidence;
 P02 never turns payload hashes or source labels into that evidence. Production
 execution, hardware compatibility, CPU fitting and sampling remain later tasks.
+
+P06 additionally provides `python -m ndpsim.fit_cli check|fit|table|evaluate`.
+See [independent fitting and measured tables](FITTING.md) for the explicit
+manifest/recipe contract, grouped training, quality gates and standalone commands.
+This module needs only the installed Python package and declared metadata inputs;
+it has no dependency on a compiler, simulator, old stage tools or historical runs.

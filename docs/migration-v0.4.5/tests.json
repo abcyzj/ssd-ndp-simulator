@@ -2224,6 +2224,30 @@
       "replacement_assertions": "独立整数/Decimal/树遍历期望ns；公式、范围、目标及逐调用实测表失败关闭",
       "deletion_gate": "保留当前服务模型正确性和扩展注册断言",
       "reason": "PRD FR04/07；P05实现出口"
+    },
+    {
+      "backtrace": 191,
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v045_fitting.py",
+        "${BUILD}/fit_profile_probe"
+      ],
+      "name": "independent_fit_v045",
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "tests/test_v045_fitting.py",
+        "tests/fit_profile_probe.cc"
+      ],
+      "decision": "保留",
+      "tasks": "P06/P15/P18/P20/P21",
+      "replacement_assertions": "独立安装/分组留出/重复确定性/预测质量及实测表完整覆盖、C++Profile消费、失败不出成功",
+      "deletion_gate": "保留本版独立拟合与质量/来源门控，不按旧版本兼容删除",
+      "reason": "PRD FR08；P06独立拟合／制表"
     }
   ],
   "standalone_tests": [

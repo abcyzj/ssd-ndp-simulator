@@ -556,3 +556,11 @@ if(BUILD_TESTING)
     add_test(NAME cost_model_v045 COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_v045_cost_model.py" "$<TARGET_FILE:cost_model_probe>")
 endif()
+
+if(BUILD_TESTING)
+    add_executable(fit_profile_probe tests/fit_profile_probe.cc)
+    target_include_directories(fit_profile_probe PRIVATE "${PROJECT_SOURCE_DIR}/third_party/sst-core/external")
+    target_link_libraries(fit_profile_probe PRIVATE ndpsim::cost)
+    add_test(NAME independent_fit_v045 COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_v045_fitting.py" "$<TARGET_FILE:fit_profile_probe>")
+endif()
