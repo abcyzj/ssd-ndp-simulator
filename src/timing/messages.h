@@ -59,6 +59,7 @@ public:
         uint64_t id, query, task, logical, payload, wire, submitted, arrived;
         MessageKind kind;
         Direction direction;
+        uint64_t chunk, count, dimension;
     };
     MetadataPcie(Host_Components::PCIe_Link&,
                  EventBridge&,

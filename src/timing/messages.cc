@@ -145,7 +145,7 @@ uint64_t MetadataPcie::send(Message m, std::function<void(Message)> receive) {
     auto id = ++next_;
     p->Platform_id = id;
     Record record{
-        id, m.query, m.task, s.logical, s.payload, wire, now_(), 0, m.kind, direction(m.kind)};
+        id, m.query, m.task, s.logical, s.payload, wire, now_(), 0, m.kind, direction(m.kind), m.chunk, m.count, m.dimension};
     p->Platform_arrived =
         [this, alive = alive_, m, record, receive = std::move(receive)]() mutable {
             if (!*alive)

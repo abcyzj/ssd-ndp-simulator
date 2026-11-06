@@ -38,32 +38,35 @@ uint64_t positive(const Json& j) {
     return j.get<uint64_t>();
 }
 } // namespace
-Plan::Plan(const std::filesystem::path& path) {
+Plan::Plan(const std::filesystem::path& path, bool ssd) {
     const auto raw = read(path);
     auto c = parse(raw);
-    const std::set<std::string> fields = {"format",
-                                          "package",
-                                          "scratch",
-                                          "report",
-                                          "report_sha256",
-                                          "package_sha256",
-                                          "registry",
-                                          "registry_sha256",
-                                          "semantic_report",
-                                          "semantic_sha256",
-                                          "allow_fixture",
-                                          "profile",
-                                          "profile_sha256",
-                                          "target",
-                                          "context",
-                                          "workers",
-                                          "slots",
-                                          "admission",
-                                          "output"};
+    std::set<std::string> fields = {"format",
+                                    "package",
+                                    "scratch",
+                                    "report",
+                                    "report_sha256",
+                                    "package_sha256",
+                                    "registry",
+                                    "registry_sha256",
+                                    "semantic_report",
+                                    "semantic_sha256",
+                                    "allow_fixture",
+                                    "profile",
+                                    "profile_sha256",
+                                    "target",
+                                    "context",
+                                    "workers",
+                                    "slots",
+                                    "admission",
+                                    "output"};
+    if (ssd)
+        fields.insert({"placement", "layout", "device", "resources"});
     need(c.is_object(), "config object required");
     for (auto i = c.begin(); i != c.end(); ++i)
         need(fields.count(i.key()), "unknown config field " + i.key());
-    need(c.at("format") == "ndpsim-memory-run/1", "unsupported format");
+    need(c.at("format") == (ssd ? "ndpsim-graph-ssd-run/1" : "ndpsim-memory-run/1"),
+         "unsupported format");
     auto resolve = [&](const std::string& k) {
         return std::filesystem::absolute(path).parent_path() / c.at(k).get<std::string>();
     };
@@ -116,7 +119,8 @@ Plan::Plan(const std::filesystem::path& path) {
                t.at("affinity"),
                t.at("memory_bytes")};
     context_ = c.at("context");
-    need(context_ == "resident_random/2" ||
+    need((ssd && (context_ == "ssd_host_return/1" || context_ == "ssd_controller_command/1")) ||
+             (!ssd && context_ == "resident_random/2") ||
              (inputs.receipt.allow_fixture && context_ == "fixture/1"),
          "unsupported memory context");
     const auto pr = read(resolve("profile"));
@@ -145,7 +149,8 @@ Plan::Plan(const std::filesystem::path& path) {
                 {"registry", reg},
                 {"profile", parse(pr)}};
 }
-timing::Operation Plan::lower(const dag::Stage& s, timing::HostCpu& cpu) {
+timing::Operation
+Plan::lower(const dag::Stage& s, timing::HostCpu& cpu, const std::string& location) {
     need(s.metadata.context == context_, "stage context mismatch");
     cost::Input in;
     in.key = s.key;
@@ -153,7 +158,7 @@ timing::Operation Plan::lower(const dag::Stage& s, timing::HostCpu& cpu) {
     in.operator_version = s.operator_version;
     in.stage_kind = s.metadata.kind;
     in.context = context_;
-    in.location = "host";
+    in.location = location;
     in.work = s.metadata.work;
     in.features = s.metadata.features;
     in.target = target_;
@@ -171,7 +176,7 @@ timing::Operation Plan::lower(const dag::Stage& s, timing::HostCpu& cpu) {
     for (const auto& r : rules_)
         if (r.at("operator") == in.operator_id && r.at("operator_version") == in.operator_version &&
             r.at("stage_kind") == in.stage_kind && r.at("context") == context_ &&
-            r.at("location") == "host") {
+            r.at("location") == location) {
             last_demand = {{"query", s.key.query},
                            {"op", s.key.op},
                            {"stage", s.key.stage},

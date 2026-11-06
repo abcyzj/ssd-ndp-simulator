@@ -183,6 +183,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "configs/graph_ssd_timing.py",
+      "policy": "timing-only-graph-mapping",
+      "decision": "保留",
+      "tasks": "P13/P19/P20/P21",
+      "replacement_assertions": "同包双SSD映射、原始Work保持、合法分块/模型上下文拒绝、SQ/CQ/平台字节独立账本、无payload与排空",
+      "deletion_gate": "当前SSD映射与独立资源断言必须保留",
+      "reason": "P13 FR05/09；图特定lowering与SST接线，不链接功能库"
+    },
+    {
       "path": "configs/layouts/graph-example.json",
       "policy": "metadata-layout",
       "decision": "保留",
@@ -1155,6 +1164,24 @@
       "reason": "PRD FR01/03；P08 静态DAG执行器"
     },
     {
+      "path": "src/extensions/graph/ssd.cc",
+      "policy": "timing-only-graph-mapping",
+      "decision": "保留",
+      "tasks": "P13/P19/P20/P21",
+      "replacement_assertions": "同包双SSD映射、原始Work保持、合法分块/模型上下文拒绝、SQ/CQ/平台字节独立账本、无payload与排空",
+      "deletion_gate": "当前SSD映射与独立资源断言必须保留",
+      "reason": "P13 FR05/09；图特定lowering与SST接线，不链接功能库"
+    },
+    {
+      "path": "src/extensions/graph/ssd.h",
+      "policy": "timing-only-graph-mapping",
+      "decision": "保留",
+      "tasks": "P13/P19/P20/P21",
+      "replacement_assertions": "同包双SSD映射、原始Work保持、合法分块/模型上下文拒绝、SQ/CQ/平台字节独立账本、无payload与排空",
+      "deletion_gate": "当前SSD映射与独立资源断言必须保留",
+      "reason": "P13 FR05/09；图特定lowering与SST接线，不链接功能库"
+    },
+    {
       "path": "src/ir/embedded.h.in",
       "policy": "ir",
       "decision": "拆分后删除候选",
@@ -1605,6 +1632,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
     },
     {
+      "path": "src/sst/ssd_host.cc",
+      "policy": "timing-only-graph-mapping",
+      "decision": "保留",
+      "tasks": "P13/P19/P20/P21",
+      "replacement_assertions": "同包双SSD映射、原始Work保持、合法分块/模型上下文拒绝、SQ/CQ/平台字节独立账本、无payload与排空",
+      "deletion_gate": "当前SSD映射与独立资源断言必须保留",
+      "reason": "P13 FR05/09；图特定lowering与SST接线，不链接功能库"
+    },
+    {
       "path": "src/sst/system.cc",
       "policy": "bridge",
       "decision": "改造保留",
@@ -1927,6 +1963,15 @@
       "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
       "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：native"
+    },
+    {
+      "path": "tests/graph_ssd_probe.cc",
+      "policy": "timing-only-graph-mapping",
+      "decision": "保留",
+      "tasks": "P13/P19/P20/P21",
+      "replacement_assertions": "同包双SSD映射、原始Work保持、合法分块/模型上下文拒绝、SQ/CQ/平台字节独立账本、无payload与排空",
+      "deletion_gate": "当前SSD映射与独立资源断言必须保留",
+      "reason": "P13 FR05/09；图特定lowering与SST接线，不链接功能库"
     },
     {
       "path": "tests/host_scenario.h",
@@ -2413,6 +2458,15 @@
       "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
       "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
       "reason": "PRD FR08；P06独立拟合／制表"
+    },
+    {
+      "path": "tests/test_v045_graph_ssd.py",
+      "policy": "timing-only-graph-mapping",
+      "decision": "保留",
+      "tasks": "P13/P19/P20/P21",
+      "replacement_assertions": "同包双SSD映射、原始Work保持、合法分块/模型上下文拒绝、SQ/CQ/平台字节独立账本、无payload与排空",
+      "deletion_gate": "当前SSD映射与独立资源断言必须保留",
+      "reason": "P13 FR05/09；图特定lowering与SST接线，不链接功能库"
     },
     {
       "path": "tests/test_v045_layout.py",

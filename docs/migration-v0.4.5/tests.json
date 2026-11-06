@@ -3435,6 +3435,34 @@
       "replacement_assertions": "size-only消息/PCIe/本地读/缓冲服务手算，模型来源与门控、独立延迟注入、在途故障及Close清零",
       "deletion_gate": "保留当前产品资源/错误断言，不以历史兼容测试替代",
       "reason": "P12元数据Controller及实际SST服务出口"
+    },
+    {
+      "backtrace": 271,
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v045_graph_ssd.py",
+        "${BUILD}"
+      ],
+      "name": "graph_ssd_v045",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "tests/test_v045_graph_ssd.py",
+        "tests/graph_ssd_probe.cc"
+      ],
+      "decision": "保留",
+      "tasks": "P13/P19/P20/P21",
+      "replacement_assertions": "新图包双放置实际SST、Work/字节/分块/门控/资源排空与负例；ASan用原生时间驱动仅作探针",
+      "deletion_gate": "正式SSD账本及映射替代出口通过前保留",
+      "reason": "P13定向接线验证，不计AC06通过"
     }
   ],
   "standalone_tests": [

@@ -58,6 +58,9 @@ public:
     const FifoResource& compute() const {
         return compute_;
     }
+    History<CreditRecord>& credit_observations() { return buffer_.observations(); }
+    History<ServiceRecord>& compute_observations() { return compute_.observations(); }
+    History<ServiceRecord>& port_observations() { return port_.observations(); }
     // Test/research boundary observer, no implicit target service or clock charge.
     std::function<void(const std::string&, uint64_t)> observe;
 
