@@ -1,4 +1,4 @@
-# 独立图搜索参考工程（P03）
+# 独立图搜索参考工程（P03/P04）
 
 C++17/POSIX 原生 `ndpsim-ranked-expansion-v1`，只依赖标准库、线程和显式提供的 [Capture SDK](../../sdk/README.md)。macOS arm64 已验证；Linux 尚未实测。无需模拟工程、SST、MQSim、设备 XML、构建缓存或 Python 生产运行时。Python 3.9+ 仅用于测试。
 
@@ -50,8 +50,13 @@ ndpsim_native N D Q R truth_k entry k L B E chunk workers admission
 
 ## 当前边界
 
-P03 保留旧原生 raw observation 能力，`static_capture` **不是 `ndpsim-static-ir/2` 包**，不能交给新仿真入口。新 SDK 的图阶段接线、完整特征/依赖、Measurement/2、封包及独立语义校验由 P04 实施。这里不调用旧 Python 封包工具，也不要求历史 results。
+P03 保留旧原生 raw observation 能力，`static_capture` **不是 `ndpsim-static-ir/2` 包**，不能交给新仿真入口。新 SDK 的图阶段接线、完整特征/依赖、Measurement/2、封包及独立语义校验已由 P04 实施，见 [capture instructions](CAPTURE.md)。这里不调用旧 Python 封包工具，也不要求历史 results。
 
-未运行 SIFT1M 全规模、A/B/A、正式采集、CPU 拟合或精度验收。本工程身份变化后必须重采／重拟合，旧表不能直接继承。正式数据准备和预算说明参见 [SIFT1M](../../docs/sift1m.md)；原始锁定 NSG/prepared 尚缺的状态见 [P00](../../docs/baseline-v0.4.5.md)。大规模运行前须重新检查输入和资源。
+未运行 SIFT1M 全规模、正式 A/B/A/采集、CPU 拟合或精度验收；合成 pilot 记录见 [P04](../../docs/capture-graph-v0.4.5.md)。本工程身份变化后必须重采／重拟合，旧表不能直接继承。正式数据准备和预算说明参见 [SIFT1M](../../docs/sift1m.md)；原始锁定 NSG/prepared 尚缺的状态见 [P00](../../docs/baseline-v0.4.5.md)。大规模运行前须重新检查输入和资源。
 
 本工程与 SDK 使用 MIT License，见各自 LICENSE；不分发第三方模拟器或数据集。
+
+P04 update: new `graph_*` native modes, IR/2 sealing, Measurement/2 and independent
+semantic validation are implemented. See [capture instructions](CAPTURE.md). The
+legacy raw-mode descriptions above remain migration references; use the new entry
+point for new packages. Formal SIFT1M collection and complete AC remain pending.

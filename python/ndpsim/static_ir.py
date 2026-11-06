@@ -81,7 +81,7 @@ def _load(path, limit=META_MAX):
 
 # Bundled with the installable package. These are byte-for-byte the frozen schemas.
 SCHEMA_DIR=Path(__file__).with_name('schemas')
-_SCHEMAS=[_load(SCHEMA_DIR/n) for n in ('ndpsim-contract-v2.schema.json','ndpsim-static-ir-v2.schema.json')]
+_SCHEMAS=[_load(SCHEMA_DIR/n) for n in ('ndpsim-contract-v2.schema.json','ndpsim-static-ir-v2.schema.json','ndpsim-measurement-v2.schema.json')]
 _SCHEMA_REGISTRY=SchemaRegistry().with_resources((s['$id'],Resource.from_contents(s)) for s in _SCHEMAS)
 _STRICT=validators.extend(Draft202012Validator,type_checker=Draft202012Validator.TYPE_CHECKER.redefine('integer',lambda checker,v:type(v) is int))
 _VALIDATORS={}
@@ -90,7 +90,7 @@ _VALIDATORS={}
 def check_schema(value, definition=None):
     key=definition or 'manifest'
     if key not in _VALIDATORS:
-        schema={'$ref':'urn:ndpsim:contract:2#/$defs/'+definition} if definition else _SCHEMAS[1]
+        schema=_SCHEMAS[2] if definition=='measurement' else ({'$ref':'urn:ndpsim:contract:2#/$defs/'+definition} if definition else _SCHEMAS[1])
         _VALIDATORS[key]=_STRICT(schema,registry=_SCHEMA_REGISTRY)
     try: _VALIDATORS[key].validate(value)
     except Exception as exc: raise ValidationError('schema '+key+': '+str(exc)) from exc

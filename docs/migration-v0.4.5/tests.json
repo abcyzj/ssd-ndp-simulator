@@ -2185,6 +2185,21 @@
       "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
       "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
       "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "name": "graph_capture_v2",
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/workloads/graph-search/tests/test_capture_v2.py",
+        "${BUILD}/ndpsim_native",
+        "${ROOT}/python",
+        "${ROOT}/extensions/graph/operators.json"
+      ],
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "真实新IR完整采集、四模式独立结果/Work、采样覆盖、重hash语义篡改/缺失/预算负例、合法物理重排",
+      "deletion_gate": "功能与语义独立核对必须保留",
+      "reason": "P04当前产品采集出口，不能以纯结构hash证明功能正确"
     }
   ],
   "standalone_tests": [

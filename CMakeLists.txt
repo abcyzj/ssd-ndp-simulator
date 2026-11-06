@@ -42,15 +42,18 @@ set_target_properties(ndpsim_algorithm PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(ndpsim_algorithm PUBLIC ndpsim_operators)
 target_compile_options(ndpsim_algorithm PRIVATE -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off)
 find_package(Threads REQUIRED)
+add_subdirectory(sdk)
 add_executable(ndpsim_native workloads/graph-search/src/search/native.cc)
-target_link_libraries(ndpsim_native PRIVATE ndpsim_algorithm Threads::Threads)
+target_link_libraries(ndpsim_native PRIVATE ndpsim_algorithm Threads::Threads ndpsim::capture)
 target_compile_options(ndpsim_native PRIVATE -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off)
 # Embed source identity from the actual native build inputs.
 set(_native_identity "")
 foreach(_source CMakeLists.txt workloads/graph-search/src/search/native.cc workloads/graph-search/src/search/native_observation.h
         workloads/graph-search/src/search/core.cc workloads/graph-search/src/search/core.h workloads/graph-search/src/operators/operators.cc workloads/graph-search/src/operators/operators.h
         src/content/content.cc src/content/content.h src/content/sha256.cc
-        workloads/graph-search/src/content/value.h workloads/graph-search/src/content/value.cc)
+        workloads/graph-search/src/content/value.h workloads/graph-search/src/content/value.cc
+        workloads/graph-search/src/search/capture_v2.h workloads/graph-search/src/search/graph_specs.h
+        sdk/src/capture.cc sdk/src/sha256.cc sdk/include/ndpsim/capture.h sdk/CMakeLists.txt)
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_source}")
     file(SHA256 "${PROJECT_SOURCE_DIR}/${_source}" _sha)
     string(APPEND _native_identity "${_source}=${_sha}\n")
@@ -269,6 +272,9 @@ if(BUILD_TESTING)
         "${PROJECT_SOURCE_DIR}/tests/test_reference_paths.py")
     add_test(NAME native_search_batch COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_native_search.py" "$<TARGET_FILE:ndpsim_native>")
+    add_test(NAME graph_capture_v2 COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/workloads/graph-search/tests/test_capture_v2.py" "$<TARGET_FILE:ndpsim_native>"
+        "${PROJECT_SOURCE_DIR}/python" "${PROJECT_SOURCE_DIR}/extensions/graph/operators.json")
     add_test(NAME native_observation COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_native_observation.py" "$<TARGET_FILE:ndpsim_native>")
     add_executable(search_core_probe workloads/graph-search/tests/search_core_probe.cc)

@@ -23,7 +23,7 @@ inline void add_work(operators::Work& total, const operators::Work& delta) {
 
 uint64_t clock_ns(clockid_t clock);
 
-enum class Mode { benchmark, uninstrumented, cpu_sample, static_capture };
+enum class Mode { benchmark, uninstrumented, cpu_sample, static_capture, graph_benchmark, graph_uninstrumented, graph_capture, graph_sample };
 
 struct Observation {
     Mode mode = Mode::benchmark;

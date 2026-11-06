@@ -29,7 +29,9 @@ REQUIRED_AC = {f'AC-04-{number:02}' for number in range(1,13)}
 NATIVE_SOURCES = ('workloads/graph-search/src/search/native.cc','workloads/graph-search/src/search/native_observation.h','workloads/graph-search/src/search/core.cc',
                   'workloads/graph-search/src/search/core.h','workloads/graph-search/src/operators/operators.cc','workloads/graph-search/src/operators/operators.h',
                   'src/content/sha256.cc','workloads/graph-search/src/content/value.h',
-                  'workloads/graph-search/src/content/value.cc')
+                  'workloads/graph-search/src/content/value.cc','workloads/graph-search/src/search/capture_v2.h',
+                  'workloads/graph-search/src/search/graph_specs.h','sdk/src/capture.cc',
+                  'sdk/src/sha256.cc','sdk/include/ndpsim/capture.h')
 
 
 def load(path):

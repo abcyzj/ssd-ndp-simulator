@@ -1,6 +1,6 @@
 {
   "schema": "ndpsim-migration-files/1",
-  "scope": "tracked and nonignored untracked regular files under src/tools/tests/configs/schemas/examples/sdk/python/workloads plus root build and dependency files",
+  "scope": "tracked and nonignored untracked regular files under src/tools/tests/configs/schemas/examples/sdk/python/workloads/extensions plus root build and dependency files",
   "files": [
     {
       "path": ".gitmodules",
@@ -570,6 +570,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "extensions/graph/operators.json",
+      "policy": "capture-extension",
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
+      "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
+    },
+    {
       "path": "python/LICENSE",
       "policy": "p02-generic-capture",
       "decision": "保留通用SDK/封包校验与回归",
@@ -613,6 +622,15 @@
       "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
       "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/ndpsim/schemas/ndpsim-measurement-v2.schema.json",
+      "policy": "capture-extension",
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
+      "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
     },
     {
       "path": "python/ndpsim/schemas/ndpsim-static-ir-v2.schema.json",
@@ -2649,6 +2667,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
     },
     {
+      "path": "workloads/graph-search/CAPTURE.md",
+      "policy": "capture-extension",
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "独立图采集/语义/测量及可复现夹具与文档",
+      "deletion_gate": "对应新出口验证后方可替代；独立oracle必须保留",
+      "reason": "P04当前原生采集职责"
+    },
+    {
       "path": "workloads/graph-search/CMakeLists.txt",
       "policy": "native-workload",
       "decision": "保留",
@@ -2683,6 +2710,42 @@
       "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
       "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
       "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/graph-search/python/graph_capture.py",
+      "policy": "capture-extension",
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
+      "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
+    },
+    {
+      "path": "workloads/graph-search/python/graph_contract.py",
+      "policy": "capture-extension",
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
+      "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
+    },
+    {
+      "path": "workloads/graph-search/python/graph_oracle.py",
+      "policy": "capture-extension",
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
+      "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
+    },
+    {
+      "path": "workloads/graph-search/python/make_fixture.py",
+      "policy": "capture-extension",
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
+      "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
     },
     {
       "path": "workloads/graph-search/src/content/hash.cc",
@@ -2730,6 +2793,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：native；P03已迁入独立负载，保留功能与独立oracle"
     },
     {
+      "path": "workloads/graph-search/src/search/capture_v2.h",
+      "policy": "capture-extension",
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
+      "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
+    },
+    {
       "path": "workloads/graph-search/src/search/core.cc",
       "policy": "native",
       "decision": "迁原生",
@@ -2746,6 +2818,15 @@
       "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
       "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：native；P03已迁入独立负载，保留功能与独立oracle"
+    },
+    {
+      "path": "workloads/graph-search/src/search/graph_specs.h",
+      "policy": "capture-extension",
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
+      "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
     },
     {
       "path": "workloads/graph-search/src/search/native.cc",
@@ -2773,6 +2854,15 @@
       "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
       "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：native；P03已迁入独立负载，保留功能与独立oracle"
+    },
+    {
+      "path": "workloads/graph-search/tests/test_capture_v2.py",
+      "policy": "capture-extension",
+      "decision": "保留",
+      "tasks": "P04/P15/P18/P20/P21",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
+      "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
     },
     {
       "path": "workloads/graph-search/tests/test_native_search.py",

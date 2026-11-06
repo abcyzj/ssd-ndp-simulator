@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ndpsim:measurement:2",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "ndpsim-measurement/2"
+    },
+    "binding": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/binding"
+    },
+    "mode": {
+      "enum": [
+        "cpu_sample",
+        "benchmark",
+        "uninstrumented"
+      ]
+    },
+    "clock": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "resolution_ns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "empty_probe_ns": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "empty_probe_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        }
+      },
+      "required": [
+        "source",
+        "resolution_ns",
+        "empty_probe_ns",
+        "empty_probe_count"
+      ],
+      "additionalProperties": false
+    },
+    "sampling": {
+      "type": "object",
+      "properties": {
+        "stride": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "eligible": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "planned": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "observed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "lost": {
+          "const": 0
+        }
+      },
+      "required": [
+        "stride",
+        "eligible",
+        "planned",
+        "observed",
+        "lost"
+      ],
+      "additionalProperties": false
+    },
+    "samples": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:ndpsim:contract:2#/$defs/sample"
+      },
+      "minItems": 0
+    },
+    "reference_report_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "required": [
+    "format",
+    "binding",
+    "mode",
+    "clock",
+    "sampling",
+    "samples",
+    "reference_report_sha256"
+  ],
+  "additionalProperties": false
+}

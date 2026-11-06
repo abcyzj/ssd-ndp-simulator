@@ -12,6 +12,10 @@
 #include <sys/resource.h>
 #include <thread>
 #include <time.h>
+#include <ndpsim/capture.h>
+#include <filesystem>
+#include <cstring>
+#include "search/graph_specs.h"
 
 uint64_t ndpsim::search::native::clock_ns(clockid_t clock) {
     timespec ts{};
@@ -286,6 +290,8 @@ Result search_query(const Config& c, const Input& input, size_t query_id,
     return result;
 }
 
+#include "search/capture_v2.h"
+
 uint64_t nanos(const timespec& ts) {
     return uint64_t(ts.tv_sec) * 1000000000 + ts.tv_nsec;
 }
@@ -415,7 +421,7 @@ public:
                   << ",\"qps\":" << double(completed) * 1e9 / end
                   << ",\"p50_ns\":" << percentile(50) << ",\"p95_ns\":" << percentile(95)
                   << ",\"empty_probe_ns\":" << probes << ",\"empty_probe_count\":"
-                  << (observation.mode == Mode::cpu_sample ? config.workers * probe_count : 0)
+                  << ((observation.mode == Mode::cpu_sample || observation.mode == Mode::graph_sample) ? config.workers * probe_count : 0)
                   << ",\"exit_code\":0}\n";
         std::cout.flush();
         if (!std::cout)
@@ -432,13 +438,15 @@ private:
 
     void worker(size_t id) {
         try {
-            search_query<Mode::benchmark>(config, data, id % config.queries);
+            if(observation.mode>=Mode::graph_benchmark) {
+                Observation warm;graph_query<Mode::graph_benchmark>(config,data,id%config.queries,warm);
+            } else search_query<Mode::benchmark>(config, data, id % config.queries);
             for (size_t query = id; query < prefixes.size(); query += config.workers) {
                 const auto r = search_query<Mode::benchmark>(config, data, query);
                 prefixes[query] = inventory(r);
             }
             uint64_t overhead = 0;
-            if (observation.mode == Mode::cpu_sample) {
+            if ((observation.mode == Mode::cpu_sample || observation.mode == Mode::graph_sample)) {
                 for (size_t i = 0; i < probe_count; ++i) {
                     const auto start = clock_ns(CLOCK_THREAD_CPUTIME_ID);
                     overhead += clock_ns(CLOCK_THREAD_CPUTIME_ID) - start;
@@ -458,10 +466,14 @@ private:
                 lock.unlock();
                 Recorder observer(observation, prefixes.empty() ? Inventory{} : prefixes[query]);
                 const bool detail = trace || query < observation.detail;
-                const auto cpu_start = observation.mode == Mode::uninstrumented ? 0 :
+                const auto cpu_start = (observation.mode == Mode::uninstrumented || observation.mode == Mode::graph_uninstrumented) ? 0 :
                     clock_ns(CLOCK_THREAD_CPUTIME_ID);
                 Result result;
                 switch (observation.mode) {
+                case Mode::graph_capture: result=graph_query<Mode::graph_capture>(config,data,query,observation);break;
+                case Mode::graph_sample: result=graph_query<Mode::graph_sample>(config,data,query,observation);break;
+                case Mode::graph_benchmark: result=graph_query<Mode::graph_benchmark>(config,data,query,observation);break;
+                case Mode::graph_uninstrumented: result=graph_query<Mode::graph_uninstrumented>(config,data,query,observation);break;
                 case Mode::static_capture:
                     result = search_query<Mode::static_capture>(config, data, query, detail, &observer);
                     break;
@@ -479,7 +491,7 @@ private:
                         throw std::runtime_error("CPU sampling plan disagrees with actual query inventory");
                 }
                 result.cpu_start = cpu_start;
-                if (observation.mode != Mode::uninstrumented)
+                if (observation.mode != Mode::uninstrumented && observation.mode != Mode::graph_uninstrumented)
                     result.cpu = clock_ns(CLOCK_THREAD_CPUTIME_ID) - cpu_start;
                 result.worker = id;
                 result.admission = admission;
@@ -537,7 +549,9 @@ int main(int argc, char** argv) {
                          "  [uninstrumented | cpu_sample directory total_bytes buffer_bytes stride |\n"
                          "   static_capture directory total_bytes buffer_bytes 1] [--semantic-log | --detail8]\n"
                          "Default: benchmark. See README.md for formats and observation limitations.\n"
-                         "static_capture produces legacy raw shards, NOT ndpsim-static-ir/2.\n";
+                         "static_capture produces legacy raw shards, NOT ndpsim-static-ir/2.\n"
+                         "New modes: graph_benchmark, graph_uninstrumented; graph_capture/graph_sample\n"
+                         "  directory total_bytes buffer_bytes stride registry_sha binary_sha config_sha split\n";
             return 0;
         }
         if (argc == 2 && std::string(argv[1]) == "--build-info") {
@@ -548,17 +562,21 @@ int main(int argc, char** argv) {
         const bool trace = argc > 24 && std::string(argv[argc-1]) == "--semantic-log";
         const bool detail = argc > 24 && std::string(argv[argc-1]) == "--detail8";
         const int count = argc - trace - detail;
-        if (count != 24 && count != 25 && count != 29)
+        if (count != 24 && count != 25 && count != 29 && count != 33)
             throw std::runtime_error("invalid arguments; use --help and the independent graph-search README.md");
         Observation observation;
         observation.detail = detail ? 8 : 0;
         if (count == 25 && std::string(argv[24]) == "uninstrumented")
             observation.mode = Mode::uninstrumented;
-        else if (count == 29) {
+        else if(count==25 && std::string(argv[24])=="graph_benchmark") observation.mode=Mode::graph_benchmark;
+        else if(count==25 && std::string(argv[24])=="graph_uninstrumented") observation.mode=Mode::graph_uninstrumented;
+        else if (count == 29 || count==33) {
             const std::string mode = argv[24];
-            if (mode == "cpu_sample")
+            if(mode=="graph_capture" && count==33) observation.mode=Mode::graph_capture;
+            else if(mode=="graph_sample" && count==33) observation.mode=Mode::graph_sample;
+            else if (mode == "cpu_sample" && count==29)
                 observation.mode = Mode::cpu_sample;
-            else if (mode == "static_capture")
+            else if (mode == "static_capture" && count==29)
                 observation.mode = Mode::static_capture;
             else
                 throw std::runtime_error("invalid observation mode");
@@ -573,6 +591,21 @@ int main(int argc, char** argv) {
         }
         const Config config(argv);
         const Input input(config, argv);
+        if(observation.mode>=Mode::graph_benchmark && (trace || detail))throw std::runtime_error("graph v2 does not accept legacy detail flags");
+        if(observation.mode==Mode::graph_capture || observation.mode==Mode::graph_sample) {
+            if(observation.mode==Mode::graph_capture && observation.stride!=1)throw std::runtime_error("complete capture requires stride 1");
+            const auto directory=std::filesystem::path(observation.directory);
+            if(!std::filesystem::is_directory(directory) || !std::filesystem::is_empty(directory))throw std::runtime_error("v2 output directory must be empty");
+            auto& p=graph_capture_config.provenance;p.kind="native-capture";
+            p.capture_build={NDPSIM_NATIVE_SOURCE_SHA256,argv[30],__VERSION__,{NDPSIM_NATIVE_FLAGS}};
+            p.extension_sha256=argv[29];p.split=argv[32];if(p.split=="fixture")p.kind="synthetic-fixture";p.semantic_config_sha256=argv[31];
+            p.input_content_sha256=cap::sha256(std::string(argv[15])+argv[17]+argv[19]+argv[23]);
+            p.semantic_version="ndpsim-ranked-expansion-v1";p.workload="graph";p.numeric_version="fp32-le-ordered-fp64-l2-v1";p.work_version="ndpsim-work-v1";
+            std::set<uint32_t> queries;for(size_t i=0;i<config.queries;++i){auto q=u32(input.query_ids.data()+4*i);if(!queries.insert(q).second)throw std::runtime_error("duplicate query ID");p.query_ids.push_back(q);}
+            graph_capture_config.objects={{"vectors",0,"fp32-le",input.vectors.size(),{config.count,config.dimensions},argv[15]},
+                {"queries",0,"fp32-le",input.queries.size(),{config.queries,config.dimensions},argv[17]},
+                {"graph",0,"degree-u32-le+padded-ids-u32-le",input.graph.size(),{config.count,config.degree+1},argv[19]}};
+        }
         Batch batch(config, input, trace, observation);
         batch.run();
         batch.report();
