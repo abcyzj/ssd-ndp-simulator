@@ -1,0 +1,28 @@
+{
+  "schema": "ndpsim-v045-budget-plan/1",
+  "status": "plan_not_full_scale_permission",
+  "basis": "PRD§6.1 / plan§6.2; conservative V0.4 process defaults retained, new aggregate scope",
+  "process_rss_bytes_max": 4294967296,
+  "physical_ram_fraction_max": 0.6,
+  "postprocess_rss_bytes_max": 536870912,
+  "initialization_seconds_max": 3600,
+  "query_seconds_max": 7200,
+  "postprocessing_seconds_max": 600,
+  "builder_rss_bytes_max": 8589934592,
+  "builder_seconds_max": 28800,
+  "output_bytes_per_run_max": 2147483648,
+  "task_output_bytes_max": 34359738368,
+  "aggregate_data_and_v045_bytes_max": 51539607552,
+  "volume_free_bytes_min": 21474836480,
+  "scope": "Raw SIFT + shared prepared + all results/v0.4.5 including failures; separate 32GiB task output ceiling; exclude historical/build/cache, but account their volume use through actual free space",
+  "preflight": [
+    "full raw/prepared/graph/truth hashes + source/build/model/config identity",
+    "fresh physical RAM, pressure, paging/faults, active processes",
+    "pilot actual bytes/op/stage/query/shard and peak active metadata; project complete schedule and retained failures",
+    "logical size aggregate + output projection + disk free >=20GiB AFTER projected remaining output",
+    "per operation timeout and process group termination; RSS observed with wait4 and limits checked",
+    "refuse full run when input/reference/pilot/projection missing; never truncate or reduce official scale"
+  ],
+  "pilot_projection": "sum per-run measured/projected outputs x planned repeat counts + manifests/logs/indexes + retained failures; P04/P06/P18 freeze actual sizes, refuse or explicitly revise budget before full-scale collection",
+  "limitations": "4GiB is capped again at 60% of fresh physical RAM; observed RSS/disk are not hard isolation or simultaneous process-tree bounds; this plan proves no future resource feasibility."
+}

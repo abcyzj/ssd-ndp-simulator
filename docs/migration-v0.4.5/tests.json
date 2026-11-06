@@ -1,0 +1,2196 @@
+{
+  "schema": "ndpsim-migration-tests/1",
+  "source": "root configured CTest BUILD_TESTING=ON, NDPSIM_SANITIZE=OFF; source command and conditions remain in CMakeLists.txt",
+  "tests": [
+    {
+      "name": "device_profiles",
+      "sources": [
+        "tests/test_device_profiles.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_device_profiles.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "name": "simulation_input_schema",
+      "sources": [
+        "tests/test_simulation_input.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_simulation_input.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留迁负载工具",
+      "tasks": "P03/P04/P18/P21",
+      "replacement_assertions": "数据获取/导入/完整hash/原始ID切分、锁定NSG建图/真值独立核对与预算",
+      "deletion_gate": "独立原生可按公开步骤重建输入；不能作为simulate前置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：data"
+    },
+    {
+      "name": "benchmark_artifact_schema",
+      "sources": [
+        "tests/test_benchmark_artifacts.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_benchmark_artifacts.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留迁负载工具",
+      "tasks": "P03/P04/P18/P21",
+      "replacement_assertions": "数据获取/导入/完整hash/原始ID切分、锁定NSG建图/真值独立核对与预算",
+      "deletion_gate": "独立原生可按公开步骤重建输入；不能作为simulate前置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：data"
+    },
+    {
+      "name": "benchmark_data_schema",
+      "sources": [
+        "tests/test_benchmark_data.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_benchmark_data.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留迁负载工具",
+      "tasks": "P03/P04/P18/P21",
+      "replacement_assertions": "数据获取/导入/完整hash/原始ID切分、锁定NSG建图/真值独立核对与预算",
+      "deletion_gate": "独立原生可按公开步骤重建输入；不能作为simulate前置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：data"
+    },
+    {
+      "name": "m0_evidence_tools",
+      "sources": [
+        "tests/test_m0.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_m0.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "name": "backend_lifecycle",
+      "sources": [
+        "tests/lifecycle_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/lifecycle_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "backend_error",
+      "sources": [
+        "tests/lifecycle_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/lifecycle_probe",
+        "error"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "backend_early_teardown",
+      "sources": [
+        "tests/lifecycle_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/lifecycle_probe",
+        "early"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "backend_invalid_mqsim_config",
+      "sources": [
+        "tests/lifecycle_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/lifecycle_probe",
+        "invalid-mqsim"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "backend_local_read_device",
+      "sources": [
+        "tests/local_read_device_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/local_read_device_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "backend_local_read_reverse",
+      "sources": [
+        "tests/local_read_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/local_read_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "backend_local_read_forward",
+      "sources": [
+        "tests/local_read_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/local_read_probe",
+        "forward"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "backend_local_read_unsupported",
+      "sources": [
+        "tests/local_read_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/local_read_probe",
+        "unsupported"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "backend_event_bridge",
+      "sources": [
+        "tests/event_bridge_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/event_bridge_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "backend_native_event_loop",
+      "sources": [
+        "tests/event_bridge_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/event_bridge_probe",
+        "native"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "sst_event_bridge",
+      "sources": [
+        "configs/regression/bridge_poc.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/bridge_poc.py"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "E1 PASS events=8"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "sst_element_load",
+      "sources": [
+        "CMakeLists.txt"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst-info",
+        "--add-lib-path=${BUILD}",
+        "ndpsim.System"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "Component 0: System"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留改造",
+      "tasks": "P03/P10/P20/P21",
+      "replacement_assertions": "根模拟构建/SST固定缓存、依赖实际hash/许可证；原生/拟合独立边界；MQSim XML运行时生效",
+      "deletion_gate": "最终根CTest、隔离原生/拟合、无功能链接及不重编译切配置通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：build"
+    },
+    {
+      "name": "sst_lifecycle",
+      "sources": [
+        "configs/regression/lifecycle.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/lifecycle.py"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "finish SST=1 ns MQSim=0 ns",
+            " device destroyed"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "formal_bridge_guards",
+      "sources": [
+        "tests/formal_bridge_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/formal_bridge_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "sst_formal_bridge",
+      "sources": [
+        "configs/regression/event_bridge.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/event_bridge.py"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "M1.2 PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "ordinary_qd1",
+      "sources": [
+        "tests/ordinary_io_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/ordinary_io_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "ordinary_cmt_miss_concurrent",
+      "sources": [
+        "tests/ordinary_io_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/ordinary_io_probe",
+        "miss",
+        "concurrent"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "observation_intervals",
+      "sources": [
+        "tests/observation_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/observation_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "mapped_content",
+      "sources": [
+        "tests/mapped_content_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/mapped_content_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "name": "profile_native-small",
+      "sources": [
+        "tests/profile_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/profile_probe",
+        "native-small"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "name": "profile_native-small_namespace_overflow",
+      "sources": [
+        "tests/profile_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/profile_probe",
+        "native-small",
+        "overflow"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "name": "profile_ann-2g-v1",
+      "sources": [
+        "tests/profile_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/profile_probe",
+        "ann-2g-v1"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "name": "profile_ann-2g-v1_namespace_overflow",
+      "sources": [
+        "tests/profile_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/profile_probe",
+        "ann-2g-v1",
+        "overflow"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "name": "profile_ann-16g-v1",
+      "sources": [
+        "tests/profile_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/profile_probe",
+        "ann-16g-v1"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "name": "profile_ann-16g-v1_namespace_overflow",
+      "sources": [
+        "tests/profile_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/profile_probe",
+        "ann-16g-v1",
+        "overflow"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "name": "content_layout_handles",
+      "sources": [
+        "tests/content_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/content_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "name": "content_backend_association",
+      "sources": [
+        "tests/content_backend_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/content_backend_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "name": "runtime_dependencies_visibility",
+      "sources": [
+        "tests/runtime_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/runtime_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P08",
+      "replacement_assertions": "依赖/输入/服务/返回门控，零服务异步，owner/pin生命周期，失败不放后继及终态清零",
+      "deletion_gate": "令牌替代Bytes后保留全部因果和资源断言",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runtime"
+    },
+    {
+      "name": "sst_runtime_visibility",
+      "sources": [
+        "configs/regression/runtime.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/runtime.py"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "M2.2 SST PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "reference_path_comparator",
+      "sources": [
+        "tests/test_reference_paths.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_reference_paths.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "迁移期参考后删除候选",
+      "tasks": "P03/P04/P15/P20",
+      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
+      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：reference"
+    },
+    {
+      "name": "native_search_batch",
+      "sources": [
+        "tests/test_native_search.py",
+        "src/search/native.cc"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_native_search.py",
+        "${BUILD}/ndpsim_native"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
+    },
+    {
+      "name": "native_observation",
+      "sources": [
+        "tests/test_native_observation.py",
+        "src/search/native.cc"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_native_observation.py",
+        "${BUILD}/ndpsim_native"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
+    },
+    {
+      "name": "search_core_oracle",
+      "sources": [
+        "tests/test_search_core.py",
+        "tests/search_core_probe.cc"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_search_core.py",
+        "--probe",
+        "${BUILD}/search_core_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
+    },
+    {
+      "name": "operators_host_cost",
+      "sources": [
+        "tests/operator_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/operator_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
+    },
+    {
+      "name": "cpu_profile_fail_closed",
+      "sources": [
+        "tests/cpu_profile_probe.cc",
+        "examples/v04-contract/cpu-profile.json"
+      ],
+      "command": [
+        "${BUILD}/cpu_profile_probe",
+        "${ROOT}/examples/v04-contract/cpu-profile.json",
+        "${BUILD}/cpu-profile-probe.json"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
+    },
+    {
+      "name": "sst_host_cost",
+      "sources": [
+        "configs/regression/host_cost.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/host_cost.py"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "M2.3 SST PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "sst_host_graph",
+      "sources": [
+        "tools/run_graph.py",
+        "configs/regression/host-branch.json"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tools/run_graph.py",
+        "--config",
+        "${ROOT}/configs/regression/host-branch.json",
+        "--build",
+        "${BUILD}",
+        "--output",
+        "${BUILD}/m3.1-ctest"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "Recall@2="
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 120.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "收敛入口",
+      "tasks": "P03/P14/P20",
+      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
+      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
+    },
+    {
+      "name": "graph_search_semantics",
+      "sources": [
+        "tests/graph_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/graph_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
+    },
+    {
+      "name": "formal_local_read",
+      "sources": [
+        "tests/formal_local_read_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/formal_local_read_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "formal_local_read_reverse",
+      "sources": [
+        "tests/formal_local_read_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/formal_local_read_probe",
+        "reverse"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "formal_local_read_fault",
+      "sources": [
+        "tests/formal_local_read_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/formal_local_read_probe",
+        "fault"
+      ],
+      "properties": [
+        {
+          "name": "WILL_FAIL",
+          "value": true
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "formal_local_read_transaction",
+      "sources": [
+        "tests/formal_local_read_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/formal_local_read_probe",
+        "transaction"
+      ],
+      "properties": [
+        {
+          "name": "WILL_FAIL",
+          "value": true
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "formal_local_read_unknown",
+      "sources": [
+        "tests/formal_local_read_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/formal_local_read_probe",
+        "unknown"
+      ],
+      "properties": [
+        {
+          "name": "WILL_FAIL",
+          "value": true
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "formal_local_read_duplicate",
+      "sources": [
+        "tests/formal_local_read_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/formal_local_read_probe",
+        "duplicate"
+      ],
+      "properties": [
+        {
+          "name": "WILL_FAIL",
+          "value": true
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "sst_local_read",
+      "sources": [
+        "configs/regression/local_read.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/local_read.py"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "M3.2a PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 60.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "shared_pcie_mixed",
+      "sources": [
+        "tests/pcie_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/pcie_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "sst_shared_pcie",
+      "sources": [
+        "configs/regression/pcie.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/pcie.py"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "M3.2b PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 60.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "shared_pcie_contract",
+      "sources": [
+        "tests/pcie_contract_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/pcie_contract_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_capacity",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_command",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe",
+        "command"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_staged",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe",
+        "staged"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_evaluate",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe",
+        "evaluate"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_result",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe",
+        "result"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_cross",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe",
+        "cross"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_compute",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe",
+        "compute"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_slots",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe",
+        "slots"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_zero",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe",
+        "zero"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_open-command",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe",
+        "open-command"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "controller_query-staged",
+      "sources": [
+        "tests/controller_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_probe",
+        "query-staged"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "sst_controller_capacity",
+      "sources": [
+        "configs/regression/controller.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/controller.py"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "M3.3 PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 60.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "controller_resources",
+      "sources": [
+        "tests/controller_resource_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/controller_resource_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "name": "sst_graph_placements",
+      "sources": [
+        "tools/run_pair.py",
+        "configs/regression/placements-branch.json"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tools/run_pair.py",
+        "--pair",
+        "--config",
+        "${ROOT}/configs/regression/placements-branch.json",
+        "--build",
+        "${BUILD}",
+        "--output",
+        "${BUILD}/m3.4-ctest"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "M3.4 paired PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 120.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "收敛入口",
+      "tasks": "P03/P14/P20",
+      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
+      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
+    },
+    {
+      "name": "sst_graph_concurrency_output",
+      "sources": [
+        "tools/verify_concurrency.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tools/verify_concurrency.py",
+        "--quick",
+        "--build",
+        "${BUILD}",
+        "--output",
+        "${BUILD}/m4.1-ctest"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "M4.1 PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 120.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "name": "acceptance_parameter_regression",
+      "sources": [
+        "tools/verify_acceptance.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tools/verify_acceptance.py",
+        "--quick",
+        "--build",
+        "${BUILD}",
+        "--output",
+        "${BUILD}/m4.2-ctest"
+      ],
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "M4.2 PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "name": "observation_lifecycle",
+      "sources": [
+        "tests/observation_lifecycle_probe.cc"
+      ],
+      "command": [
+        "${BUILD}/observation_lifecycle_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "name": "sift1m_matrix",
+      "sources": [
+        "tests/test_t6_matrix.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_t6_matrix.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "name": "streaming_output",
+      "sources": [
+        "tests/test_streaming_output.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_streaming_output.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留改造",
+      "tasks": "P14/P15",
+      "replacement_assertions": "统计窗口/分位数/逻辑物理账本/资源峰值/排空及流式有界输出，参考结果明确标记",
+      "deletion_gate": "新报告独立统计及缺失/错误字段负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：output"
+    },
+    {
+      "name": "ir_schema_catalog",
+      "sources": [
+        "tests/test_ir_schema.py",
+        "src/ir/validate.cc"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_ir_schema.py",
+        "--validator",
+        "${BUILD}/ir_validate"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
+    },
+    {
+      "name": "ir_schema_memory",
+      "sources": [
+        "tests/ir_schema_probe.cc",
+        "examples/ir/graph-contract.json"
+      ],
+      "command": [
+        "${BUILD}/ir_schema_probe",
+        "${ROOT}/examples/ir/graph-contract.json"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
+    },
+    {
+      "name": "ir_dynamic_lifecycle",
+      "sources": [
+        "tests/ir_executor_probe.cc",
+        "examples/ir/graph-contract.json"
+      ],
+      "command": [
+        "${BUILD}/ir_executor_probe",
+        "${ROOT}/examples/ir/graph-contract.json"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
+    },
+    {
+      "name": "sst_ir_base",
+      "sources": [
+        "configs/regression/ir.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/ir.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "sst_ir_input",
+      "sources": [
+        "configs/regression/ir.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/ir.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_IR_INPUT_DELAY=100"
+          ]
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "sst_ir_compute",
+      "sources": [
+        "configs/regression/ir.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/ir.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_IR_COMPUTE_DELAY=100"
+          ]
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "sst_ir_return",
+      "sources": [
+        "configs/regression/ir.py"
+      ],
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/ir.py"
+      ],
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_IR_RETURN_DELAY=100"
+          ]
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "name": "ir_operator_placements",
+      "sources": [
+        "tests/test_ir_mapping.py",
+        "tests/ir_mapping_probe.cc"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_ir_mapping.py",
+        "--probe",
+        "${BUILD}/ir_mapping_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
+    },
+    {
+      "name": "ir_graph_frontend",
+      "sources": [
+        "tests/test_ir_mapping.py",
+        "tests/ir_mapping_probe.cc"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_ir_mapping.py",
+        "--probe",
+        "${BUILD}/ir_frontend_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
+    },
+    {
+      "name": "sst_ir_graph_frontend",
+      "sources": [
+        "tests/test_ir_frontend.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_ir_frontend.py",
+        "--build",
+        "${BUILD}"
+      ],
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 240.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
+    },
+    {
+      "name": "ir_graph_frontend_causality",
+      "sources": [
+        "tests/ir_frontend_causal_probe.cc",
+        "examples/ir/graph-contract.json"
+      ],
+      "command": [
+        "${BUILD}/ir_frontend_causal_probe",
+        "${ROOT}/examples/ir/graph-contract.json"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
+    },
+    {
+      "name": "ir_observation_comparator",
+      "sources": [
+        "tests/test_ir_observation.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_ir_observation.py",
+        "--build",
+        "${BUILD}"
+      ],
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 240.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
+    },
+    {
+      "name": "ir_matrix_gates",
+      "sources": [
+        "tests/test_ir_matrix.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_ir_matrix.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "name": "v03_delivery_gates",
+      "sources": [
+        "tests/test_v03_delivery.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v03_delivery.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "name": "v02_delivery_gates",
+      "sources": [
+        "tests/test_v02_delivery.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v02_delivery.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "name": "v04_start_gates",
+      "sources": [
+        "tests/test_v04_start.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v04_start.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "name": "v04_contract",
+      "sources": [
+        "tests/test_v04_contract.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v04_contract.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "重写迁移",
+      "tasks": "P02/P04/P08/P15",
+      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
+      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：static"
+    },
+    {
+      "name": "sst_static_replay",
+      "sources": [
+        "tests/test_static_replay.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_static_replay.py",
+        "${BUILD}"
+      ],
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 60.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "重写迁移",
+      "tasks": "P02/P04/P08/P15",
+      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
+      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：static"
+    },
+    {
+      "name": "v04_validator",
+      "sources": [
+        "tests/test_v04_validator.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v04_validator.py",
+        "${BUILD}"
+      ],
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 120.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "重写迁移",
+      "tasks": "P02/P04/P08/P15",
+      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
+      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：static"
+    },
+    {
+      "name": "v04_regression_gates",
+      "sources": [
+        "tests/test_v04_regression.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v04_regression.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "name": "v04_delivery_gates",
+      "sources": [
+        "tests/test_v04_delivery.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v04_delivery.py"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    }
+  ],
+  "standalone_tests": [
+    "tests/test_direct_baseline.py",
+    "tests/test_v045_baseline.py",
+    "tests/test_v04_cpu_fit.py"
+  ],
+  "unregistered_note": "Standalone tests remain covered by files.json; not silently counted as executed CTests. ASan has conditional registration and is a future P20 targeted exit."
+}
