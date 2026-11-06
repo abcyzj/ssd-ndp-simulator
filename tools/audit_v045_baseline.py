@@ -23,7 +23,7 @@ def inventory():
     names = subprocess.check_output(['git', 'ls-files', '--cached', '--others',
                                      '--exclude-standard', '-z'], cwd=ROOT).decode().split('\0')
     return sorted({p for p in names if p and (ROOT/p).is_file() and (
-        p.startswith(('src/', 'tools/', 'tests/', 'configs/', 'schemas/', 'examples/', 'sdk/', 'python/'))
+        p.startswith(('src/', 'tools/', 'tests/', 'configs/', 'schemas/', 'examples/', 'sdk/', 'python/', 'workloads/'))
         or p in ('CMakeLists.txt', 'deps.lock.json', '.gitmodules'))})
 
 
@@ -95,10 +95,10 @@ def references(names):
         if path.suffix in ('.py', '.cc', '.h', '.in', '.txt', '.json', '.cmake') or path.name=='CMakeLists.txt':
             text = path.read_text()
             for i, line in enumerate(text.splitlines(), 1):
-                for target in re.findall(r'(?:src|tests|tools|configs|schemas|examples|sdk|python)/[\w./-]+', line):
+                for target in re.findall(r'(?:workloads|src|tests|tools|configs|schemas|examples|sdk|python)/[\w./-]+', line):
                     if target in names: edges.add((name, target, i, 'literal_reference'))
                 for header in re.findall(r'#include\s+"([^"]+)"', line):
-                    for candidate in (path.parent/header, ROOT/'src'/header, ROOT/'tests'/header, ROOT/'sdk/include'/header):
+                    for candidate in (path.parent/header, ROOT/'src'/header, ROOT/'tests'/header, ROOT/'sdk/include'/header, ROOT/'workloads/graph-search/src'/header):
                         try: target = str(candidate.resolve().relative_to(ROOT))
                         except ValueError: continue
                         if target in names: edges.add((name,target,i,'cpp_include')); break

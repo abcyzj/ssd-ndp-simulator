@@ -19,15 +19,15 @@ option(NDPSIM_NATIVE_ONLY "Build only the standalone graph search" OFF)
 option(NDPSIM_SANITIZE "Instrument backend lifecycle probes with AddressSanitizer" OFF)
 
 # Immutable logical content and target residency; no MQSim/SST ownership or timing.
-add_library(ndpsim_content STATIC src/content/content.cc src/content/sha256.cc)
+add_library(ndpsim_content STATIC src/content/content.cc src/content/sha256.cc workloads/graph-search/src/content/value.cc)
 set_target_properties(ndpsim_content PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_include_directories(ndpsim_content PUBLIC src)
+target_include_directories(ndpsim_content PUBLIC src workloads/graph-search/src)
 target_compile_options(ndpsim_content PRIVATE -Wall -Wextra -Wpedantic)
 if(NDPSIM_SANITIZE)
     target_compile_options(ndpsim_content PUBLIC -fsanitize=address -fno-omit-frame-pointer)
     target_link_options(ndpsim_content PUBLIC -fsanitize=address)
 endif()
-add_library(ndpsim_operators STATIC src/operators/operators.cc)
+add_library(ndpsim_operators STATIC workloads/graph-search/src/operators/operators.cc)
 set_target_properties(ndpsim_operators PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(ndpsim_operators PUBLIC ndpsim_content)
 # Fixed dimension-order binary64 operations, including under Release/global fast-math flags.
@@ -37,19 +37,20 @@ if(NDPSIM_SLOW_FUNCTIONAL)
     target_compile_definitions(ndpsim_operators PRIVATE NDPSIM_SLOW_FUNCTIONAL=1)
 endif()
 # Shared pure graph operations; no Runtime, HostCpu, SST or MQSim link dependency.
-add_library(ndpsim_algorithm STATIC src/search/core.cc)
+add_library(ndpsim_algorithm STATIC workloads/graph-search/src/search/core.cc)
 set_target_properties(ndpsim_algorithm PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(ndpsim_algorithm PUBLIC ndpsim_operators)
 target_compile_options(ndpsim_algorithm PRIVATE -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off)
 find_package(Threads REQUIRED)
-add_executable(ndpsim_native src/search/native.cc)
+add_executable(ndpsim_native workloads/graph-search/src/search/native.cc)
 target_link_libraries(ndpsim_native PRIVATE ndpsim_algorithm Threads::Threads)
 target_compile_options(ndpsim_native PRIVATE -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off)
 # Embed source identity from the actual native build inputs.
 set(_native_identity "")
-foreach(_source CMakeLists.txt src/search/native.cc src/search/native_observation.h
-        src/search/core.cc src/search/core.h src/operators/operators.cc src/operators/operators.h
-        src/content/content.cc src/content/content.h src/content/sha256.cc)
+foreach(_source CMakeLists.txt workloads/graph-search/src/search/native.cc workloads/graph-search/src/search/native_observation.h
+        workloads/graph-search/src/search/core.cc workloads/graph-search/src/search/core.h workloads/graph-search/src/operators/operators.cc workloads/graph-search/src/operators/operators.h
+        src/content/content.cc src/content/content.h src/content/sha256.cc
+        workloads/graph-search/src/content/value.h workloads/graph-search/src/content/value.cc)
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_source}")
     file(SHA256 "${PROJECT_SOURCE_DIR}/${_source}" _sha)
     string(APPEND _native_identity "${_source}=${_sha}\n")
@@ -270,7 +271,7 @@ if(BUILD_TESTING)
         "${PROJECT_SOURCE_DIR}/tests/test_native_search.py" "$<TARGET_FILE:ndpsim_native>")
     add_test(NAME native_observation COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_native_observation.py" "$<TARGET_FILE:ndpsim_native>")
-    add_executable(search_core_probe tests/search_core_probe.cc)
+    add_executable(search_core_probe workloads/graph-search/tests/search_core_probe.cc)
     target_link_libraries(search_core_probe PRIVATE ndpsim_algorithm)
     add_test(NAME search_core_oracle COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_search_core.py" --probe "$<TARGET_FILE:search_core_probe>")

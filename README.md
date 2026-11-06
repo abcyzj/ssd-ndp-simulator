@@ -4,7 +4,7 @@
 
 ## 下一版 V0.4.5 需求
 
-[V0.4.5 正式 PRD](docs/prd-v0.4.5.md)定义面向发布的 timing-only 平台、独立图搜索与采集、算子／映射／成本扩展、外置配置和统一入口。版本号按用户指定为 V0.4.5，接续 V0.4。当前已完成 [P00 基线与迁移清单](docs/baseline-v0.4.5.md)、[P01 契约与风险设计](docs/contract-v0.4.5.md)和[P02 通用SDK与校验](docs/capture-sdk-v0.4.5.md)，模拟路径尚未迁移、全部新AC未验收；以下命令仍描述当前 V0.4 可运行交付。V0.4.5 对旧兼容、功能回放和回归义务的替代范围以新 PRD 为准。 [源码核查](docs/source-audit-v0.4.5.md)与[22项实施计划](docs/implementation-plan-v0.4.5.md)已完成规划；P00/P01/P02 已完成，P03～P21 未开始。
+[V0.4.5 正式 PRD](docs/prd-v0.4.5.md)定义面向发布的 timing-only 平台、独立图搜索与采集、算子／映射／成本扩展、外置配置和统一入口。版本号按用户指定为 V0.4.5，接续 V0.4。当前已完成 [P00 基线与迁移清单](docs/baseline-v0.4.5.md)、[P01 契约与风险设计](docs/contract-v0.4.5.md)、[P02 通用SDK与校验](docs/capture-sdk-v0.4.5.md)和[P03 独立图搜索构建](docs/native-v0.4.5.md)，模拟路径尚未迁移、全部新AC未验收；以下命令仍描述当前 V0.4 可运行交付。V0.4.5 对旧兼容、功能回放和回归义务的替代范围以新 PRD 为准。 [源码核查](docs/source-audit-v0.4.5.md)与[22项实施计划](docs/implementation-plan-v0.4.5.md)已完成规划；P00/P01/P02/P03 已完成，P04～P21 未开始。
 
 ## V0.4 交付与开发记录
 

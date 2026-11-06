@@ -1,6 +1,6 @@
 {
   "schema": "ndpsim-migration-files/1",
-  "scope": "tracked and nonignored untracked regular files under src/tools/tests/configs/schemas/examples/sdk/python plus root build and dependency files",
+  "scope": "tracked and nonignored untracked regular files under src/tools/tests/configs/schemas/examples/sdk/python/workloads plus root build and dependency files",
   "files": [
     {
       "path": ".gitmodules",
@@ -1110,24 +1110,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：output"
     },
     {
-      "path": "src/operators/operators.cc",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
-    },
-    {
-      "path": "src/operators/operators.h",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
-    },
-    {
       "path": "src/runtime/runtime.cc",
       "policy": "runtime",
       "decision": "改造保留",
@@ -1144,24 +1126,6 @@
       "replacement_assertions": "依赖/输入/服务/返回门控，零服务异步，owner/pin生命周期，失败不放后继及终态清零",
       "deletion_gate": "令牌替代Bytes后保留全部因果和资源断言",
       "reason": "PRD FR11/12；实施计划§7职责迁移：runtime"
-    },
-    {
-      "path": "src/search/core.cc",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
-    },
-    {
-      "path": "src/search/core.h",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
     },
     {
       "path": "src/search/graph.cc",
@@ -1189,24 +1153,6 @@
       "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
       "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
       "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/search/native.cc",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
-    },
-    {
-      "path": "src/search/native_observation.h",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
     },
     {
       "path": "src/search/replay.cc",
@@ -1711,15 +1657,6 @@
       "replacement_assertions": "依赖/输入/服务/返回门控，零服务异步，owner/pin生命周期，失败不放后继及终态清零",
       "deletion_gate": "令牌替代Bytes后保留全部因果和资源断言",
       "reason": "PRD FR11/12；实施计划§7职责迁移：runtime"
-    },
-    {
-      "path": "tests/search_core_probe.cc",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
     },
     {
       "path": "tests/test_benchmark_artifacts.py",
@@ -2710,6 +2647,159 @@
       "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
       "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
       "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
+    },
+    {
+      "path": "workloads/graph-search/CMakeLists.txt",
+      "policy": "native-workload",
+      "decision": "保留",
+      "tasks": "P03/P04/P20/P21",
+      "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
+      "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
+      "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/graph-search/LICENSE",
+      "policy": "native-workload",
+      "decision": "保留",
+      "tasks": "P03/P04/P20/P21",
+      "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
+      "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
+      "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/graph-search/README.md",
+      "policy": "native-workload",
+      "decision": "保留",
+      "tasks": "P03/P04/P20/P21",
+      "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
+      "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
+      "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/graph-search/cmake/build-identity.cmake.in",
+      "policy": "native-workload",
+      "decision": "保留",
+      "tasks": "P03/P04/P20/P21",
+      "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
+      "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
+      "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/graph-search/src/content/hash.cc",
+      "policy": "native-workload",
+      "decision": "保留",
+      "tasks": "P03/P04/P20/P21",
+      "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
+      "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
+      "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/graph-search/src/content/value.cc",
+      "policy": "native-workload",
+      "decision": "保留",
+      "tasks": "P03/P04/P20/P21",
+      "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
+      "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
+      "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/graph-search/src/content/value.h",
+      "policy": "native-workload",
+      "decision": "保留",
+      "tasks": "P03/P04/P20/P21",
+      "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
+      "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
+      "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/graph-search/src/operators/operators.cc",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native；P03已迁入独立负载，保留功能与独立oracle"
+    },
+    {
+      "path": "workloads/graph-search/src/operators/operators.h",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native；P03已迁入独立负载，保留功能与独立oracle"
+    },
+    {
+      "path": "workloads/graph-search/src/search/core.cc",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native；P03已迁入独立负载，保留功能与独立oracle"
+    },
+    {
+      "path": "workloads/graph-search/src/search/core.h",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native；P03已迁入独立负载，保留功能与独立oracle"
+    },
+    {
+      "path": "workloads/graph-search/src/search/native.cc",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native；P03已迁入独立负载，保留功能与独立oracle"
+    },
+    {
+      "path": "workloads/graph-search/src/search/native_observation.h",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native；P03已迁入独立负载，保留功能与独立oracle"
+    },
+    {
+      "path": "workloads/graph-search/tests/search_core_probe.cc",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native；P03已迁入独立负载，保留功能与独立oracle"
+    },
+    {
+      "path": "workloads/graph-search/tests/test_native_search.py",
+      "policy": "native-workload",
+      "decision": "保留",
+      "tasks": "P03/P04/P20/P21",
+      "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
+      "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
+      "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/graph-search/tests/test_observation.py",
+      "policy": "native-workload",
+      "decision": "保留",
+      "tasks": "P03/P04/P20/P21",
+      "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
+      "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
+      "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/graph-search/tests/test_search_core.py",
+      "policy": "native-workload",
+      "decision": "保留",
+      "tasks": "P03/P04/P20/P21",
+      "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
+      "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
+      "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
     }
   ]
 }

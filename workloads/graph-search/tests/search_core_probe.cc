@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <cmath>
+#include <limits>
 using namespace ndpsim;
 void emit(const char* stage, const operators::Result& r) {
     std::cout << stage << ' ';
@@ -24,6 +26,17 @@ std::vector<uint32_t> unpack(const content::Bytes& b) {
 }
 int main() {
     try {
+        auto precise = operators::squared_l2(operators::fp32({16777216.f}),
+            {operators::fp32({-1.f})}, {1});
+        if (operators::scores(precise.bytes)[0].distance != 281475010265089.0) return 7;
+        auto ordered = operators::squared_l2(operators::fp32({0,0,0}),
+            {operators::fp32({1e8f,1,1})}, {1});
+        if (operators::scores(ordered.bytes)[0].distance != 1e16) return 8;
+        auto extreme = operators::squared_l2(operators::fp32({std::numeric_limits<float>::max()}),
+            {operators::fp32({-std::numeric_limits<float>::max()})}, {1});
+        if (!std::isfinite(operators::scores(extreme.bytes)[0].distance)) return 9;
+        try { operators::fp32({std::numeric_limits<float>::infinity()}); return 10; }
+        catch (const content::Error& e) { if(e.code != content::Code::InvalidArgument) return 11; }
         size_t n,d,k,L,B,E,chunk;
         if (!(std::cin >> n >> d >> k >> L >> B >> E >> chunk)) return 2;
         std::vector<float> q(d);

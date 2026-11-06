@@ -531,6 +531,15 @@ private:
 
 int main(int argc, char** argv) {
     try {
+        if (argc == 2 && std::string(argv[1]) == "--help") {
+            std::cout << "ndpsim_native N D Q R truth_k entry k L B E chunk workers admission\n"
+                         "  vectors sha256 queries sha256 graph sha256 truth sha256 query_ids sha256\n"
+                         "  [uninstrumented | cpu_sample directory total_bytes buffer_bytes stride |\n"
+                         "   static_capture directory total_bytes buffer_bytes 1] [--semantic-log | --detail8]\n"
+                         "Default: benchmark. See README.md for formats and observation limitations.\n"
+                         "static_capture produces legacy raw shards, NOT ndpsim-static-ir/2.\n";
+            return 0;
+        }
         if (argc == 2 && std::string(argv[1]) == "--build-info") {
             std::cout << NDPSIM_NATIVE_SOURCE_SHA256 << '\n' << __VERSION__ << '\n'
                       << NDPSIM_NATIVE_FLAGS << '\n';
@@ -540,7 +549,7 @@ int main(int argc, char** argv) {
         const bool detail = argc > 24 && std::string(argv[argc-1]) == "--detail8";
         const int count = argc - trace - detail;
         if (count != 24 && count != 25 && count != 29)
-            throw std::runtime_error("use tools/run_native.py for validated dataset-v2 input");
+            throw std::runtime_error("invalid arguments; use --help and the independent graph-search README.md");
         Observation observation;
         observation.detail = detail ? 8 : 0;
         if (count == 25 && std::string(argv[24]) == "uninstrumented")

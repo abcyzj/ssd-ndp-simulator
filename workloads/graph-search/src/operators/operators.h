@@ -1,5 +1,5 @@
 #pragma once
-#include "content/content.h"
+#include "content/value.h"
 namespace ndpsim::operators {
 // Logical bytes only; no sector padding, PCIe charge or host instruction count.
 struct Work {

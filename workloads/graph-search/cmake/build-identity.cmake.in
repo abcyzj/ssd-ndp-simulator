@@ -1,0 +1,3 @@
+file(SHA256 "${SDK_ARCHIVE}" _sdk_sha)
+string(SHA256 _identity "@_source_sha@\nSDK_ARCHIVE=${_sdk_sha}\n")
+file(WRITE "${OUTPUT}" "#define NDPSIM_NATIVE_SOURCE_SHA256 \"${_identity}\"\n")

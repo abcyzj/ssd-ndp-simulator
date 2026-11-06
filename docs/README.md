@@ -1,6 +1,6 @@
 # 文档入口
 
-下一版正式需求为 [V0.4.5 PRD](prd-v0.4.5.md)：面向发布的 timing-only 平台与静态 IR、算子、映射和硬件成本扩展。V0.4.5 的[源码核查](source-audit-v0.4.5.md)与[22项实施计划](implementation-plan-v0.4.5.md)已完成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)和[P02通用SDK与校验](capture-sdk-v0.4.5.md)已完成，P03～P21 未开始、全部新AC未验收；当前可运行版本仍为 V0.4。新版本与旧兼容、功能重算和回归要求的替代关系见新 PRD §2。
+下一版正式需求为 [V0.4.5 PRD](prd-v0.4.5.md)：面向发布的 timing-only 平台与静态 IR、算子、映射和硬件成本扩展。V0.4.5 的[源码核查](source-audit-v0.4.5.md)与[22项实施计划](implementation-plan-v0.4.5.md)已完成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)和[P03独立图搜索构建](native-v0.4.5.md)已完成，P04～P21 未开始、全部新AC未验收；当前可运行版本仍为 V0.4。新版本与旧兼容、功能重算和回归要求的替代关系见新 PRD §2。
 
 V0.4 已交付范围见 [V0.4 PRD](prd-v0.4.md)：现有图搜索的独立原生程序、Profiler、CPU Cost Model、内存驻留单线程精度验证及盘控条件预测。需求与[18项实施清单](implementation-plan-v0.4.md)已整理，V04-0开工冻结、V04-1a纯算法核心、V04-1b原生构建与运行、V04-1c参考路径语义出口、V04-2a契约、V04-2b Profiler与静态IR采集、V04-2c训练采集与 A/B/A 、V04-3a 模型接口与失败关闭、V04-3b 训练拟合与冻结、V04-3c 静态执行与内存驻留及 V04-3d worker 与 CPU 顺序、V04-4a Validator 框架已完成。V04-4b 已完成，AC-04-04 按两点口径通过。V04-4c 已完成，两点单线程 Level B/C 及 Host 静态语义通过，[V04-4d 已完成](workers-v0.4.md)，AC-04-07 诊断通过；[V04-5a](offload-v0.4.md) 条件预测及 [V04-5b](regression-v0.4.md) 兼容继承已完成；[V04-5c 总交付](releases/v0.4.md)已完成，12/12配置和12/12 AC通过；[定向复核](source-audit-v0.4.md)记录此前核查与当前commit一致及证据边界。2/4 worker 为诊断项，真实 SSD/盘控硬件校准不在本版范围。
 
@@ -13,6 +13,7 @@ V0.4 新路径已修订为原生真实搜索插桩采集完整静态 IR，随后
 | V0.4.5 正式需求、扩展边界、验收与需求级里程碑 | [产品需求](prd-v0.4.5.md) |
 | V0.4.5 源码证据、耦合点与迁移依据 | [源码核查](source-audit-v0.4.5.md) |
 | V0.4.5 任务依赖、配置矩阵、测试迁移与实施出口 | [实施计划](implementation-plan-v0.4.5.md) |
+| V0.4.5 P03 独立图搜索构建、功能oracle及实际检查 | [P03实现记录](native-v0.4.5.md) |
 | V0.4.5 P02 独立SDK、通用封包/结构校验、安装和实际检查 | [P02实现记录](capture-sdk-v0.4.5.md) |
 | V0.4.5 P01 版本化契约、阶段/计费、接口声明及风险设计夹具 | [P01冻结记录](contract-v0.4.5.md) |
 | V0.4.5 P00 基线身份、逐文件/测试迁移、矩阵预算及实际检查 | [P00完成记录](baseline-v0.4.5.md) |
