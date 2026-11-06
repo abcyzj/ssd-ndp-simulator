@@ -2190,7 +2190,16 @@
   "standalone_tests": [
     "tests/test_direct_baseline.py",
     "tests/test_v045_baseline.py",
+    "tests/test_v045_contract_design.py",
     "tests/test_v04_cpu_fit.py"
   ],
-  "unregistered_note": "Standalone tests remain covered by files.json; not silently counted as executed CTests. ASan has conditional registration and is a future P20 targeted exit."
+  "unregistered_note": "Standalone tests remain covered by files.json; not silently counted as executed CTests. ASan has conditional registration and is a future P20 targeted exit.",
+  "design_probes": [
+    {
+      "source": "tests/v045_contract_header_probe.cc",
+      "compile": "c++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -I . tests/v045_contract_header_probe.cc -o <new-output>",
+      "execute": "<new-output>",
+      "scope": "P01 header design only; no production dependency links or timing behavior proof"
+    }
+  ]
 }

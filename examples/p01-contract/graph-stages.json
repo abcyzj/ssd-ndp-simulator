@@ -1,0 +1,1277 @@
+[
+  {
+    "query": 7,
+    "id": "op0",
+    "operator": "graph.INIT",
+    "operator_version": "2",
+    "semantic_work": {},
+    "stages": [
+      {
+        "id": "s0",
+        "kind": "init",
+        "topological_rank": 0,
+        "dependencies": [],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "copied_bytes": {
+            "value": 1,
+            "unit": "B"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": null,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "query",
+            "type": "graph.query",
+            "logical_bytes": 12,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "state",
+            "type": "graph.state",
+            "logical_bytes": 0,
+            "version": 1,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [
+          {
+            "name": "query_state",
+            "before": 0,
+            "after": 1,
+            "input": null,
+            "output": "state"
+          }
+        ],
+        "decomposition_rule": "none/1"
+      }
+    ]
+  },
+  {
+    "query": 7,
+    "id": "op1",
+    "operator": "graph.MARK_SCORED",
+    "operator_version": "2",
+    "semantic_work": {},
+    "stages": [
+      {
+        "id": "s0",
+        "kind": "state",
+        "topological_rank": 1,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op0",
+                "stage": "s0"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op0",
+                "stage": "s0"
+              },
+              "port": "state"
+            },
+            "input": "prior_state"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "objects": {
+            "value": 1,
+            "unit": "count"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": null,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "state",
+            "type": "graph.state",
+            "logical_bytes": 0,
+            "version": 2,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [
+          {
+            "name": "query_state",
+            "before": 1,
+            "after": 2,
+            "input": "prior_state",
+            "output": "state"
+          }
+        ],
+        "decomposition_rule": "none/1"
+      }
+    ]
+  },
+  {
+    "query": 7,
+    "id": "op3",
+    "operator": "graph.SCORE_L2",
+    "operator_version": "2",
+    "semantic_work": {},
+    "stages": [
+      {
+        "id": "prepare",
+        "kind": "score_prepare",
+        "topological_rank": 2,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op1",
+                "stage": "s0"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op0",
+                "stage": "s0"
+              },
+              "port": "query"
+            },
+            "input": "query"
+          },
+          {
+            "kind": "CONTROL",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op1",
+                "stage": "s0"
+              },
+              "port": "state"
+            },
+            "input": "state"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "vectors": {
+            "value": 1,
+            "unit": "count"
+          },
+          "dimensions": {
+            "value": 1,
+            "unit": "count"
+          },
+          "state_objects": {
+            "value": 1,
+            "unit": "count"
+          },
+          "copied_bytes": {
+            "value": 1,
+            "unit": "B"
+          },
+          "decoded_bytes": {
+            "value": 1,
+            "unit": "B"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": 0,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "vectors",
+            "type": "graph.vectors",
+            "logical_bytes": 12,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [],
+        "decomposition_rule": "none/1"
+      },
+      {
+        "id": "l2",
+        "kind": "score_l2",
+        "topological_rank": 3,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op3",
+                "stage": "prepare"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op0",
+                "stage": "s0"
+              },
+              "port": "query"
+            },
+            "input": "query"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op3",
+                "stage": "prepare"
+              },
+              "port": "vectors"
+            },
+            "input": "vectors"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "vectors": {
+            "value": 1,
+            "unit": "count"
+          },
+          "dimensions": {
+            "value": 1,
+            "unit": "count"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": 0,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "scores",
+            "type": "graph.scores",
+            "logical_bytes": 12,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [],
+        "decomposition_rule": "none/1"
+      },
+      {
+        "id": "append",
+        "kind": "merge_append",
+        "topological_rank": 4,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op3",
+                "stage": "l2"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op3",
+                "stage": "l2"
+              },
+              "port": "scores"
+            },
+            "input": "scores"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "old_scores": {
+            "value": 1,
+            "unit": "count"
+          },
+          "new_scores": {
+            "value": 1,
+            "unit": "count"
+          },
+          "copied_bytes": {
+            "value": 1,
+            "unit": "B"
+          },
+          "released_vectors": {
+            "value": 1,
+            "unit": "count"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": 0,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "batch",
+            "type": "graph.scores",
+            "logical_bytes": 12,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [],
+        "decomposition_rule": "none/1"
+      }
+    ]
+  },
+  {
+    "query": 7,
+    "id": "op6",
+    "operator": "graph.MERGE_CANDIDATES",
+    "operator_version": "2",
+    "semantic_work": {},
+    "stages": [
+      {
+        "id": "s0",
+        "kind": "merge_finalize",
+        "topological_rank": 5,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op3",
+                "stage": "append"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op3",
+                "stage": "append"
+              },
+              "port": "batch"
+            },
+            "input": "batch"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "old_scores": {
+            "value": 1,
+            "unit": "count"
+          },
+          "new_scores": {
+            "value": 1,
+            "unit": "count"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": null,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "candidates",
+            "type": "graph.candidates",
+            "logical_bytes": 12,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [],
+        "decomposition_rule": "none/1"
+      }
+    ]
+  },
+  {
+    "query": 7,
+    "id": "op7",
+    "operator": "graph.SELECT_FRONTIER",
+    "operator_version": "2",
+    "semantic_work": {},
+    "stages": [
+      {
+        "id": "s0",
+        "kind": "select",
+        "topological_rank": 6,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op6",
+                "stage": "s0"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op6",
+                "stage": "s0"
+              },
+              "port": "candidates"
+            },
+            "input": "candidates"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "old_scores": {
+            "value": 1,
+            "unit": "count"
+          },
+          "expanded": {
+            "value": 1,
+            "unit": "count"
+          },
+          "L": {
+            "value": 1,
+            "unit": "count"
+          },
+          "B": {
+            "value": 1,
+            "unit": "count"
+          },
+          "E": {
+            "value": 1,
+            "unit": "count"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": null,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "frontier",
+            "type": "graph.frontier",
+            "logical_bytes": 12,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [],
+        "decomposition_rule": "none/1"
+      }
+    ]
+  },
+  {
+    "query": 7,
+    "id": "op2",
+    "operator": "graph.MARK_EXPANDED",
+    "operator_version": "2",
+    "semantic_work": {},
+    "stages": [
+      {
+        "id": "s0",
+        "kind": "state",
+        "topological_rank": 7,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op7",
+                "stage": "s0"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "CONTROL",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op7",
+                "stage": "s0"
+              },
+              "port": "frontier"
+            },
+            "input": "frontier"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op1",
+                "stage": "s0"
+              },
+              "port": "state"
+            },
+            "input": "prior_state"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "objects": {
+            "value": 1,
+            "unit": "count"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": null,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "state",
+            "type": "graph.state",
+            "logical_bytes": 0,
+            "version": 3,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [
+          {
+            "name": "query_state",
+            "before": 2,
+            "after": 3,
+            "input": "prior_state",
+            "output": "state"
+          }
+        ],
+        "decomposition_rule": "none/1"
+      }
+    ]
+  },
+  {
+    "query": 7,
+    "id": "op8",
+    "operator": "graph.READ_ADJACENCY",
+    "operator_version": "2",
+    "semantic_work": {},
+    "stages": [
+      {
+        "id": "s0",
+        "kind": "adjacency_prepare",
+        "topological_rank": 8,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op2",
+                "stage": "s0"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "ADDRESS",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op7",
+                "stage": "s0"
+              },
+              "port": "frontier"
+            },
+            "input": "frontier"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "edges": {
+            "value": 1,
+            "unit": "count"
+          },
+          "state_objects": {
+            "value": 1,
+            "unit": "count"
+          },
+          "copied_bytes": {
+            "value": 1,
+            "unit": "B"
+          },
+          "decoded_bytes": {
+            "value": 1,
+            "unit": "B"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": null,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "neighbors",
+            "type": "graph.neighbors",
+            "logical_bytes": 12,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [],
+        "decomposition_rule": "none/1"
+      }
+    ]
+  },
+  {
+    "query": 7,
+    "id": "op9",
+    "operator": "graph.JOIN",
+    "operator_version": "2",
+    "semantic_work": {},
+    "stages": [
+      {
+        "id": "s0",
+        "kind": "join",
+        "topological_rank": 9,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op8",
+                "stage": "s0"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op8",
+                "stage": "s0"
+              },
+              "port": "neighbors"
+            },
+            "input": "neighbors"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {},
+        "context": "resident_random/2",
+        "chunk": null,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "neighbors",
+            "type": "graph.neighbors",
+            "logical_bytes": 12,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [],
+        "decomposition_rule": "none/1"
+      }
+    ]
+  },
+  {
+    "query": 7,
+    "id": "op10",
+    "operator": "graph.DEDUP_NEIGHBORS",
+    "operator_version": "2",
+    "semantic_work": {},
+    "stages": [
+      {
+        "id": "s0",
+        "kind": "dedup",
+        "topological_rank": 10,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op9",
+                "stage": "s0"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op9",
+                "stage": "s0"
+              },
+              "port": "neighbors"
+            },
+            "input": "neighbors"
+          },
+          {
+            "kind": "CONTROL",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op1",
+                "stage": "s0"
+              },
+              "port": "state"
+            },
+            "input": "state"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "edges": {
+            "value": 1,
+            "unit": "count"
+          },
+          "scored": {
+            "value": 1,
+            "unit": "count"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": null,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "fresh",
+            "type": "graph.frontier",
+            "logical_bytes": 12,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [],
+        "decomposition_rule": "none/1"
+      }
+    ]
+  },
+  {
+    "query": 7,
+    "id": "op11",
+    "operator": "graph.FINISH",
+    "operator_version": "2",
+    "semantic_work": {},
+    "stages": [
+      {
+        "id": "s0",
+        "kind": "finish",
+        "topological_rank": 11,
+        "dependencies": [
+          {
+            "kind": "ORDER",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op10",
+                "stage": "s0"
+              },
+              "port": "out"
+            },
+            "input": "in"
+          },
+          {
+            "kind": "DATA",
+            "source": {
+              "key": {
+                "query": 7,
+                "op": "op6",
+                "stage": "s0"
+              },
+              "port": "candidates"
+            },
+            "input": "candidates"
+          }
+        ],
+        "work": {
+          "elements": {
+            "value": 0,
+            "unit": "count"
+          },
+          "flops": {
+            "value": 0,
+            "unit": "flop"
+          },
+          "read_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "write_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "output_bytes": {
+            "value": 0,
+            "unit": "B"
+          },
+          "candidate_checks": {
+            "value": 0,
+            "unit": "count"
+          },
+          "comparisons": {
+            "value": 0,
+            "unit": "count"
+          }
+        },
+        "features": {
+          "objects": {
+            "value": 1,
+            "unit": "count"
+          }
+        },
+        "context": "resident_random/2",
+        "chunk": null,
+        "segment": 0,
+        "accesses": [],
+        "outputs": [
+          {
+            "port": "out",
+            "type": "token",
+            "logical_bytes": 0,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          {
+            "port": "topk",
+            "type": "graph.scores",
+            "logical_bytes": 12,
+            "version": 0,
+            "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "state_versions": [],
+        "decomposition_rule": "none/1"
+      }
+    ]
+  }
+]

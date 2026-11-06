@@ -1,0 +1,1187 @@
+{
+  "format": "ndpsim-graph-stage-design/1",
+  "fixture": true,
+  "operators": [
+    {
+      "id": "graph.INIT",
+      "version": "2",
+      "locations": [
+        "host"
+      ],
+      "stages": [
+        {
+          "kind": "init",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": false,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "query",
+              "type": "graph.query",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "state",
+              "type": "graph.state",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "copied_bytes": "B"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.INIT.init/1"
+        }
+      ],
+      "semantic_validator": "graph-ranked-expansion-independent/2"
+    },
+    {
+      "id": "graph.MARK_SCORED",
+      "version": "2",
+      "locations": [
+        "host"
+      ],
+      "stages": [
+        {
+          "kind": "state",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "prior_state",
+              "type": "graph.state",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "state",
+              "type": "graph.state",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "objects": "count"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.MARK_SCORED.state/1"
+        }
+      ],
+      "semantic_validator": "graph-ranked-expansion-independent/2"
+    },
+    {
+      "id": "graph.MARK_EXPANDED",
+      "version": "2",
+      "locations": [
+        "host"
+      ],
+      "stages": [
+        {
+          "kind": "state",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "frontier",
+              "type": "graph.frontier",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "prior_state",
+              "type": "graph.state",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "state",
+              "type": "graph.state",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "objects": "count"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.MARK_EXPANDED.state/1"
+        }
+      ],
+      "semantic_validator": "graph-ranked-expansion-independent/2"
+    },
+    {
+      "id": "graph.SCORE_L2",
+      "version": "2",
+      "locations": [
+        "host",
+        "controller"
+      ],
+      "stages": [
+        {
+          "kind": "score_prepare",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "query",
+              "type": "graph.query",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "state",
+              "type": "graph.state",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "vectors",
+              "type": "graph.vectors",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "vectors": "count",
+            "dimensions": "count",
+            "state_objects": "count",
+            "copied_bytes": "B",
+            "decoded_bytes": "B"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.SCORE_L2.score_prepare/1"
+        },
+        {
+          "kind": "score_l2",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "query",
+              "type": "graph.query",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "vectors",
+              "type": "graph.vectors",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "scores",
+              "type": "graph.scores",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "vectors": "count",
+            "dimensions": "count"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1",
+            "graph-l2-items/1"
+          ],
+          "output_size_rule": "graph.SCORE_L2.score_l2/1"
+        },
+        {
+          "kind": "merge_append",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "scores",
+              "type": "graph.scores",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "batch",
+              "type": "graph.scores",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "old_scores": "count",
+            "new_scores": "count",
+            "copied_bytes": "B",
+            "released_vectors": "count"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.SCORE_L2.merge_append/1"
+        }
+      ],
+      "semantic_validator": "graph-ranked-expansion-independent/2"
+    },
+    {
+      "id": "graph.MERGE_CANDIDATES",
+      "version": "2",
+      "locations": [
+        "host"
+      ],
+      "stages": [
+        {
+          "kind": "merge_finalize",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "batch",
+              "type": "graph.scores",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "previous",
+              "type": "graph.candidates",
+              "unit": "B",
+              "required": false,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "candidates",
+              "type": "graph.candidates",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "old_scores": "count",
+            "new_scores": "count"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.MERGE_CANDIDATES.merge_finalize/1"
+        }
+      ],
+      "semantic_validator": "graph-ranked-expansion-independent/2"
+    },
+    {
+      "id": "graph.SELECT_FRONTIER",
+      "version": "2",
+      "locations": [
+        "host"
+      ],
+      "stages": [
+        {
+          "kind": "select",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "candidates",
+              "type": "graph.candidates",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "frontier",
+              "type": "graph.frontier",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "old_scores": "count",
+            "expanded": "count",
+            "L": "count",
+            "B": "count",
+            "E": "count"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.SELECT_FRONTIER.select/1"
+        }
+      ],
+      "semantic_validator": "graph-ranked-expansion-independent/2"
+    },
+    {
+      "id": "graph.READ_ADJACENCY",
+      "version": "2",
+      "locations": [
+        "host"
+      ],
+      "stages": [
+        {
+          "kind": "adjacency_prepare",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "frontier",
+              "type": "graph.frontier",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "neighbors",
+              "type": "graph.neighbors",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "edges": "count",
+            "state_objects": "count",
+            "copied_bytes": "B",
+            "decoded_bytes": "B"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.READ_ADJACENCY.adjacency_prepare/1"
+        }
+      ],
+      "semantic_validator": "graph-ranked-expansion-independent/2"
+    },
+    {
+      "id": "graph.JOIN",
+      "version": "2",
+      "locations": [
+        "host"
+      ],
+      "stages": [
+        {
+          "kind": "join",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "neighbors",
+              "type": "graph.neighbors",
+              "unit": "B",
+              "required": true,
+              "cardinality": "many"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "neighbors",
+              "type": "graph.neighbors",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {},
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.JOIN.join/1"
+        }
+      ],
+      "semantic_validator": "graph-ranked-expansion-independent/2"
+    },
+    {
+      "id": "graph.DEDUP_NEIGHBORS",
+      "version": "2",
+      "locations": [
+        "host"
+      ],
+      "stages": [
+        {
+          "kind": "dedup",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "neighbors",
+              "type": "graph.neighbors",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "state",
+              "type": "graph.state",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "fresh",
+              "type": "graph.frontier",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "edges": "count",
+            "scored": "count"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.DEDUP_NEIGHBORS.dedup/1"
+        }
+      ],
+      "semantic_validator": "graph-ranked-expansion-independent/2"
+    },
+    {
+      "id": "graph.FINISH",
+      "version": "2",
+      "locations": [
+        "host"
+      ],
+      "stages": [
+        {
+          "kind": "finish",
+          "inputs": [
+            {
+              "name": "in",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "candidates",
+              "type": "graph.candidates",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "out",
+              "type": "token",
+              "unit": "count",
+              "required": true,
+              "cardinality": "one"
+            },
+            {
+              "name": "topk",
+              "type": "graph.scores",
+              "unit": "B",
+              "required": true,
+              "cardinality": "one"
+            }
+          ],
+          "work_units": {
+            "elements": "count",
+            "flops": "flop",
+            "read_bytes": "B",
+            "write_bytes": "B",
+            "output_bytes": "B",
+            "candidate_checks": "count",
+            "comparisons": "count"
+          },
+          "feature_units": {
+            "objects": "count"
+          },
+          "contexts": [
+            "resident_random/2",
+            "ssd_host_return/1",
+            "ssd_controller_command/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "output_size_rule": "graph.FINISH.finish/1"
+        }
+      ],
+      "semantic_validator": "graph-ranked-expansion-independent/2"
+    }
+  ],
+  "ledger": [
+    {
+      "operator": "graph.INIT",
+      "stage": "init",
+      "features": {
+        "copied_bytes": "B"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "query copy/validation/container initialization; no later scored/expanded insertions",
+      "model_source": "prediction",
+      "decomposition": "none/1",
+      "locations": [
+        "host"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "HostCpu.init",
+        "ssd_host_return/1": "HostCpu.init",
+        "ssd_controller_command/1": "HostCpu.init"
+      }
+    },
+    {
+      "operator": "graph.MARK_SCORED",
+      "stage": "state",
+      "features": {
+        "objects": "count"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "resident: zero-service token; insertion charged once in score_prepare; SSD: own Host state service",
+      "model_source": "prediction",
+      "decomposition": "none/1",
+      "locations": [
+        "host"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "none; logical token only, owner=score_prepare",
+        "ssd_host_return/1": "HostCpu.state",
+        "ssd_controller_command/1": "HostCpu.state"
+      }
+    },
+    {
+      "operator": "graph.MARK_EXPANDED",
+      "stage": "state",
+      "features": {
+        "objects": "count"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "resident: zero-service token; insertion charged once per adjacency_prepare; SSD: own Host state service",
+      "model_source": "prediction",
+      "decomposition": "none/1",
+      "locations": [
+        "host"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "none; logical token only, owner=adjacency_prepare",
+        "ssd_host_return/1": "HostCpu.state",
+        "ssd_controller_command/1": "HostCpu.state"
+      }
+    },
+    {
+      "operator": "graph.SCORE_L2",
+      "stage": "score_prepare",
+      "features": {
+        "vectors": "count",
+        "dimensions": "count",
+        "state_objects": "count",
+        "copied_bytes": "B",
+        "decoded_bytes": "B"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "resident: vector lookup/copy and scored insertions; SSD Host: return-buffer decode; Controller: command metadata only, no vector Host copy",
+      "model_source": "prediction",
+      "decomposition": "none/1",
+      "locations": [
+        "host",
+        "controller"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "HostCpu.score_prepare",
+        "ssd_host_return/1": "HostCpu.score_prepare",
+        "ssd_controller_command/1": "HostCpu.score_prepare"
+      }
+    },
+    {
+      "operator": "graph.SCORE_L2",
+      "stage": "score_l2",
+      "features": {
+        "vectors": "count",
+        "dimensions": "count"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "Host: L2 input decode/arithmetic/output packing; Controller: arithmetic only, explicit BufferModel stages own copies",
+      "model_source": "prediction",
+      "decomposition": "graph-l2-items/1",
+      "locations": [
+        "host",
+        "controller"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "HostCpu.score_l2",
+        "ssd_host_return/1": "HostCpu.score_l2",
+        "ssd_controller_command/1": "ControllerCompute arithmetic only; BufferModel owns all buffer copies"
+      }
+    },
+    {
+      "operator": "graph.SCORE_L2",
+      "stage": "merge_append",
+      "features": {
+        "old_scores": "count",
+        "new_scores": "count",
+        "copied_bytes": "B",
+        "released_vectors": "count"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "per semantic chunk packed-score append and temporary vector destruction, excludes candidate sort",
+      "model_source": "measured-table",
+      "decomposition": "none/1",
+      "locations": [
+        "host",
+        "controller"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "HostCpu.merge_append",
+        "ssd_host_return/1": "HostCpu.merge_append",
+        "ssd_controller_command/1": "HostCpu.merge_append"
+      }
+    },
+    {
+      "operator": "graph.MERGE_CANDIDATES",
+      "stage": "merge_finalize",
+      "features": {
+        "old_scores": "count",
+        "new_scores": "count"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "batch-end merge/dedup/insertion sort and candidate replacement, excludes chunk append",
+      "model_source": "prediction",
+      "decomposition": "none/1",
+      "locations": [
+        "host"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "HostCpu.merge_finalize",
+        "ssd_host_return/1": "HostCpu.merge_finalize",
+        "ssd_controller_command/1": "HostCpu.merge_finalize"
+      }
+    },
+    {
+      "operator": "graph.SELECT_FRONTIER",
+      "stage": "select",
+      "features": {
+        "old_scores": "count",
+        "expanded": "count",
+        "L": "count",
+        "B": "count",
+        "E": "count"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "frontier traversal/candidate checks and selected IDs construction",
+      "model_source": "prediction",
+      "decomposition": "none/1",
+      "locations": [
+        "host"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "HostCpu.select",
+        "ssd_host_return/1": "HostCpu.select",
+        "ssd_controller_command/1": "HostCpu.select"
+      }
+    },
+    {
+      "operator": "graph.READ_ADJACENCY",
+      "stage": "adjacency_prepare",
+      "features": {
+        "edges": "count",
+        "state_objects": "count",
+        "copied_bytes": "B",
+        "decoded_bytes": "B"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "resident: lookup/copy/decode and expanded insertion; SSD: decode Host-returned adjacency, state charged separately",
+      "model_source": "prediction",
+      "decomposition": "none/1",
+      "locations": [
+        "host"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "HostCpu.adjacency_prepare",
+        "ssd_host_return/1": "HostCpu.adjacency_prepare",
+        "ssd_controller_command/1": "HostCpu.adjacency_prepare"
+      }
+    },
+    {
+      "operator": "graph.JOIN",
+      "stage": "join",
+      "features": {},
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "zero-service control join; no implicit payload concatenation; real concatenation if present belongs to adjacency_prepare segments",
+      "model_source": "prediction",
+      "decomposition": "none/1",
+      "locations": [
+        "host"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "none; asynchronous join",
+        "ssd_host_return/1": "none; asynchronous join",
+        "ssd_controller_command/1": "none; asynchronous join"
+      }
+    },
+    {
+      "operator": "graph.DEDUP_NEIGHBORS",
+      "stage": "dedup",
+      "features": {
+        "edges": "count",
+        "scored": "count"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "independent counted seen traversal, fresh insertion and neighbor container disposal",
+      "model_source": "prediction",
+      "decomposition": "none/1",
+      "locations": [
+        "host"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "HostCpu.dedup",
+        "ssd_host_return/1": "HostCpu.dedup",
+        "ssd_controller_command/1": "HostCpu.dedup"
+      }
+    },
+    {
+      "operator": "graph.FINISH",
+      "stage": "finish",
+      "features": {
+        "objects": "count"
+      },
+      "work_units": {
+        "elements": "count",
+        "flops": "flop",
+        "read_bytes": "B",
+        "write_bytes": "B",
+        "output_bytes": "B",
+        "candidate_checks": "count",
+        "comparisons": "count"
+      },
+      "source": "native boundary + independent numeric/search/Work validator; never derived from simulator payload",
+      "boundary": "top-k materialization/copy and owned state/container destruction; no wall-clock residual",
+      "model_source": "prediction",
+      "decomposition": "none/1",
+      "locations": [
+        "host"
+      ],
+      "charge_owner_by_context": {
+        "resident_random/2": "HostCpu.finish",
+        "ssd_host_return/1": "HostCpu.finish",
+        "ssd_controller_command/1": "HostCpu.finish"
+      }
+    }
+  ],
+  "limitations": "Typed graph stage inventory only; not independently validated real search or a sealed package. P04 implements these port/Work rules and captures concrete versions, calls and access metadata."
+}

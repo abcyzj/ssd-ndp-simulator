@@ -1,0 +1,47 @@
+{
+  "format": "ndpsim-cost-profile/1",
+  "fixture": true,
+  "target": {
+    "id": "fixture-target",
+    "hardware": "hypothetical",
+    "os": "fixture",
+    "memory_bytes": 4096,
+    "frequency": "Unsupported",
+    "affinity": "Unsupported"
+  },
+  "rules": [
+    {
+      "operator": "example.block_sum",
+      "operator_version": "1",
+      "stage_kind": "reduce",
+      "context": "fixture/1",
+      "location": "host",
+      "target_id": "fixture-target",
+      "feature_ranges": [
+        {
+          "name": "blocks",
+          "unit": "count",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "work_units": {
+        "elements": "count",
+        "flops": "flop"
+      },
+      "source": "prediction",
+      "formula": "constant/1",
+      "parameter_schema_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "parameters": {
+        "ns": 3
+      },
+      "measurement_sha256": [
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "training_query_ids": [
+        7
+      ],
+      "fit_report_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

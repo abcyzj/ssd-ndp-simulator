@@ -22,7 +22,9 @@
       "chunk": 16,
       "workers": 1,
       "slots": 1,
-      "admission": 1
+      "admission": 1,
+      "offered_ns": 0,
+      "schedule_policy": "fifo-query/1"
     },
     {
       "id": "B01",
@@ -38,9 +40,11 @@
       "k": 10,
       "B": 1,
       "chunk": 16,
-      "workers": "P01冻结",
-      "slots": "P01冻结",
-      "admission": "P01冻结"
+      "workers": 1,
+      "slots": 1,
+      "admission": 1,
+      "offered_ns": 0,
+      "schedule_policy": "fifo-query/1"
     },
     {
       "id": "C01",
@@ -56,9 +60,11 @@
       "k": 10,
       "B": 1,
       "chunk": 16,
-      "workers": "P01冻结",
-      "slots": "P01冻结",
-      "admission": "P01冻结"
+      "workers": 1,
+      "slots": 1,
+      "admission": 1,
+      "offered_ns": 0,
+      "schedule_policy": "fifo-query/1"
     },
     {
       "id": "A02",
@@ -76,7 +82,9 @@
       "chunk": 16,
       "workers": 1,
       "slots": 1,
-      "admission": 1
+      "admission": 1,
+      "offered_ns": 0,
+      "schedule_policy": "fifo-query/1"
     },
     {
       "id": "B02",
@@ -92,9 +100,11 @@
       "k": 10,
       "B": 1,
       "chunk": 16,
-      "workers": "P01冻结",
-      "slots": "P01冻结",
-      "admission": "P01冻结"
+      "workers": 1,
+      "slots": 1,
+      "admission": 1,
+      "offered_ns": 0,
+      "schedule_policy": "fifo-query/1"
     },
     {
       "id": "C02",
@@ -110,9 +120,11 @@
       "k": 10,
       "B": 1,
       "chunk": 16,
-      "workers": "P01冻结",
-      "slots": "P01冻结",
-      "admission": "P01冻结"
+      "workers": 1,
+      "slots": 1,
+      "admission": 1,
+      "offered_ns": 0,
+      "schedule_policy": "fifo-query/1"
     }
   ],
   "simulated_runs_min": 8,
@@ -290,9 +302,6 @@
       "C02"
     ]
   ],
-  "pending_P01": [
-    "SSD offered/admission/worker/slots identical comparable conditions; list only placement and necessary preparation context differences"
-  ],
   "schedule": {
     "capture_packages": 4,
     "splits": [
@@ -358,5 +367,25 @@
     "pilot/training/Level A",
     "P20 current CTest and targeted ASan"
   ],
-  "limitations": "New identity requires new capture/fit; historical evaluation exposure disclosed in releases/v0.4.md; no evaluation feedback to fitting; SSD/PCIe/Controller configured_unvalidated."
+  "limitations": "New identity requires new capture/fit; historical evaluation exposure disclosed in releases/v0.4.md; no evaluation feedback to fitting; SSD/PCIe/Controller configured_unvalidated.",
+  "schedule_frozen_by": "P01/v045-contract/1",
+  "paired_resource_policy": {
+    "equal": [
+      "package",
+      "device_xml",
+      "layout",
+      "host_slots",
+      "workers",
+      "admission",
+      "controller_buffer",
+      "controller_compute",
+      "endpoint_parameters"
+    ],
+    "allowed_differences": [
+      "placement",
+      "mapping",
+      "explicit_preparation_context_and_applicable_service_source"
+    ],
+    "capacity": "both paired runs require one full query plus maximum deterministic work block; never silently reduce admission"
+  }
 }

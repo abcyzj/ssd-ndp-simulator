@@ -1,0 +1,105 @@
+{
+  "format": "ndpsim-cost-profile/1",
+  "fixture": true,
+  "target": {
+    "id": "fixture-target",
+    "hardware": "hypothetical",
+    "os": "fixture",
+    "memory_bytes": 4096,
+    "frequency": "Unsupported",
+    "affinity": "Unsupported"
+  },
+  "rules": [
+    {
+      "operator": "example.block_sum",
+      "operator_version": "1",
+      "stage_kind": "reduce",
+      "context": "fixture/1",
+      "location": "host",
+      "target_id": "fixture-target",
+      "feature_ranges": [
+        {
+          "name": "blocks",
+          "unit": "count",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "work_units": {
+        "elements": "count",
+        "flops": "flop"
+      },
+      "source": "measured-table",
+      "binding": {
+        "package_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "provenance": {
+          "kind": "synthetic-fixture",
+          "capture_build": {
+            "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "binary_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "compiler": "fixture",
+            "flags": [
+              "-fno-fast-math",
+              "-ffp-contract=off"
+            ]
+          },
+          "input_content_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "semantic_version": "block-sum/1",
+          "extension_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "split": "fixture",
+          "query_ids": [
+            7
+          ],
+          "workload": "example.block_sum",
+          "numeric_version": "u32-u64-exact/1",
+          "work_version": "sum-work/1",
+          "semantic_config_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "target": {
+          "id": "fixture-target",
+          "hardware": "hypothetical",
+          "os": "fixture",
+          "memory_bytes": 4096,
+          "frequency": "Unsupported",
+          "affinity": "Unsupported"
+        },
+        "context": "fixture/1",
+        "workers": 1,
+        "slots": 1,
+        "admission": 1
+      },
+      "measurement_sha256": [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "rows": [
+        {
+          "key": {
+            "query": 7,
+            "op": "root",
+            "stage": "s0"
+          },
+          "work": {
+            "elements": {
+              "value": 16,
+              "unit": "count"
+            },
+            "flops": {
+              "value": 15,
+              "unit": "flop"
+            }
+          },
+          "features": {
+            "blocks": {
+              "value": 1,
+              "unit": "count"
+            }
+          },
+          "duration_ns": 8
+        }
+      ],
+      "quality_report_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

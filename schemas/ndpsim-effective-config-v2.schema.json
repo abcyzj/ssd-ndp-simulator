@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ndpsim:effective-config:2",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "ndpsim-effective-config/2"
+    },
+    "package": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/file"
+    },
+    "semantic_report": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/semantic_report"
+    },
+    "layout": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/file"
+    },
+    "device": {
+      "oneOf": [
+        {
+          "$ref": "urn:ndpsim:contract:2#/$defs/file"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "resources": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/file"
+    },
+    "profile": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/file"
+    },
+    "mapping": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/file"
+    },
+    "provider": {
+      "enum": [
+        "host_memory",
+        "ssd"
+      ]
+    },
+    "placement": {
+      "enum": [
+        "host",
+        "controller"
+      ]
+    },
+    "target": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/target"
+    },
+    "simulator_build": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/build"
+    },
+    "execution_host": {
+      "type": "object",
+      "properties": {
+        "hardware": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "os": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "hardware",
+        "os",
+        "architecture"
+      ],
+      "additionalProperties": false
+    },
+    "schedule": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "const": "fifo-query/1"
+        },
+        "offered_ns": {
+          "const": 0
+        },
+        "workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "slots": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "admission": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        }
+      },
+      "required": [
+        "policy",
+        "offered_ns",
+        "workers",
+        "slots",
+        "admission"
+      ],
+      "additionalProperties": false
+    },
+    "fixture_allowed": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "format",
+    "package",
+    "semantic_report",
+    "layout",
+    "device",
+    "resources",
+    "profile",
+    "mapping",
+    "provider",
+    "placement",
+    "target",
+    "simulator_build",
+    "execution_host",
+    "schedule",
+    "fixture_allowed"
+  ],
+  "additionalProperties": false
+}

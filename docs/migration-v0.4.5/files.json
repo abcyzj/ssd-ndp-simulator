@@ -336,6 +336,96 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "examples/p01-contract/effective-config.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
+      "path": "examples/p01-contract/fork-join.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
+      "path": "examples/p01-contract/graph-stage-catalog.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
+      "path": "examples/p01-contract/graph-stages.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
+      "path": "examples/p01-contract/hand-cases.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
+      "path": "examples/p01-contract/manifest.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
+      "path": "examples/p01-contract/measured-profile.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
+      "path": "examples/p01-contract/measurement.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
+      "path": "examples/p01-contract/profile.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
+      "path": "examples/p01-contract/sum-operator.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
       "path": "examples/v04-contract/base.bin",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -435,6 +525,24 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "schemas/ndpsim-contract-v2.schema.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
+      "path": "schemas/ndpsim-cost-profile-v1.schema.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
       "path": "schemas/ndpsim-cpu-profile-v1.schema.json",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -451,6 +559,15 @@
       "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
       "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "path": "schemas/ndpsim-effective-config-v2.schema.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
     },
     {
       "path": "schemas/ndpsim-ir-diagnostics-v1.schema.json",
@@ -489,6 +606,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "schemas/ndpsim-measurement-v2.schema.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
+    },
+    {
       "path": "schemas/ndpsim-static-ir-v1.schema.json",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -496,6 +622,15 @@
       "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
       "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "path": "schemas/ndpsim-static-ir-v2.schema.json",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
     },
     {
       "path": "schemas/ndpsim-validator-report-v1.schema.json",
@@ -1587,6 +1722,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：p00"
     },
     {
+      "path": "tests/test_v045_contract_design.py",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；独立运行，未改旧根CMake或原生身份"
+    },
+    {
       "path": "tests/test_v04_contract.py",
       "policy": "static",
       "decision": "重写迁移",
@@ -1639,6 +1783,15 @@
       "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
       "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：static"
+    },
+    {
+      "path": "tests/v045_contract_header_probe.cc",
+      "policy": "p01-contract-design",
+      "decision": "保留设计契约/迁后续实现",
+      "tasks": "P01/P02/P04/P05/P07/P08/P12/P20",
+      "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
+      "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
+      "reason": "P01设计出口；独立运行，未改旧根CMake或原生身份"
     },
     {
       "path": "tools/README.md",

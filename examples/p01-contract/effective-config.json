@@ -1,0 +1,76 @@
+{
+  "format": "ndpsim-effective-config/2",
+  "package": {
+    "path": "manifest.json",
+    "bytes": 0,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "semantic_report": {
+    "path": "semantic-report.json",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "level": "structural-only",
+    "verifier_build": {
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "binary_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "compiler": "fixture",
+      "flags": [
+        "-fno-fast-math",
+        "-ffp-contract=off"
+      ]
+    },
+    "package_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "layout": {
+    "path": "layout.json",
+    "bytes": 0,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "device": null,
+  "resources": {
+    "path": "resources.json",
+    "bytes": 0,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "profile": {
+    "path": "profile.json",
+    "bytes": 0,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "mapping": {
+    "path": "mapping.json",
+    "bytes": 0,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "provider": "host_memory",
+  "placement": "host",
+  "target": {
+    "id": "fixture-target",
+    "hardware": "hypothetical",
+    "os": "fixture",
+    "memory_bytes": 4096,
+    "frequency": "Unsupported",
+    "affinity": "Unsupported"
+  },
+  "simulator_build": {
+    "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "binary_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "compiler": "fixture",
+    "flags": [
+      "-fno-fast-math",
+      "-ffp-contract=off"
+    ]
+  },
+  "execution_host": {
+    "hardware": "different-from-target",
+    "os": "fixture-other",
+    "architecture": "arm64"
+  },
+  "schedule": {
+    "policy": "fifo-query/1",
+    "offered_ns": 0,
+    "workers": 1,
+    "slots": 1,
+    "admission": 1
+  },
+  "fixture_allowed": true
+}

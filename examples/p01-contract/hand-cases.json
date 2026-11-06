@@ -1,0 +1,93 @@
+{
+  "fixture": true,
+  "zero_service_visible_ns": [
+    0,
+    0
+  ],
+  "zero_service_phases": [
+    [
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      2
+    ],
+    [
+      0,
+      0,
+      3
+    ],
+    [
+      0,
+      1,
+      1
+    ],
+    [
+      0,
+      1,
+      2
+    ],
+    [
+      0,
+      1,
+      3
+    ]
+  ],
+  "l2_split": {
+    "dimensions": 3,
+    "items": 5,
+    "semantic_chunks": [
+      3,
+      2
+    ],
+    "physical_chunks": [
+      2,
+      1,
+      2
+    ],
+    "expected_semantic": {
+      "elements": 15,
+      "flops": 45,
+      "read_bytes": 84,
+      "write_bytes": 60,
+      "output_bytes": 60,
+      "candidate_checks": 0,
+      "comparisons": 0
+    },
+    "expected_physical": {
+      "elements": 15,
+      "flops": 45,
+      "read_bytes": 96,
+      "write_bytes": 60,
+      "output_bytes": 60,
+      "candidate_checks": 0,
+      "comparisons": 0
+    },
+    "note": "Physical work query-read overhead is 12 bytes higher; semantic Work unchanged. No proportional split of observed comparisons or durations."
+  },
+  "messages": {
+    "dimensions": 32,
+    "items": 2,
+    "max_payload": 128,
+    "overhead": 28,
+    "lanes": 4,
+    "lane_GBps": 1,
+    "expected_controller": {
+      "H2D_payload": 388,
+      "H2D_wire": 584,
+      "D2H_payload": 708,
+      "D2H_wire": 960,
+      "buffer_bytes": 2352,
+      "credit_peak": 1248
+    },
+    "expected_host": {
+      "H2D_payload": 152,
+      "H2D_wire": 320,
+      "D2H_payload": 1576,
+      "D2H_wire": 2024
+    }
+  }
+}

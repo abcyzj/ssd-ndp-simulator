@@ -31,13 +31,15 @@ class BaselineGates(unittest.TestCase):
                 self.files,self.tests=saved
 
     def test_reduced_matrix_repeats_or_changed_queries(self):
-        for key in ('point','repeat','query','strict'):
+        for key in ('point','repeat','query','strict','ssd-admission','ssd-offered'):
             with self.subTest(key=key):
                 saved=copy.deepcopy(self.matrix)
                 if key=='point': self.matrix['configurations'].pop()
                 if key=='repeat': self.matrix['configurations'][0]['simulated_repeats_min']=1
                 if key=='query': self.matrix['evaluation_ids'].reverse()
                 if key=='strict': self.matrix['configurations'][0]['workers']=2
+                if key=='ssd-admission': next(r for r in self.matrix['configurations'] if r['id']=='C01')['admission']=2
+                if key=='ssd-offered': next(r for r in self.matrix['configurations'] if r['id']=='B01')['offered_ns']=1
                 with self.assertRaises(ValueError): self.check_plan()
                 self.matrix=saved
 

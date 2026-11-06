@@ -1,0 +1,338 @@
+{
+  "operations": [
+    {
+      "query": 7,
+      "id": "root",
+      "operator": "example.block_sum",
+      "operator_version": "1",
+      "semantic_work": {
+        "elements": {
+          "value": 16,
+          "unit": "count"
+        },
+        "flops": {
+          "value": 15,
+          "unit": "flop"
+        }
+      },
+      "stages": [
+        {
+          "id": "s0",
+          "kind": "reduce",
+          "topological_rank": 0,
+          "dependencies": [],
+          "work": {
+            "elements": {
+              "value": 16,
+              "unit": "count"
+            },
+            "flops": {
+              "value": 15,
+              "unit": "flop"
+            }
+          },
+          "features": {
+            "blocks": {
+              "value": 1,
+              "unit": "count"
+            }
+          },
+          "context": "fixture/1",
+          "chunk": null,
+          "segment": 0,
+          "accesses": [
+            {
+              "object": "block",
+              "version": 0,
+              "offset_bytes": 0,
+              "length_bytes": 64
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out",
+              "type": "example.sum",
+              "logical_bytes": 8,
+              "version": 0,
+              "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          ],
+          "state_versions": [],
+          "decomposition_rule": "none/1"
+        }
+      ]
+    },
+    {
+      "query": 7,
+      "id": "left",
+      "operator": "example.block_sum",
+      "operator_version": "1",
+      "semantic_work": {
+        "elements": {
+          "value": 16,
+          "unit": "count"
+        },
+        "flops": {
+          "value": 15,
+          "unit": "flop"
+        }
+      },
+      "stages": [
+        {
+          "id": "s0",
+          "kind": "reduce",
+          "topological_rank": 1,
+          "dependencies": [
+            {
+              "kind": "DATA",
+              "source": {
+                "key": {
+                  "query": 7,
+                  "op": "root",
+                  "stage": "s0"
+                },
+                "port": "out"
+              },
+              "input": "in0"
+            }
+          ],
+          "work": {
+            "elements": {
+              "value": 16,
+              "unit": "count"
+            },
+            "flops": {
+              "value": 15,
+              "unit": "flop"
+            }
+          },
+          "features": {
+            "blocks": {
+              "value": 1,
+              "unit": "count"
+            }
+          },
+          "context": "fixture/1",
+          "chunk": null,
+          "segment": 0,
+          "accesses": [
+            {
+              "object": "block",
+              "version": 0,
+              "offset_bytes": 0,
+              "length_bytes": 64
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out",
+              "type": "example.sum",
+              "logical_bytes": 8,
+              "version": 0,
+              "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          ],
+          "state_versions": [],
+          "decomposition_rule": "none/1"
+        }
+      ]
+    },
+    {
+      "query": 7,
+      "id": "right",
+      "operator": "example.block_sum",
+      "operator_version": "1",
+      "semantic_work": {
+        "elements": {
+          "value": 16,
+          "unit": "count"
+        },
+        "flops": {
+          "value": 15,
+          "unit": "flop"
+        }
+      },
+      "stages": [
+        {
+          "id": "s0",
+          "kind": "reduce",
+          "topological_rank": 2,
+          "dependencies": [
+            {
+              "kind": "ADDRESS",
+              "source": {
+                "key": {
+                  "query": 7,
+                  "op": "root",
+                  "stage": "s0"
+                },
+                "port": "out"
+              },
+              "input": "in0"
+            }
+          ],
+          "work": {
+            "elements": {
+              "value": 16,
+              "unit": "count"
+            },
+            "flops": {
+              "value": 15,
+              "unit": "flop"
+            }
+          },
+          "features": {
+            "blocks": {
+              "value": 1,
+              "unit": "count"
+            }
+          },
+          "context": "fixture/1",
+          "chunk": null,
+          "segment": 0,
+          "accesses": [
+            {
+              "object": "block",
+              "version": 0,
+              "offset_bytes": 0,
+              "length_bytes": 64
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out",
+              "type": "example.sum",
+              "logical_bytes": 8,
+              "version": 0,
+              "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          ],
+          "state_versions": [],
+          "decomposition_rule": "none/1"
+        }
+      ]
+    },
+    {
+      "query": 7,
+      "id": "join",
+      "operator": "example.block_sum",
+      "operator_version": "1",
+      "semantic_work": {
+        "elements": {
+          "value": 16,
+          "unit": "count"
+        },
+        "flops": {
+          "value": 15,
+          "unit": "flop"
+        }
+      },
+      "stages": [
+        {
+          "id": "s0",
+          "kind": "reduce",
+          "topological_rank": 3,
+          "dependencies": [
+            {
+              "kind": "CONTROL",
+              "source": {
+                "key": {
+                  "query": 7,
+                  "op": "left",
+                  "stage": "s0"
+                },
+                "port": "out"
+              },
+              "input": "in0"
+            },
+            {
+              "kind": "ORDER",
+              "source": {
+                "key": {
+                  "query": 7,
+                  "op": "right",
+                  "stage": "s0"
+                },
+                "port": "out"
+              },
+              "input": "in1"
+            }
+          ],
+          "work": {
+            "elements": {
+              "value": 16,
+              "unit": "count"
+            },
+            "flops": {
+              "value": 15,
+              "unit": "flop"
+            }
+          },
+          "features": {
+            "blocks": {
+              "value": 1,
+              "unit": "count"
+            }
+          },
+          "context": "fixture/1",
+          "chunk": null,
+          "segment": 0,
+          "accesses": [
+            {
+              "object": "block",
+              "version": 0,
+              "offset_bytes": 0,
+              "length_bytes": 64
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out",
+              "type": "example.sum",
+              "logical_bytes": 8,
+              "version": 0,
+              "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          ],
+          "state_versions": [],
+          "decomposition_rule": "none/1"
+        }
+      ]
+    }
+  ],
+  "services": {
+    "root": [
+      2,
+      3,
+      4
+    ],
+    "left": [
+      0,
+      5,
+      2
+    ],
+    "right": [
+      0,
+      11,
+      0
+    ],
+    "join": [
+      0,
+      1,
+      0
+    ]
+  },
+  "expected_visible_ns": {
+    "root": 9,
+    "left": 16,
+    "right": 20,
+    "join": 21
+  },
+  "order_left_before_right_visible_ns": {
+    "root": 9,
+    "left": 16,
+    "right": 27,
+    "join": 28
+  },
+  "note": "Logical hand oracle only; P08/P12 production gates pending. No actual native block-sum implementation in P01."
+}

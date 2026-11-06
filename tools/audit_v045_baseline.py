@@ -54,6 +54,11 @@ def validate(files, tests, actual_files, actual_tests, matrix):
             raise ValueError('formal dataset/semantics changed')
         if r['id'].startswith('A') and (r['workers'], r['slots'], r['admission'], r['native_repeats_min']) != (1,1,1,3):
             raise ValueError('strict CPU point changed')
+    if matrix.get('schedule_frozen_by') != 'P01/v045-contract/1':
+        raise ValueError('missing P01 schedule freeze')
+    for r in rows:
+        if (r['workers'],r['slots'],r['admission'],r.get('offered_ns'),r.get('schedule_policy')) != (1,1,1,0,'fifo-query/1'):
+            raise ValueError('P01 comparable resource/admission schedule changed')
     selection = json.loads((ROOT/'configs/benchmarks/v0.2-query-selection.json').read_text())['datasets']['sift1m']
     if matrix['tuning_ids'] != selection['tuning_ids'] or matrix['evaluation_ids'] != selection['evaluation_ids']:
         raise ValueError('original query order changed')

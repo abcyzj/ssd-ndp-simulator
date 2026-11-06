@@ -1,0 +1,53 @@
+{
+  "id": "example.block_sum",
+  "version": "1",
+  "locations": [
+    "host",
+    "controller"
+  ],
+  "semantic_validator": "independent-block-sum/1",
+  "stages": [
+    {
+      "kind": "reduce",
+      "inputs": [
+        {
+          "name": "in0",
+          "type": "example.sum",
+          "unit": "B",
+          "required": false,
+          "cardinality": "one"
+        },
+        {
+          "name": "in1",
+          "type": "example.sum",
+          "unit": "B",
+          "required": false,
+          "cardinality": "one"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "type": "example.sum",
+          "unit": "B",
+          "required": true,
+          "cardinality": "one"
+        }
+      ],
+      "work_units": {
+        "elements": "count",
+        "flops": "flop"
+      },
+      "feature_units": {
+        "blocks": "count"
+      },
+      "contexts": [
+        "fixture/1"
+      ],
+      "decomposition_rules": [
+        "none/1"
+      ],
+      "output_size_rule": "example.u64-result/1"
+    }
+  ]
+}
