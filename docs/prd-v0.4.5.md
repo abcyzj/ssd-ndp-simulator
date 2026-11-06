@@ -3,7 +3,7 @@
 版本：0.4.5（接续 V0.4）  
 日期：2026-11-05（Asia/Shanghai）  
 主题：面向发布的 timing-only 平台、静态 IR 接入与可扩展算子／硬件成本模型  
-状态：正式需求基线；[源码核查](source-audit-v0.4.5.md)和[实施计划](implementation-plan-v0.4.5.md)已形成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)、[P03独立图搜索构建](native-v0.4.5.md)和[P04新IR采集与语义校验](capture-graph-v0.4.5.md)已完成，模拟路径尚未迁移、全部本版 AC 未验收。当前可运行交付仍为 [V0.4](releases/v0.4.md)。
+状态：正式需求基线；[源码核查](source-audit-v0.4.5.md)和[实施计划](implementation-plan-v0.4.5.md)已形成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)、[P03独立图搜索构建](native-v0.4.5.md)、[P04新IR采集与语义校验](capture-graph-v0.4.5.md)和[P05通用模型与注册接口](cost-model-v0.4.5.md)已完成，模拟路径尚未迁移、全部本版 AC 未验收。当前可运行交付仍为 [V0.4](releases/v0.4.md)。
 
 ## 1. 产品目标
 

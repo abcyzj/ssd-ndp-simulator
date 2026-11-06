@@ -76,6 +76,14 @@ if(NDPSIM_NATIVE_ONLY)
     return()
 endif()
 
+file(READ "${PROJECT_SOURCE_DIR}/schemas/ndpsim-cost-profile-v1.schema.json" COST_PROFILE_SCHEMA)
+file(READ "${PROJECT_SOURCE_DIR}/schemas/ndpsim-contract-v2.schema.json" COST_CONTRACT_SCHEMA)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    schemas/ndpsim-cost-profile-v1.schema.json schemas/ndpsim-contract-v2.schema.json)
+configure_file(src/model/cost/schemas.h.in generated/model/cost/schemas.h @ONLY)
+add_subdirectory(src/model/cost)
+
+
 set(SST_ROOT "" CACHE PATH "Existing SST 16.0.0 prefix; empty uses the shared SST cache")
 if(SST_ROOT)
     get_filename_component(NDPSIM_SST_PREFIX "${SST_ROOT}" ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
@@ -539,4 +547,12 @@ endif()
 if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
     add_test(NAME v04_delivery_gates COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_v04_delivery.py")
+endif()
+
+if(BUILD_TESTING)
+    add_executable(cost_model_probe tests/cost_model_probe.cc)
+    target_include_directories(cost_model_probe PRIVATE "${PROJECT_SOURCE_DIR}/third_party/sst-core/external")
+    target_link_libraries(cost_model_probe PRIVATE ndpsim::cost)
+    add_test(NAME cost_model_v045 COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_v045_cost_model.py" "$<TARGET_FILE:cost_model_probe>")
 endif()

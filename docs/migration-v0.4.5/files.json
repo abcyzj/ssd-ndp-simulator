@@ -1047,6 +1047,42 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
     },
     {
+      "path": "src/model/cost/CMakeLists.txt",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P05/P06/P11/P12/P20/P21",
+      "replacement_assertions": "通用公式独立数值/单位/范围/溢出，表完整键/Work/身份及编译期注册失败关闭",
+      "deletion_gate": "新模型接口数值/负例及后续timing-only接线通过；不因旧图Profile迁移删除有效断言",
+      "reason": "PRD FR04/07；P05通用模型与注册接口"
+    },
+    {
+      "path": "src/model/cost/cost_model.cc",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P05/P06/P11/P12/P20/P21",
+      "replacement_assertions": "通用公式独立数值/单位/范围/溢出，表完整键/Work/身份及编译期注册失败关闭",
+      "deletion_gate": "新模型接口数值/负例及后续timing-only接线通过；不因旧图Profile迁移删除有效断言",
+      "reason": "PRD FR04/07；P05通用模型与注册接口"
+    },
+    {
+      "path": "src/model/cost/cost_model.h",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P05/P06/P11/P12/P20/P21",
+      "replacement_assertions": "通用公式独立数值/单位/范围/溢出，表完整键/Work/身份及编译期注册失败关闭",
+      "deletion_gate": "新模型接口数值/负例及后续timing-only接线通过；不因旧图Profile迁移删除有效断言",
+      "reason": "PRD FR04/07；P05通用模型与注册接口"
+    },
+    {
+      "path": "src/model/cost/schemas.h.in",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P05/P06/P11/P12/P20/P21",
+      "replacement_assertions": "通用公式独立数值/单位/范围/溢出，表完整键/Work/身份及编译期注册失败关闭",
+      "deletion_gate": "新模型接口数值/负例及后续timing-only接线通过；不因旧图Profile迁移删除有效断言",
+      "reason": "PRD FR04/07；P05通用模型与注册接口"
+    },
+    {
       "path": "src/model/cpu_profile.cc",
       "policy": "model",
       "decision": "拆分迁移",
@@ -1396,6 +1432,15 @@
       "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
       "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
+    },
+    {
+      "path": "tests/cost_model_probe.cc",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P05/P06/P11/P12/P20/P21",
+      "replacement_assertions": "通用公式独立数值/单位/范围/溢出，表完整键/Work/身份及编译期注册失败关闭",
+      "deletion_gate": "新模型接口数值/负例及后续timing-only接线通过；不因旧图Profile迁移删除有效断言",
+      "reason": "PRD FR04/07；P05通用模型与注册接口"
     },
     {
       "path": "tests/cpu_profile_probe.cc",
@@ -1882,6 +1927,15 @@
       "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
       "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
       "reason": "P01设计出口；独立运行，未改旧根CMake或原生身份"
+    },
+    {
+      "path": "tests/test_v045_cost_model.py",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P05/P06/P11/P12/P20/P21",
+      "replacement_assertions": "通用公式独立数值/单位/范围/溢出，表完整键/Work/身份及编译期注册失败关闭",
+      "deletion_gate": "新模型接口数值/负例及后续timing-only接线通过；不因旧图Profile迁移删除有效断言",
+      "reason": "PRD FR04/07；P05通用模型与注册接口"
     },
     {
       "path": "tests/test_v04_contract.py",

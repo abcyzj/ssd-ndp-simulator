@@ -2200,6 +2200,30 @@
       "replacement_assertions": "真实新IR完整采集、四模式独立结果/Work、采样覆盖、重hash语义篡改/缺失/预算负例、合法物理重排",
       "deletion_gate": "功能与语义独立核对必须保留",
       "reason": "P04当前产品采集出口，不能以纯结构hash证明功能正确"
+    },
+    {
+      "backtrace": 189,
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v045_cost_model.py",
+        "${BUILD}/cost_model_probe"
+      ],
+      "name": "cost_model_v045",
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "tests/cost_model_probe.cc",
+        "tests/test_v045_cost_model.py"
+      ],
+      "decision": "保留",
+      "tasks": "P05/P06/P11/P12/P20/P21",
+      "replacement_assertions": "独立整数/Decimal/树遍历期望ns；公式、范围、目标及逐调用实测表失败关闭",
+      "deletion_gate": "保留当前服务模型正确性和扩展注册断言",
+      "reason": "PRD FR04/07；P05实现出口"
     }
   ],
   "standalone_tests": [

@@ -1,0 +1,5 @@
+#pragma once
+namespace ndpsim::cost::embedded {
+inline constexpr auto profile = R"schema(@COST_PROFILE_SCHEMA@)schema";
+inline constexpr auto contract = R"schema(@COST_CONTRACT_SCHEMA@)schema";
+}
