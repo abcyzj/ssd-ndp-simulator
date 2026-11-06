@@ -156,6 +156,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "configs/layouts/graph-example.json",
+      "policy": "metadata-layout",
+      "decision": "保留",
+      "tasks": "P09/P10/P13/P14/P20",
+      "replacement_assertions": "无ContentStore的Layout；extent完整覆盖/重叠/范围/溢出/预算拒绝；独立逐字节oracle；外部路径与快照hash",
+      "deletion_gate": "P09定向检查、根CTest及后续正式映射/配置出口通过",
+      "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
+    },
+    {
       "path": "configs/native/reads.trace",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -678,6 +687,15 @@
       "reason": "PRD FR08；P06独立拟合／制表"
     },
     {
+      "path": "python/ndpsim/layout.py",
+      "policy": "metadata-layout",
+      "decision": "保留",
+      "tasks": "P09/P10/P13/P14/P20",
+      "replacement_assertions": "无ContentStore的Layout；extent完整覆盖/重叠/范围/溢出/预算拒绝；独立逐字节oracle；外部路径与快照hash",
+      "deletion_gate": "P09定向检查、根CTest及后续正式映射/配置出口通过",
+      "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
+    },
+    {
       "path": "python/ndpsim/schemas/ndpsim-contract-v2.schema.json",
       "policy": "p02-generic-capture",
       "decision": "保留通用SDK/封包校验与回归",
@@ -802,6 +820,15 @@
       "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
       "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "path": "schemas/ndpsim-layout-v1.schema.json",
+      "policy": "metadata-layout",
+      "decision": "保留",
+      "tasks": "P09/P10/P13/P14/P20",
+      "replacement_assertions": "无ContentStore的Layout；extent完整覆盖/重叠/范围/溢出/预算拒绝；独立逐字节oracle；外部路径与快照hash",
+      "deletion_gate": "P09定向检查、根CTest及后续正式映射/配置出口通过",
+      "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
     },
     {
       "path": "schemas/ndpsim-measurement-v1.schema.json",
@@ -1135,6 +1162,24 @@
       "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
       "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
       "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
+    },
+    {
+      "path": "src/layout/layout.cc",
+      "policy": "metadata-layout",
+      "decision": "保留",
+      "tasks": "P09/P10/P13/P14/P20",
+      "replacement_assertions": "无ContentStore的Layout；extent完整覆盖/重叠/范围/溢出/预算拒绝；独立逐字节oracle；外部路径与快照hash",
+      "deletion_gate": "P09定向检查、根CTest及后续正式映射/配置出口通过",
+      "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
+    },
+    {
+      "path": "src/layout/layout.h",
+      "policy": "metadata-layout",
+      "decision": "保留",
+      "tasks": "P09/P10/P13/P14/P20",
+      "replacement_assertions": "无ContentStore的Layout；extent完整覆盖/重叠/范围/溢出/预算拒绝；独立逐字节oracle；外部路径与快照hash",
+      "deletion_gate": "P09定向检查、根CTest及后续正式映射/配置出口通过",
+      "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
     },
     {
       "path": "src/model/controller.cc",
@@ -1776,6 +1821,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
     },
     {
+      "path": "tests/layout_metadata_probe.cc",
+      "policy": "metadata-layout",
+      "decision": "保留",
+      "tasks": "P09/P10/P13/P14/P20",
+      "replacement_assertions": "无ContentStore的Layout；extent完整覆盖/重叠/范围/溢出/预算拒绝；独立逐字节oracle；外部路径与快照hash",
+      "deletion_gate": "P09定向检查、根CTest及后续正式映射/配置出口通过",
+      "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
+    },
+    {
       "path": "tests/lifecycle_probe.cc",
       "policy": "bridge",
       "decision": "改造保留",
@@ -2161,6 +2215,15 @@
       "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
       "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
       "reason": "PRD FR08；P06独立拟合／制表"
+    },
+    {
+      "path": "tests/test_v045_layout.py",
+      "policy": "metadata-layout",
+      "decision": "保留",
+      "tasks": "P09/P10/P13/P14/P20",
+      "replacement_assertions": "无ContentStore的Layout；extent完整覆盖/重叠/范围/溢出/预算拒绝；独立逐字节oracle；外部路径与快照hash",
+      "deletion_gate": "P09定向检查、根CTest及后续正式映射/配置出口通过",
+      "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
     },
     {
       "path": "tests/test_v04_contract.py",

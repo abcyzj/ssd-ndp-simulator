@@ -632,3 +632,22 @@ if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
         "${PROJECT_SOURCE_DIR}/tests/test_v045_dag_sst.py" "${PROJECT_BINARY_DIR}")
     set_tests_properties(sst_static_dag_v045 PROPERTIES TIMEOUT 60)
 endif()
+
+# P09 metadata-only physical layout, independent of content and device services.
+add_library(ndpsim_layout STATIC src/layout/layout.cc)
+set_target_properties(ndpsim_layout PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(ndpsim_layout PUBLIC src sdk/include
+    PRIVATE "${PROJECT_SOURCE_DIR}/third_party/sst-core/external")
+target_link_libraries(ndpsim_layout PUBLIC ndpsim::capture)
+target_compile_options(ndpsim_layout PRIVATE -Wall -Wextra -Wpedantic)
+if(NDPSIM_SANITIZE)
+    target_compile_options(ndpsim_layout PUBLIC -fsanitize=address -fno-omit-frame-pointer)
+    target_link_options(ndpsim_layout PUBLIC -fsanitize=address)
+endif()
+if(BUILD_TESTING)
+    add_executable(layout_metadata_probe tests/layout_metadata_probe.cc)
+    target_include_directories(layout_metadata_probe PRIVATE "${PROJECT_SOURCE_DIR}/third_party/sst-core/external")
+    target_link_libraries(layout_metadata_probe PRIVATE ndpsim_layout)
+    add_test(NAME layout_metadata_v045 COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_v045_layout.py" "$<TARGET_FILE:layout_metadata_probe>")
+endif()

@@ -1,0 +1,106 @@
+{
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "ndpsim-layout/1"
+    },
+    "namespace": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sector_bytes": {
+          "const": 512
+        },
+        "page_bytes": {
+          "type": "integer",
+          "minimum": 512,
+          "maximum": 18446744073709551615
+        },
+        "capacity_sectors": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        }
+      },
+      "required": [
+        "id",
+        "sector_bytes",
+        "page_bytes",
+        "capacity_sectors"
+      ],
+      "additionalProperties": false
+    },
+    "alignment_bytes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 18446744073709551615
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18446744073709551615
+          },
+          "extents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "logical_offset_bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                },
+                "physical_offset_bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 18446744073709551615
+                },
+                "length_bytes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 18446744073709551615
+                }
+              },
+              "required": [
+                "logical_offset_bytes",
+                "physical_offset_bytes",
+                "length_bytes"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "object",
+          "version",
+          "extents"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "format",
+    "namespace",
+    "alignment_bytes",
+    "objects"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ndpsim:layout:1",
+  "description": "One read-only namespace. Runtime additionally checks alignment powers, uint64 arithmetic, full IR coverage and physical overlap."
+}

@@ -2522,6 +2522,29 @@
       "replacement_assertions": "静态DAG手算、四边/返回门控、多分支无额外串行、重排、配额、失败排空、回收、SST时间；不作为完整AC",
       "deletion_gate": "P08通过且P20最终身份复验",
       "reason": "PRD AC02/03/10；P08定向验证"
+    },
+    {
+      "name": "layout_metadata_v045",
+      "sources": [
+        "tests/layout_metadata_probe.cc",
+        "tests/test_v045_layout.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v045_layout.py",
+        "${BUILD}/layout_metadata_probe"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P09/P20",
+      "replacement_assertions": "逐字节独立oracle/跨sector和page/非对齐/空访问/范围容量重叠溢出及预算/改配置不重编译",
+      "deletion_gate": "后续替代断言和新路径全链路证明通过",
+      "reason": "PRD FR06/11；P09"
     }
   ],
   "standalone_tests": [

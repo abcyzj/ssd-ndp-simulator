@@ -1,0 +1,45 @@
+{
+  "format": "ndpsim-layout/1",
+  "namespace": {
+    "id": "ssd0",
+    "sector_bytes": 512,
+    "page_bytes": 4096,
+    "capacity_sectors": 64
+  },
+  "alignment_bytes": 512,
+  "objects": [
+    {
+      "object": "vectors",
+      "version": 0,
+      "extents": [
+        {
+          "logical_offset_bytes": 0,
+          "physical_offset_bytes": 0,
+          "length_bytes": 4096
+        }
+      ]
+    },
+    {
+      "object": "graph",
+      "version": 0,
+      "extents": [
+        {
+          "logical_offset_bytes": 0,
+          "physical_offset_bytes": 4096,
+          "length_bytes": 256
+        }
+      ]
+    },
+    {
+      "object": "queries",
+      "version": 0,
+      "extents": [
+        {
+          "logical_offset_bytes": 0,
+          "physical_offset_bytes": 4608,
+          "length_bytes": 512
+        }
+      ]
+    }
+  ]
+}
