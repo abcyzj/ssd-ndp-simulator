@@ -2190,6 +2190,7 @@
   "standalone_tests": [
     "tests/test_direct_baseline.py",
     "tests/test_v045_baseline.py",
+    "tests/test_v045_capture.py",
     "tests/test_v045_contract_design.py",
     "tests/test_v04_cpu_fit.py"
   ],
@@ -2200,6 +2201,20 @@
       "compile": "c++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -I . tests/v045_contract_header_probe.cc -o <new-output>",
       "execute": "<new-output>",
       "scope": "P01 header design only; no production dependency links or timing behavior proof"
+    }
+  ],
+  "sdk_tests": [
+    {
+      "name": "sdk_sha256",
+      "command": "ctest --test-dir <standalone-sdk-build> -R sdk_sha256 --output-on-failure",
+      "source": "sdk/tests/capture_fixture.cc",
+      "scope": "independent SDK; hash vectors also checked against Python hashlib"
+    },
+    {
+      "name": "sdk_measurement_metadata",
+      "command": "ctest --test-dir <standalone-sdk-build> -R sdk_measurement_metadata --output-on-failure",
+      "source": "sdk/tests/capture_fixture.cc",
+      "scope": "shared measurement metadata serialization only; no clock collection"
     }
   ]
 }

@@ -1,0 +1,1 @@
+{"complete":true,"counts":{"dependencies":4,"operations":4,"queries":1,"stages":4},"format":"ndpsim-static-ir-tail/2","lost_records":0,"package_sha256":"88ef17d073b0c500eadc5a4effcefb137cc9d37cf419501a3c63570db7b08c6d","terminals":[{"op":"join","query":7,"stage":"s0"}]}

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ndpsim:static-ir:2",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "ndpsim-static-ir/2"
+    },
+    "provenance": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/provenance"
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:ndpsim:contract:2#/$defs/object"
+      },
+      "minItems": 0
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:ndpsim:contract:2#/$defs/file"
+      },
+      "minItems": 1
+    },
+    "counts": {
+      "$ref": "urn:ndpsim:contract:2#/$defs/counts"
+    },
+    "terminals": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:ndpsim:contract:2#/$defs/key"
+      },
+      "minItems": 1
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "line_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "query_index_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "active_stages": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        }
+      },
+      "required": [
+        "line_bytes",
+        "query_index_bytes",
+        "active_stages"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "format",
+    "provenance",
+    "objects",
+    "files",
+    "counts",
+    "terminals",
+    "limits"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,20 @@
+{
+  "format": "ndpsim-operator-registry/1",
+  "units": ["B", "count", "flop"],
+  "operators": [{
+    "id": "fixture.reduce", "version": "1", "locations": ["host", "controller"],
+    "semantic_validator": "fixture-independent/1",
+    "stages": [{
+      "kind": "reduce",
+      "inputs": [
+        {"name": "in0", "type": "fixture.u64", "unit": "B", "required": false, "cardinality": "one"},
+        {"name": "in1", "type": "fixture.u64", "unit": "B", "required": false, "cardinality": "one"}
+      ],
+      "outputs": [{"name": "out", "type": "fixture.u64", "unit": "B", "required": true, "cardinality": "one"}],
+      "work_units": {"elements": "count"}, "feature_units": {},
+      "contexts": ["fixture/1"], "decomposition_rules": ["none/1"],
+      "output_size_rule": "fixture.fixed-eight/1"
+    }]
+  }],
+  "rules": [{"id": "fixture.fixed-eight/1", "kind": "fixed-outputs/1", "bytes": {"out": 8}}]
+}

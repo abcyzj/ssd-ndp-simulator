@@ -1,6 +1,6 @@
 {
   "schema": "ndpsim-migration-files/1",
-  "scope": "tracked and nonignored untracked regular files under src/tools/tests/configs/schemas/examples plus root build and dependency files",
+  "scope": "tracked and nonignored untracked regular files under src/tools/tests/configs/schemas/examples/sdk/python plus root build and dependency files",
   "files": [
     {
       "path": ".gitmodules",
@@ -426,6 +426,51 @@
       "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
     },
     {
+      "path": "examples/p02-capture/package/index.jsonl",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "examples/p02-capture/package/manifest.json",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "examples/p02-capture/package/operations.jsonl",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "examples/p02-capture/package/tail.json",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "examples/p02-capture/registry.json",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
       "path": "examples/v04-contract/base.bin",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -523,6 +568,78 @@
       "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
       "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "path": "python/LICENSE",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/README.md",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/ndpsim/__init__.py",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/ndpsim/capture_cli.py",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/ndpsim/schemas/ndpsim-contract-v2.schema.json",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/ndpsim/schemas/ndpsim-static-ir-v2.schema.json",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/ndpsim/static_ir.py",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/pyproject.toml",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
     },
     {
       "path": "schemas/ndpsim-contract-v2.schema.json",
@@ -640,6 +757,78 @@
       "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
       "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
+    },
+    {
+      "path": "sdk/CMakeLists.txt",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "sdk/LICENSE",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "sdk/README.md",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "sdk/cmake/ndpsimCaptureConfig.cmake.in",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "sdk/include/ndpsim/capture.h",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "sdk/src/capture.cc",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "sdk/src/sha256.cc",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "sdk/tests/capture_fixture.cc",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
     },
     {
       "path": "src/backend/event_bridge.h",
@@ -1720,6 +1909,15 @@
       "replacement_assertions": "逐文件/逐CTest覆盖，静态引用和删除门槛；矩阵6配置8次且查询隔离",
       "deletion_gate": "更新清单后重新审计；不成为生产CLI依赖",
       "reason": "PRD FR11/12；实施计划§7职责迁移：p00"
+    },
+    {
+      "path": "tests/test_v045_capture.py",
+      "policy": "p02-generic-capture",
+      "decision": "保留通用SDK/封包校验与回归",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
+      "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
     },
     {
       "path": "tests/test_v045_contract_design.py",
