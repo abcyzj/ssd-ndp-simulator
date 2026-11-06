@@ -11,7 +11,7 @@ from .static_ir import decode, require, _lines
 def reduce_trace(output, config, b, deadline):
     db = sqlite3.connect(str(output/'report.sqlite'))
     db.execute('pragma cache_size=-2048')
-    db.execute('create table requests(query text primary key, latency integer, admission integer)')
+    db.execute('create table requests(query text primary key, latency integer, admission integer, offered_latency integer, admitted_ns integer, visible_ns integer)')
     counts = Counter(); sources = Counter(); flow = Counter(); peaks = Counter()
     total_services = Counter(); summary = None; snapshot = None
     try:
@@ -36,7 +36,7 @@ def reduce_trace(output, config, b, deadline):
                     elif k == 'request':
                         require(r['success'], 'failed request')
                         offered = r.get('offered', 0)  # SSD contract freezes offered=0.
-                        db.execute('insert into requests values(?,?,?)', (str(r['query']), r['visible']-offered, r['admitted']-offered))
+                        db.execute('insert into requests values(?,?,?,?,?,?)', (str(r['query']), r['visible']-r['admitted'], r['admitted']-offered, r['visible']-offered, r['admitted'], r['visible']))
                     elif k == 'stage':
                         require(r['success'], 'failed stage')
                         stages.writerow([r[x] for x in ('query','op','stage','submitted','completed')]+[r['completed']-r['submitted']])
@@ -65,6 +65,7 @@ def reduce_trace(output, config, b, deadline):
         require(n > 0, 'no completed requests')
         def quantiles(column):
             return {name: db.execute('select '+column+' from requests order by '+column+' limit 1 offset ?', (max(0,math.ceil(p*n)-1),)).fetchone()[0] for name,p in [('p50',.5),('p95',.95),('p99',.99)]}
+        window = db.execute('select max(visible_ns)-min(admitted_ns) from requests').fetchone()[0]
         result = dict(format='ndpsim-run-report/1', execution_succeeded=True, full_acceptance_passed=False,
             mode=config['format'], placement=config.get('placement','host'), package_sha256=config['package_sha256'],
             profile_sha256=config['profile_sha256'], target_hardware=config['target'], context=config['context'],
@@ -72,9 +73,9 @@ def reduce_trace(output, config, b, deadline):
             interpretation='prediction and measured-table demands are distinct sources; neither proves target hardware accuracy',
             reference_results=dict(status='Unsupported', reason='timing-only does not recompute top-k; capture evidence remains external'),
             semantic_validation='trusted-independent-receipt' if 'semantic_report' in config else 'structure-only',
-            requests=n, latency_ns=quantiles('latency'), admission_wait_ns=quantiles('admission'), quantile_method='nearest_rank',
-            measurement_window_ns=summary['drained'], throughput_queries_per_second=n*1e9/summary['drained'] if summary['drained'] else None,
-            throughput_status='defined' if summary['drained'] else 'Unsupported: zero measurement window',
+            requests=n, latency_ns=quantiles('latency'), offered_latency_ns=quantiles('offered_latency'), latency_definition='visible-admitted; offered latency reported separately', admission_wait_ns=quantiles('admission'), quantile_method='nearest_rank',
+            measurement_window_ns=window, throughput_queries_per_second=n*1e9/window if window else None,
+            throughput_status='defined' if window else 'Unsupported: zero measurement window',
             traffic=dict(flow), traffic_note='logical access references can repeat; stage outputs are descriptors, not recomputed values; separate layers, do not sum protocol/PCIe or sector/NAND bytes',
             peaks=dict(peaks, **{k:v for k,v in summary.items() if k.startswith('peak_')}),
             unsupported_resources=['plane','latch','shared_dram','hardware_calibration'],

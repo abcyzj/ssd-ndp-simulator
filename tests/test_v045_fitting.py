@@ -26,12 +26,12 @@ def save(path, value):
     return dict(path=str(path), sha256=file_hash(path))
 
 
-def fixture(root, formula='nonnegative-linear/1'):
+def fixture(root, formula='nonnegative-linear/1', context='resident/1'):
     port = dict(name='out', type='token', unit='count', required=True, cardinality='one')
-    stages = [dict(kind=kind, inputs=[], outputs=[port], work_units={'flops': 'flop'}, feature_units={'items': 'count'}, contexts=['resident/1'], decomposition_rules=['none/1'], output_size_rule='zero/1') for kind in ('compute', 'append', 'token')]
+    stages = [dict(kind=kind, inputs=[], outputs=[port], work_units={'flops': 'flop'}, feature_units={'items': 'count'}, contexts=[context], decomposition_rules=['none/1'], output_size_rule='zero/1') for kind in ('compute', 'append', 'token')]
     spec = dict(id='example.work', version='1', locations=['host'], stages=stages, semantic_validator='fixture-oracle/1')
     registry = OperatorRegistry(dict(format='ndpsim-operator-registry/1', units=['count', 'flop'], operators=[spec], rules=[dict(id='zero/1', kind='fixed-outputs/1', bytes={'out': 0})]))
-    rules = [dict(operator=spec['id'], operator_version='1', stage_kind=kind, context='resident/1', location='host', source=source, features=['items'], formula=formula if source == 'prediction' else None, options={}) for kind, source in [('compute', 'prediction'), ('append', 'measured-table'), ('token', 'declared-zero')]]
+    rules = [dict(operator=spec['id'], operator_version='1', stage_kind=kind, context=context, location='host', source=source, features=['items'], formula=formula if source == 'prediction' else None, options={}) for kind, source in [('compute', 'prediction'), ('append', 'measured-table'), ('token', 'declared-zero')]]
     if formula == 'log-gbdt/1': rules[0]['options'] = dict(trees=12, depth=3, leaf=2, rate=.5)
     recipe = dict(format='ndpsim-fit-recipe/1', id='fixture-recipe/1', operators=[spec], rules=rules, training=dict(folds=4, strides=[1], min_runs=1, max_low_signal_fraction=.05, min_holdout_fraction=1, max_relative_p50=.1, max_relative_p90=.2), sampling_audits=[], training_points=[dict(id='p1', stride=1, parameters={'width': 1})], formal_partitions=None, provenance_splits=dict(tuning='training', evaluation='test'))
     recipe_ref = save(root/'recipe.json', recipe)
@@ -47,7 +47,7 @@ def fixture(root, formula='nonnegative-linear/1'):
                 for i in range(1, 9):
                     for j, kind in enumerate(('compute', 'append', 'token')):
                         op_id = f'call-{i}-{kind}'; work = dict(flops=dict(value=i*3, unit='flop')); features = dict(items=dict(value=i, unit='count'))
-                        st = dict(id='s0', kind=kind, topological_rank=rank, dependencies=[], work=work, features=features, context='resident/1', chunk=i, segment=0, accesses=[], outputs=[dict(port='out', type='token', logical_bytes=0, version=0, digest='4'*64)], state_versions=[], decomposition_rule='none/1')
+                        st = dict(id='s0', kind=kind, topological_rank=rank, dependencies=[], work=work, features=features, context=context, chunk=i, segment=0, accesses=[], outputs=[dict(port='out', type='token', logical_bytes=0, version=0, digest='4'*64)], state_versions=[], decomposition_rule='none/1')
                         op = dict(query=q, id=op_id, operator='example.work', operator_version='1', semantic_work=work, stages=[st]); writer.record(op)
                         row = dict(key=dict(query=q, op=op_id, stage='s0'), chunk=i, segment=0, stage_kind=kind, work=work, features=features)
                         if kind != 'token': planned.append(row)
@@ -55,7 +55,7 @@ def fixture(root, formula='nonnegative-linear/1'):
             terminals = [dict(query=q, op=f'call-{i}-{kind}', stage='s0') for q in ids for i in range(1, 9) for kind in ('compute', 'append', 'token')]
             structural = writer.seal(terminals)
         structural_ref = save(directory/'structural.json', structural)
-        package = structural['package_sha256']; binding = dict(package_sha256=package, provenance=provenance, target=TARGET, context='resident/1', workers=1, slots=1, admission=1)
+        package = structural['package_sha256']; binding = dict(package_sha256=package, provenance=provenance, target=TARGET, context=context, workers=1, slots=1, admission=1)
         runs = []
         for run in range(3):
             rd = directory/f'run-{run}'; rd.mkdir()

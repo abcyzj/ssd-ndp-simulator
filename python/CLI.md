@@ -99,11 +99,14 @@ Comparison spec is `{"format":"ndpsim-report-comparison/1","runs":[
 {"path":"run-b/report.json","sha256":"<actual hash>"}]}`. References resolve
 relative to the spec; duplicate reports, hash mismatch, failed or unbound run status, incomplete runs and
 package/target mismatches fail. The output compares latency, window and source
-mix descriptively. It gives no accuracy or speedup verdict. Three-layer
-Validator/native-vs-sim accuracy is P15, full acceptance aggregation is P21.
-`ndpsim verify --spec ... --output new-directory` is a reserved interface that
-**returns 3 with failed status** until those tasks exist. Every P14 command
-reports `full_acceptance_passed=false`; no quick/fixture check is total acceptance.
+mix descriptively. It gives no accuracy or speedup verdict.
+
+P15 implements `ndpsim verify --spec validation.json --output new-directory`
+for separate capture, simulation scheduling/ledger and native-vs-sim accuracy
+reports. See [VALIDATION.md](VALIDATION.md) for the three input contracts,
+budgets, identities, repetitions and strict thresholds. Unknown/full-release
+specs return 3; full release aggregation belongs to P21. Every command keeps
+`full_acceptance_passed=false`; no quick/fixture/layer check is total acceptance.
 
 Exit codes: 0 executed successfully within the stated scope; 2 usage/input,
 budget or subprocess failure; 3 unsupported acceptance. Existing outputs are

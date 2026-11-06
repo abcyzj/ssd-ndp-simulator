@@ -12,7 +12,7 @@ from .reporting import reduce_trace
 
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--version', action='version', version='ndpsim 0.4.5.dev14')
+    p.add_argument('--version', action='version', version='ndpsim 0.4.5.dev15')
     sub = p.add_subparsers(dest='command', required=True)
     s = sub.add_parser('simulate', help='run an already built timing-only SST simulator')
     s.add_argument('--config', required=True, type=Path)
@@ -43,7 +43,7 @@ def parser():
     f.add_argument('--allow-fixture', action='store_true')
     f.add_argument('--output', required=True, type=Path)
     f.add_argument('--budget', required=True, type=Path, help='execution budget JSON (RAM, disk and timeout); recipe budget still applies')
-    for name, help_text in [('compare','descriptive comparison of completed reports (no accuracy verdict)'),('verify','reserved full acceptance interface; fails closed until P15/P21')]:
+    for name, help_text in [('compare','descriptive comparison of completed reports (no accuracy verdict)'),('verify','validate capture, scheduling/ledger or native-vs-sim accuracy evidence')]:
         c = sub.add_parser(name, help=help_text)
         c.add_argument('--spec', required=True, type=Path)
         c.add_argument('--output', required=True, type=Path)
@@ -181,7 +181,13 @@ def main(argv=None):
             require(load(output/'fit/status.json')['passed'] is True,'fitting failed')
         elif args.command=='compare':compare(args,output)
         elif args.command=='verify':
-            raise NotImplementedError('full acceptance is not implemented (P15/P21); verify cannot report success')
+            spec=load(args.spec)
+            if spec.get('format') != 'ndpsim-validation/1':
+                raise NotImplementedError('expected ndpsim-validation/1 layer spec; full release aggregation belongs to P21')
+            b=budget(spec['budget']);preflight(output,b)
+            launch([sys.executable,'-m','ndpsim.validation',str(args.spec.resolve()),str(output)],output,b)
+            require(load(output/'report.json').get('layer_passed') is True,'validation failed')
+            enforce(output,b)
         code=0
     except NotImplementedError as exc:
         code=3;print(str(exc),file=sys.stderr)

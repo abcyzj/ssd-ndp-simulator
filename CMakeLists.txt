@@ -679,6 +679,9 @@ if(NOT NDPSIM_SANITIZE)
         add_test(NAME unified_cli_v045 COMMAND "${Python3_EXECUTABLE}"
             "${PROJECT_SOURCE_DIR}/tests/test_v045_cli.py" "${PROJECT_BINARY_DIR}")
         set_tests_properties(unified_cli_v045 PROPERTIES TIMEOUT 180)
+        add_test(NAME layered_validator_v045 COMMAND "${Python3_EXECUTABLE}"
+            "${PROJECT_SOURCE_DIR}/tests/test_v045_validation.py" "${PROJECT_BINARY_DIR}")
+        set_tests_properties(layered_validator_v045 PROPERTIES TIMEOUT 240)
     endif()
 endif()
 

@@ -28,8 +28,9 @@ contains `format=ndpsim-operator-registry/1`, declared `units`, frozen OperatorS
 bytes. In-process extensions may register `registered-metadata/1` callbacks with
 an explicit implementation SHA256. The CLI loads no arbitrary code or dynamic
 plugins. Callbacks receive stage metadata only; their purity and independent
-semantic verifier remain the extension's responsibility. There is no graph
-operator/loop whitelist or payload lookup in this package.
+semantic verifier remain the extension's responsibility. The generic IR validator has no graph
+operator/loop whitelist or payload lookup. The separate graph timing ledger is
+selected only for the explicit graph SSD run format; see [VALIDATION.md](VALIDATION.md).
 
 Scanning reads one bounded operation/index record at a time. A temporary SQLite
 index holds cross-record topology, ports, versions and file locations on disk;

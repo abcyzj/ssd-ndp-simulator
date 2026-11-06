@@ -705,6 +705,15 @@
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
     },
     {
+      "path": "python/VALIDATION.md",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P15/P20/P21",
+      "replacement_assertions": "安装CLI、外部cwd/空格路径、配置身份/预算/失败关闭、三放置报告、独立采集/拟合",
+      "deletion_gate": "P14定向/根CTest及P20干净入口核验",
+      "reason": "P15三层证据格式、边界与命令说明"
+    },
+    {
       "path": "python/ndpsim/__init__.py",
       "policy": "p02-generic-capture",
       "decision": "保留通用SDK/封包校验与回归",
@@ -775,6 +784,15 @@
       "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
       "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
       "reason": "PRD FR08；P06独立拟合／制表"
+    },
+    {
+      "path": "python/ndpsim/graph_validation.py",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P15/P20/P21",
+      "replacement_assertions": "三层独立证据、全阶段稳定键、唯一计费/依赖/SSD账本、严格精度/质量及删改负例",
+      "deletion_gate": "P15分层断言不可丢失；P21正式AC另验",
+      "reason": "FR09～12；P15分层Validator与独立账本"
     },
     {
       "path": "python/ndpsim/layout.py",
@@ -856,6 +874,15 @@
       "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列；P08取消未接纳offered事件/按稳定键核对物理index重排，保留失败关闭",
       "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/ndpsim/validation.py",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P15/P20/P21",
+      "replacement_assertions": "三层独立证据、全阶段稳定键、唯一计费/依赖/SSD账本、严格精度/质量及删改负例",
+      "deletion_gate": "P15分层断言不可丢失；P21正式AC另验",
+      "reason": "FR09～12；P15分层Validator与独立账本"
     },
     {
       "path": "python/pyproject.toml",
@@ -2566,6 +2593,15 @@
       "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
       "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
       "reason": "PRD FR01/07/10；P11 内存 timing-only"
+    },
+    {
+      "path": "tests/test_v045_validation.py",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P15/P20/P21",
+      "replacement_assertions": "三层独立证据、全阶段稳定键、唯一计费/依赖/SSD账本、严格精度/质量及删改负例",
+      "deletion_gate": "P15分层断言不可丢失；P21正式AC另验",
+      "reason": "FR09～12；P15分层Validator与独立账本"
     },
     {
       "path": "tests/test_v04_contract.py",
