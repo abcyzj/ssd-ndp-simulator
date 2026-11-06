@@ -2572,6 +2572,58 @@
       "replacement_assertions": "XML/布局/分区/预算在设备分配前拒绝；实际预装载/CMT/排空；文件更改改变服务且二进制不变；独立几何oracle",
       "deletion_gate": "后续替代与最终发布出口通过",
       "reason": "PRD FR06/11；P10"
+    },
+    {
+      "name": "sst_memory_timing_v045",
+      "sources": [
+        "tests/test_v045_memory.py",
+        "src/sst/memory_host.cc",
+        "configs/memory_timing.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v045_memory.py",
+        "${BUILD}"
+      ],
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 120.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P11/P20/P21",
+      "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
+      "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
+      "reason": "PRD FR01/07/10；P11 内存 timing-only"
+    },
+    {
+      "name": "memory_plan_v045",
+      "sources": [
+        "tests/test_v045_memory.py",
+        "tests/memory_plan_probe.cc",
+        "tests/test_v045_memory_plan.py"
+      ],
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v045_memory_plan.py",
+        "${BUILD}"
+      ],
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "decision": "保留",
+      "tasks": "P11/P20/P21",
+      "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
+      "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
+      "reason": "PRD FR01/07/10；P11 内存 timing-only"
     }
   ],
   "standalone_tests": [

@@ -9,6 +9,13 @@ struct Config {
     uint64_t max_active_index_bytes = 64 * 1024 * 1024;
     std::vector<uint64_t> offered_ns; // One per original manifest query; default all zero.
 };
+// Shared run inputs for native metadata probes and SST wiring.
+struct HostInputs {
+    std::filesystem::path package, scratch;
+    Receipt receipt;
+    Limits limits;
+    Config config;
+};
 struct RequestRecord {
     uint64_t query, offered, admitted, worker_start, visible, drained;
     bool success;

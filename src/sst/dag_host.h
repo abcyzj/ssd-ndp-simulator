@@ -4,12 +4,6 @@
 #include <sst/core/link.h>
 #include <sst/core/sst_config.h>
 namespace ndpsim::dag {
-struct HostInputs {
-    std::filesystem::path package, scratch;
-    Receipt receipt;
-    Limits limits;
-    Config config;
-};
 // Generic SST wiring. Concrete mapping modules implement lower() without adding
 // DAG syntax, branch parsing or another clock to GraphHost.
 class GraphHost : public SST::Component {

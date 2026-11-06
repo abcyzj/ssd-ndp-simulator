@@ -30,6 +30,7 @@ struct Operation {
     std::vector<CompletionToken> inputs;
     FifoResource* resource = nullptr;
     uint64_t duration_ns = 0;
+    std::string service_key; // Optional stable trace identity supplied by lowering.
     Adapter input, send_return;
 };
 struct Transition { uint64_t time, id; State state; };

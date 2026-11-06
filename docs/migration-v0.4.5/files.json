@@ -192,6 +192,15 @@
       "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
     },
     {
+      "path": "configs/memory_timing.py",
+      "policy": "metadata-memory",
+      "decision": "保留",
+      "tasks": "P11/P20/P21",
+      "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
+      "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
+      "reason": "PRD FR01/07/10；P11 内存 timing-only"
+    },
+    {
       "path": "configs/native/reads.trace",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -1236,6 +1245,24 @@
       "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
     },
     {
+      "path": "src/mapping/memory.cc",
+      "policy": "metadata-memory",
+      "decision": "保留",
+      "tasks": "P11/P20/P21",
+      "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
+      "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
+      "reason": "PRD FR01/07/10；P11 内存 timing-only"
+    },
+    {
+      "path": "src/mapping/memory.h",
+      "policy": "metadata-memory",
+      "decision": "保留",
+      "tasks": "P11/P20/P21",
+      "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
+      "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
+      "reason": "PRD FR01/07/10；P11 内存 timing-only"
+    },
+    {
       "path": "src/model/controller.cc",
       "policy": "controller",
       "decision": "改造保留",
@@ -1531,6 +1558,15 @@
       "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
       "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
+    },
+    {
+      "path": "src/sst/memory_host.cc",
+      "policy": "metadata-memory",
+      "decision": "保留",
+      "tasks": "P11/P20/P21",
+      "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
+      "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
+      "reason": "PRD FR01/07/10；P11 内存 timing-only"
     },
     {
       "path": "src/sst/ordinary_io.cc",
@@ -1938,6 +1974,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：content"
     },
     {
+      "path": "tests/memory_plan_probe.cc",
+      "policy": "metadata-memory",
+      "decision": "保留",
+      "tasks": "P11/P20/P21",
+      "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
+      "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
+      "reason": "PRD FR01/07/10；P11 内存 timing-only"
+    },
+    {
       "path": "tests/observation_lifecycle_probe.cc",
       "policy": "bridge",
       "decision": "改造保留",
@@ -2296,6 +2341,24 @@
       "replacement_assertions": "无ContentStore的Layout；extent完整覆盖/重叠/范围/溢出/预算拒绝；独立逐字节oracle；外部路径与快照hash",
       "deletion_gate": "P09定向检查、根CTest及后续正式映射/配置出口通过",
       "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
+    },
+    {
+      "path": "tests/test_v045_memory.py",
+      "policy": "metadata-memory",
+      "decision": "保留",
+      "tasks": "P11/P20/P21",
+      "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
+      "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
+      "reason": "PRD FR01/07/10；P11 内存 timing-only"
+    },
+    {
+      "path": "tests/test_v045_memory_plan.py",
+      "policy": "metadata-memory",
+      "decision": "保留",
+      "tasks": "P11/P20/P21",
+      "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
+      "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
+      "reason": "PRD FR01/07/10；P11 内存 timing-only"
     },
     {
       "path": "tests/test_v04_contract.py",

@@ -143,7 +143,7 @@ void Runtime::compute(const std::shared_ptr<Record>& r) {
     if (r->state == State::FailedDraining || r->state == State::Failed) return;
     ++r->pending;
     try {
-        r->ticket = r->op.resource->submit(r->op.key.op + "/" + r->op.key.stage,
+        r->ticket = r->op.resource->submit(r->op.service_key.empty() ? r->op.key.op + "/" + r->op.key.stage : r->op.service_key,
             r->op.duration_ns,
             [this, r] { transition(r, State::Running); },
             [this, r](bool ran) {

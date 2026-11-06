@@ -3,7 +3,7 @@
 版本：0.4.5（接续 V0.4）  
 日期：2026-11-05（Asia/Shanghai）  
 主题：面向发布的 timing-only 平台、静态 IR 接入与可扩展算子／硬件成本模型  
-状态：正式需求基线；[源码核查](source-audit-v0.4.5.md)和[实施计划](implementation-plan-v0.4.5.md)已形成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)、[P03独立图搜索构建](native-v0.4.5.md)、[P04新IR采集与语义校验](capture-graph-v0.4.5.md)、[P05通用模型与注册接口](cost-model-v0.4.5.md)、[P06独立拟合／制表](fit-v0.4.5.md)、[P07元数据Runtime与资源服务](runtime-v0.4.5.md)、[P08静态DAG执行器](dag-v0.4.5.md)、[P09无内容Layout](layout-v0.4.5.md)和[P10 MQSim运行时配置](device-config-v0.4.5.md)已完成，元数据Runtime及静态DAG执行器已实现，正式模拟路径尚未接线、全部本版 AC 未验收。当前可运行交付仍为 [V0.4](releases/v0.4.md)。
+状态：正式需求基线；[源码核查](source-audit-v0.4.5.md)和[实施计划](implementation-plan-v0.4.5.md)已形成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)、[P03独立图搜索构建](native-v0.4.5.md)、[P04新IR采集与语义校验](capture-graph-v0.4.5.md)、[P05通用模型与注册接口](cost-model-v0.4.5.md)、[P06独立拟合／制表](fit-v0.4.5.md)、[P07元数据Runtime与资源服务](runtime-v0.4.5.md)、[P08静态DAG执行器](dag-v0.4.5.md)、[P09无内容Layout](layout-v0.4.5.md)、[P10 MQSim运行时配置](device-config-v0.4.5.md)和[P11内存timing-only接线](memory-timing-v0.4.5.md)已完成，元数据Runtime及静态DAG执行器已实现，内存timing-only路径已接线，SSD路径与统一入口待实现、全部本版 AC 未验收。当前可运行交付仍为 [V0.4](releases/v0.4.md)。
 
 ## 1. 产品目标
 
