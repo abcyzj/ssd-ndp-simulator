@@ -2248,6 +2248,223 @@
       "replacement_assertions": "独立安装/分组留出/重复确定性/预测质量及实测表完整覆盖、C++Profile消费、失败不出成功",
       "deletion_gate": "保留本版独立拟合与质量/来源门控，不按旧版本兼容删除",
       "reason": "PRD FR08；P06独立拟合／制表"
+    },
+    {
+      "backtrace": 193,
+      "command": [
+        "${BUILD}/timing_runtime_probe"
+      ],
+      "name": "timing_runtime_v045",
+      "properties": [
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "tests/timing_runtime_probe.cc"
+      ],
+      "decision": "新增保留",
+      "tasks": "P07/P20",
+      "replacement_assertions": "元数据手算/延迟注入/零服务/同刻FIFO、失败排空/生命周期；原生探针无功能链接，SST唯一时间",
+      "deletion_gate": "P07通过且P20最终构建/接线复验",
+      "reason": "PRD AC03/10；P07定向出口，不作为完整AC"
+    },
+    {
+      "backtrace": 195,
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/timing_runtime.py"
+      ],
+      "name": "sst_timing_runtime_base",
+      "properties": [
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P07 SST PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "src/sst/timing_validation.cc",
+        "configs/regression/timing_runtime.py"
+      ],
+      "decision": "新增保留",
+      "tasks": "P07/P20",
+      "replacement_assertions": "元数据手算/延迟注入/零服务/同刻FIFO、失败排空/生命周期；原生探针无功能链接，SST唯一时间",
+      "deletion_gate": "P07通过且P20最终构建/接线复验",
+      "reason": "PRD AC03/10；P07定向出口，不作为完整AC"
+    },
+    {
+      "backtrace": 197,
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/timing_runtime.py"
+      ],
+      "name": "sst_timing_runtime_input",
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_TIMING_INPUT=107"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P07 SST PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "src/sst/timing_validation.cc",
+        "configs/regression/timing_runtime.py"
+      ],
+      "decision": "新增保留",
+      "tasks": "P07/P20",
+      "replacement_assertions": "元数据手算/延迟注入/零服务/同刻FIFO、失败排空/生命周期；原生探针无功能链接，SST唯一时间",
+      "deletion_gate": "P07通过且P20最终构建/接线复验",
+      "reason": "PRD AC03/10；P07定向出口，不作为完整AC"
+    },
+    {
+      "backtrace": 199,
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/timing_runtime.py"
+      ],
+      "name": "sst_timing_runtime_service",
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_TIMING_SERVICE=107"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P07 SST PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "src/sst/timing_validation.cc",
+        "configs/regression/timing_runtime.py"
+      ],
+      "decision": "新增保留",
+      "tasks": "P07/P20",
+      "replacement_assertions": "元数据手算/延迟注入/零服务/同刻FIFO、失败排空/生命周期；原生探针无功能链接，SST唯一时间",
+      "deletion_gate": "P07通过且P20最终构建/接线复验",
+      "reason": "PRD AC03/10；P07定向出口，不作为完整AC"
+    },
+    {
+      "backtrace": 201,
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/timing_runtime.py"
+      ],
+      "name": "sst_timing_runtime_return",
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_TIMING_RETURN=107"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P07 SST PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "src/sst/timing_validation.cc",
+        "configs/regression/timing_runtime.py"
+      ],
+      "decision": "新增保留",
+      "tasks": "P07/P20",
+      "replacement_assertions": "元数据手算/延迟注入/零服务/同刻FIFO、失败排空/生命周期；原生探针无功能链接，SST唯一时间",
+      "deletion_gate": "P07通过且P20最终构建/接线复验",
+      "reason": "PRD AC03/10；P07定向出口，不作为完整AC"
+    },
+    {
+      "backtrace": 203,
+      "command": [
+        "${ROOT}/.cache/sst/33972f57b0f1363c38eb/install/bin/sst",
+        "--add-lib-path=${BUILD}",
+        "${ROOT}/configs/regression/timing_runtime.py"
+      ],
+      "name": "sst_timing_runtime_zero",
+      "properties": [
+        {
+          "name": "ENVIRONMENT",
+          "value": [
+            "NDPSIM_TIMING_INPUT=0",
+            "NDPSIM_TIMING_SERVICE=0",
+            "NDPSIM_TIMING_RETURN=0"
+          ]
+        },
+        {
+          "name": "PASS_REGULAR_EXPRESSION",
+          "value": [
+            "P07 SST PASS"
+          ]
+        },
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "src/sst/timing_validation.cc",
+        "configs/regression/timing_runtime.py"
+      ],
+      "decision": "新增保留",
+      "tasks": "P07/P20",
+      "replacement_assertions": "元数据手算/延迟注入/零服务/同刻FIFO、失败排空/生命周期；原生探针无功能链接，SST唯一时间",
+      "deletion_gate": "P07通过且P20最终构建/接线复验",
+      "reason": "PRD AC03/10；P07定向出口，不作为完整AC"
     }
   ],
   "standalone_tests": [

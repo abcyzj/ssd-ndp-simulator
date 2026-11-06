@@ -309,6 +309,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "configs/regression/timing_runtime.py",
+      "policy": "timing-runtime",
+      "decision": "新增保留",
+      "tasks": "P07/P08/P11/P12/P20",
+      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零",
+      "deletion_gate": "手算、延迟/零服务、失败排空、SST集成及无功能链接测试通过；P20最终接线复验",
+      "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
+    },
+    {
       "path": "configs/sst/graph.py",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -1398,6 +1407,51 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
     },
     {
+      "path": "src/sst/timing_validation.cc",
+      "policy": "timing-runtime",
+      "decision": "新增保留",
+      "tasks": "P07/P08/P11/P12/P20",
+      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零",
+      "deletion_gate": "手算、延迟/零服务、失败排空、SST集成及无功能链接测试通过；P20最终接线复验",
+      "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
+    },
+    {
+      "path": "src/timing/resources.cc",
+      "policy": "timing-runtime",
+      "decision": "新增保留",
+      "tasks": "P07/P08/P11/P12/P20",
+      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零",
+      "deletion_gate": "手算、延迟/零服务、失败排空、SST集成及无功能链接测试通过；P20最终接线复验",
+      "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
+    },
+    {
+      "path": "src/timing/resources.h",
+      "policy": "timing-runtime",
+      "decision": "新增保留",
+      "tasks": "P07/P08/P11/P12/P20",
+      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零",
+      "deletion_gate": "手算、延迟/零服务、失败排空、SST集成及无功能链接测试通过；P20最终接线复验",
+      "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
+    },
+    {
+      "path": "src/timing/runtime.cc",
+      "policy": "timing-runtime",
+      "decision": "新增保留",
+      "tasks": "P07/P08/P11/P12/P20",
+      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零",
+      "deletion_gate": "手算、延迟/零服务、失败排空、SST集成及无功能链接测试通过；P20最终接线复验",
+      "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
+    },
+    {
+      "path": "src/timing/runtime.h",
+      "policy": "timing-runtime",
+      "decision": "新增保留",
+      "tasks": "P07/P08/P11/P12/P20",
+      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零",
+      "deletion_gate": "手算、延迟/零服务、失败排空、SST集成及无功能链接测试通过；P20最终接线复验",
+      "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
+    },
+    {
       "path": "src/transport/conversation.h",
       "policy": "controller",
       "decision": "改造保留",
@@ -2062,6 +2116,15 @@
       "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
       "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：static"
+    },
+    {
+      "path": "tests/timing_runtime_probe.cc",
+      "policy": "timing-runtime",
+      "decision": "新增保留",
+      "tasks": "P07/P08/P11/P12/P20",
+      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零",
+      "deletion_gate": "手算、延迟/零服务、失败排空、SST集成及无功能链接测试通过；P20最终接线复验",
+      "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
     },
     {
       "path": "tests/v045_contract_header_probe.cc",

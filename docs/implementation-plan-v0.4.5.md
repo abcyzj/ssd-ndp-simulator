@@ -2,7 +2,7 @@
 
 日期：2026-11-05（Asia/Shanghai）。依据 [正式 PRD](prd-v0.4.5.md)和[源码核查](source-audit-v0.4.5.md)。
 
-状态：**P00/P01/P02/P03/P04/P05/P06 已完成（2026-11-06）；P07～P21 未开始，全部 AC 尚未验收。** 当前可运行交付仍为 V0.4。[P00 基线与迁移记录](baseline-v0.4.5.md)保存本次构建、93项CTest、小夹具与清单证据；[P01 契约与风险设计](contract-v0.4.5.md)已冻结并完成设计检查；[P02通用SDK与校验](capture-sdk-v0.4.5.md)已完成；[P03独立图搜索构建](native-v0.4.5.md)及[P04新IR采集与语义校验](capture-graph-v0.4.5.md)已完成（合成pilot），未运行本版正式采集或完整验收，不以旧版通过填充新任务状态。
+状态：**P00/P01/P02/P03/P04/P05/P06/P07 已完成（2026-11-06）；P08～P21 未开始，全部 AC 尚未验收。** 当前可运行交付仍为 V0.4。[P00 基线与迁移记录](baseline-v0.4.5.md)保存本次构建、93项CTest、小夹具与清单证据；[P01 契约与风险设计](contract-v0.4.5.md)已冻结并完成设计检查；[P02通用SDK与校验](capture-sdk-v0.4.5.md)已完成；[P03独立图搜索构建](native-v0.4.5.md)及[P04新IR采集与语义校验](capture-graph-v0.4.5.md)已完成（合成pilot），未运行本版正式采集或完整验收，不以旧版通过填充新任务状态。
 
 ## 1. 实施原则与关键路线
 
@@ -35,7 +35,7 @@ P01 完成后，独立原生、模型、运行时和配置可以按接口分别�
 | `sdk/`，独立 CMake | 通用 IR／Measurement 元数据类型、采集 writer、封包基础和 hash；不含图搜索语法、SST/MQSim 或功能算子。JSON／hash 依赖显式声明和保留许可证，不借用 SST external 目录。 |
 | `workloads/graph-search/`，独立 CMake | 迁入 native、core、功能算子和真实数据加载；含 benchmark／采集／测量及图特定适配、recipe、独立 oracle。通过显式 SDK 路径或安装包链接，隔离复制可独立构建。 |
 | `extensions/graph/` | 图搜索算子描述、阶段／Work 规则、Host／Controller 映射和离线语义校验接线；功能实现不链接到仿真目标。 |
-| `src/ir/`、`src/runtime/` | 通用新 schema、类型／依赖检查、静态调度、元数据令牌、服务／返回门控及回收。旧动态接口迁移期共存，P20 删除。 |
+| `src/ir/`、`src/runtime/`、`src/timing/`（P07元数据底座） | 通用新 schema、类型／依赖检查、静态调度、元数据令牌、服务／返回门控及回收。旧动态接口迁移期共存，P20 删除。 |
 | `src/mapping/`、`src/model/` | 编译期算子／映射／模型注册；通用资源队列、credit 和成本算法。图特定规则移出核心。 |
 | `src/layout/`、`src/backend/`、`src/transport/` | 元数据布局、运行时设备配置、已有 MQSim 桥和读路径、size-only 传输。SST Core 不变。 |
 | `python/ndpsim/` | 通用校验、训练／拟合、CLI、输出、manifest 和运行编排；负载专用配方由扩展提供。使用可安装包和 `ndpsim` console entry point。 |
@@ -61,7 +61,7 @@ P01 输出版本化 schema、头文件级接口设计和可执行最小夹具，
 
 ## 4. 任务清单
 
-状态：**P00/P01/P02/P03/P04/P05/P06 完成；P07～P21 未开始**。每项共同保存：需求来源、输入与有效配置、源码／依赖／构建身份、命令／退出码、原始输出、独立断言、产物 hash、失败根因与适用限制。只有对应出口具备实际证据后才更新状态。
+状态：**P00/P01/P02/P03/P04/P05/P06/P07 完成；P08～P21 未开始**。每项共同保存：需求来源、输入与有效配置、源码／依赖／构建身份、命令／退出码、原始输出、独立断言、产物 hash、失败根因与适用限制。只有对应出口具备实际证据后才更新状态。
 
 ### M1：冻结与通用接口
 
@@ -84,7 +84,7 @@ P01 输出版本化 schema、头文件级接口设计和可执行最小夹具，
 
 | 任务／依据 | 依赖、输入与改动落点 | 交付与验收出口 |
 | --- | --- | --- |
-| **P07 元数据 Runtime 与资源服务**；FR01/07；AC03/10 | P01；runtime、HostCpu、FifoResource、BufferModel、EventBridge。 | 以描述／令牌替代 evaluate/Bytes；显式 Work／duration 输入；保留 FIFO/slots、异步四 phase、failure/drain、owner/pin 生命周期。独立手算、延迟注入、零服务、同刻 FIFO、失败不放后继及终态清零；无需功能算子链接。 |
+| **P07 元数据 Runtime 与资源服务（已完成）**；FR01/07；AC03/10 | P01；runtime、HostCpu、FifoResource、BufferModel、EventBridge。 | 以描述／令牌替代 evaluate/Bytes；显式 Work／duration 输入；保留 FIFO/slots、异步四 phase、failure/drain、owner/pin 生命周期。独立手算、延迟注入、零服务、同刻 FIFO、失败不放后继及终态清零；无需功能算子链接。**实际出口**：[P07实现与检查](runtime-v0.4.5.md)，独立元数据Runtime/HostCpu/FIFO/credit、四phase与failure/drain；手算/延迟/零服务/slots1、2、4/owner-pin/失败不放后继通过，5项SST接线、根102项、定向ASan及P01/P00检查通过，342文件/102CTest迁移审计通过。未实现包级DAG/正式映射，未关闭新AC。 |
 | **P08 静态 DAG 执行器**；FR01/03；AC02/03/10 | P02/P07；新静态 scheduler 替代 Replay 分支解析，GraphHost 仅保留通用 SST 接线。 | 从索引加载就绪依赖和阶段；多分支 fork/join 不额外串行，四种边都门控；请求接纳／worker／完成／排空；窗口边界、物理记录合法重排、循环拒绝及大 Q 元数据回收检查。 |
 | **P09 无内容 Layout**；FR06；AC07 | P01；ContentStore/Layout/ann_layout 和 Python 布局生成。 | 逻辑对象元数据到 extent 的独立解析器；图布局作为配置实例；普通／跨 sector/page／非对齐／空访问、重叠／容量／溢出负例；计算逻辑与物理字节的独立 oracle。模拟不构造 ContentStore。 |
 | **P10 MQSim 运行时配置**；FR06；AC05/07 | P09；device_profiles、profile.h、OrdinaryDevice、LifecycleBackend、preload_window。 | 外部 XML 解析一次并生成有效几何／partition，白名单与预算校验在设备分配前执行；不同路径运行、不重编译切配置；比对初态／预装载／CMT／排空。同步 oracle 配置输入，保留固定默认 XML 作为样例而非嵌入源码。 |
@@ -220,4 +220,4 @@ P21 总交付以清理后最终执行源码为准。测试数量不是正确性�
 | 新XML几何／partition／初态不一致 | 拒绝相关配置；P10独立解析核对支持子集，不承诺任意MQSim选项。 |
 | 真实输入或资源预算不足 | 阻塞全规模采集／验收，不阻塞接口和小夹具；不得缩小规模后记正式通过。 |
 
-P00/P01/P02/P03/P04/P05/P06已关闭；后续任务 **P07** 及其余任务本次均未开始。正式实现前不需要再次决定目录命名等常规细节；如需改变PRD范围或精度门槛，应单独明确变更，不能在任务实现中隐式降低要求。
+P00/P01/P02/P03/P04/P05/P06/P07已关闭；**P08～P21** 均未开始。正式实现前不需要再次决定目录命名等常规细节；如需改变PRD范围或精度门槛，应单独明确变更，不能在任务实现中隐式降低要求。

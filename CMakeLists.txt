@@ -564,3 +564,38 @@ if(BUILD_TESTING)
     add_test(NAME independent_fit_v045 COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_v045_fitting.py" "$<TARGET_FILE:fit_profile_probe>")
 endif()
+
+# P07: metadata-only service/token foundation. No content, functional operators,
+# native graph or legacy runtime dependency. SST remains the time authority.
+add_library(ndpsim_timing STATIC src/timing/runtime.cc src/timing/resources.cc)
+set_target_properties(ndpsim_timing PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(ndpsim_timing PUBLIC src sdk/include)
+target_link_libraries(ndpsim_timing PUBLIC mqsim_pic)
+target_compile_options(ndpsim_timing PRIVATE -Wall -Wextra -Wpedantic)
+if(BUILD_TESTING)
+    add_executable(timing_runtime_probe tests/timing_runtime_probe.cc)
+    target_link_libraries(timing_runtime_probe PRIVATE ndpsim_timing)
+    add_test(NAME timing_runtime_v045 COMMAND timing_runtime_probe)
+endif()
+if(BUILD_TESTING AND NOT NDPSIM_SANITIZE)
+    add_library(ndpsim_timing_validation MODULE src/sst/timing_validation.cc)
+    target_link_libraries(ndpsim_timing_validation PRIVATE ndpsim_timing SST::SSTCore)
+    if(APPLE)
+        target_link_options(ndpsim_timing_validation PRIVATE "-undefined" "dynamic_lookup")
+    endif()
+    foreach(variant base input service return zero)
+        add_test(NAME sst_timing_runtime_${variant} COMMAND "${NDPSIM_SST_EXECUTABLE}"
+            "--add-lib-path=$<TARGET_FILE_DIR:ndpsim_timing_validation>"
+            "${PROJECT_SOURCE_DIR}/configs/regression/timing_runtime.py")
+        set_tests_properties(sst_timing_runtime_${variant} PROPERTIES
+            PASS_REGULAR_EXPRESSION "P07 SST PASS" TIMEOUT 30)
+        if(variant STREQUAL "zero")
+            set_tests_properties(sst_timing_runtime_${variant} PROPERTIES ENVIRONMENT
+                "NDPSIM_TIMING_INPUT=0;NDPSIM_TIMING_SERVICE=0;NDPSIM_TIMING_RETURN=0")
+        elseif(NOT variant STREQUAL "base")
+            string(TOUPPER "${variant}" _timing_delay)
+            set_tests_properties(sst_timing_runtime_${variant} PROPERTIES
+                ENVIRONMENT "NDPSIM_TIMING_${_timing_delay}=107")
+        endif()
+    endforeach()
+endif()
