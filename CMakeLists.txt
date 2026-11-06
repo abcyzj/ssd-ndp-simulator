@@ -126,7 +126,6 @@ file(WRITE "${PROJECT_BINARY_DIR}/sst-paths.json"
 # Develop and compile the MQSim fork in place. The native oracle is built
 # separately from the unmodified commit recorded in deps.lock.json.
 set(MQSIM_SOURCE "${CMAKE_SOURCE_DIR}/third_party/MQSim")
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS configs/native/ssdconfig.xml)
 file(GLOB_RECURSE MQSIM_SOURCES CONFIGURE_DEPENDS "${MQSIM_SOURCE}/src/*.cpp")
 list(REMOVE_ITEM MQSIM_SOURCES "${MQSIM_SOURCE}/src/main.cpp")
 add_library(mqsim_pic STATIC ${MQSIM_SOURCES})
@@ -134,17 +133,17 @@ set_target_properties(mqsim_pic PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(mqsim_pic PUBLIC "${MQSIM_SOURCE}/src")
 target_compile_options(mqsim_pic PRIVATE -ffp-contract=off)
 
-# One descriptor drives embedded XML, partition geometry, and run snapshots.
+# Runtime XML is authoritative. Generated header contains only a migration include/path shim.
 find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/generated")
 execute_process(COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/device_profiles.py"
     --header "${CMAKE_BINARY_DIR}/generated/profile.h" COMMAND_ERROR_IS_FATAL ANY)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-    tools/device_profiles.py configs/profiles/devices.json)
-add_library(ndpsim_backend STATIC src/backend/lifecycle.cc)
+    tools/device_profiles.py)
+add_library(ndpsim_backend STATIC src/backend/lifecycle.cc src/backend/device_config.cc)
 set_target_properties(ndpsim_backend PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_include_directories(ndpsim_backend PUBLIC src PRIVATE "${CMAKE_BINARY_DIR}/generated")
-target_link_libraries(ndpsim_backend PUBLIC mqsim_pic)
+target_include_directories(ndpsim_backend PUBLIC src PRIVATE "${CMAKE_BINARY_DIR}/generated" "${PROJECT_SOURCE_DIR}/third_party/sst-core/external")
+target_link_libraries(ndpsim_backend PUBLIC mqsim_pic ndpsim::capture)
 
 add_library(ndpsim MODULE src/sst/system.cc src/sst/bridge_poc.cc src/sst/event_bridge.cc)
 target_include_directories(ndpsim PRIVATE tests)
@@ -650,4 +649,13 @@ if(BUILD_TESTING)
     target_link_libraries(layout_metadata_probe PRIVATE ndpsim_layout)
     add_test(NAME layout_metadata_v045 COMMAND "${Python3_EXECUTABLE}"
         "${PROJECT_SOURCE_DIR}/tests/test_v045_layout.py" "$<TARGET_FILE:layout_metadata_probe>")
+endif()
+
+if(BUILD_TESTING)
+    add_executable(device_config_probe tests/device_config_probe.cc)
+    target_include_directories(device_config_probe PRIVATE "${PROJECT_SOURCE_DIR}/third_party/sst-core/external" "${PROJECT_BINARY_DIR}/generated")
+    target_link_libraries(device_config_probe PRIVATE ndpsim_backend ndpsim_layout)
+    add_test(NAME device_config_v045 COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tests/test_v045_device_config.py" "$<TARGET_FILE:device_config_probe>")
+    set_tests_properties(device_config_v045 PROPERTIES TIMEOUT 120)
 endif()

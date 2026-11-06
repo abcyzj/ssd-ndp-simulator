@@ -1,7 +1,13 @@
 #include "ordinary_fixture.h"
 int main(int argc,char** argv) {
  try {
-    OrdinaryFixture fixture(argc>1 && std::string(argv[1])=="miss",argc>2?32:1);
+    std::unique_ptr<ndpsim::DeviceConfig> runtime;
+    unsigned qd=argc>2?32:1;
+    if(argc>1 && std::string(argv[1])=="--device-xml") {
+        if(argc!=7 || std::string(argv[3])!="--declaring-file" || std::string(argv[5])!="--qd")throw std::invalid_argument("invalid runtime config arguments");
+        runtime=std::make_unique<ndpsim::DeviceConfig>(argv[2],argv[4]);qd=std::stoul(argv[6]);
+    }
+    OrdinaryFixture fixture(!runtime && argc>1 && std::string(argv[1])=="miss",qd,false,0,runtime.get());
     bool rejected=false;
     try {fixture.window->read(0,1);} catch(const std::logic_error&) {rejected=true;}
     if(!rejected) throw std::logic_error("early measurement accepted");

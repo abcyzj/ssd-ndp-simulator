@@ -19,16 +19,20 @@ public:
                                SST_ELI_ELEMENT_VERSION(0, 1, 0),
                                "Ordinary NVMe validation",
                                COMPONENT_CATEGORY_UNCATEGORIZED)
-    SST_ELI_DOCUMENT_PARAMS({"observe", "Passive research observation", "0"},
+    SST_ELI_DOCUMENT_PARAMS({"device_xml", "External MQSim XML reference", ""},
+                            {"declaring_file", "Absolute file declaring XML reference", ""},
+                            {"observe", "Passive research observation", "0"},
                             {"miss", "Small CMT", "0"},
                             {"qd", "Concurrent submissions", "1"},
                             {"single_read", "Isolated one-sector NAND experiment", "0"},
                             {"read_delay", "Additional NAND read ns (acceptance only)", "0"})
     OrdinaryIO(SST::ComponentId_t id, SST::Params& p) : SST::Component(id) {
+        const auto xml=p.find<std::string>("device_xml", "");
+        if(!xml.empty())runtime=std::make_unique<DeviceConfig>(xml,p.find<std::string>("declaring_file", ""));
         fixture = std::make_unique<OrdinaryFixture>(p.find<int>("miss", 0),
                                                     p.find<unsigned>("qd", 1),
                                                     p.find<int>("single_read", 0),
-                                                    p.find<uint64_t>("read_delay", 0));
+                                                    p.find<uint64_t>("read_delay", 0), runtime.get());
         if (p.find<int>("observe", 0)) {
             observation = std::make_unique<Observation>();
             fixture->flow->submitted = [this](uint64_t id, uint64_t lba, unsigned n) {
@@ -85,6 +89,7 @@ private:
     uint64_t last_completion = 0;
     unsigned pending = 0;
     SST::Link* link;
+    std::unique_ptr<DeviceConfig> runtime;
     std::unique_ptr<OrdinaryFixture> fixture;
     std::unique_ptr<EventBridge> bridge;
 };

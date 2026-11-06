@@ -141,6 +141,8 @@ Layout::Layout(const std::filesystem::path& reference,
     std::sort(physical.begin(), physical.end());
     for (size_t i = 1; i < physical.size(); ++i)
         need(physical[i - 1].second <= physical[i].first, "physical overlap");
+    for (const auto& range : physical)
+        mapped_end_ = std::max(mapped_end_, range.second / sector_ + (range.second % sector_ != 0));
     hash_ = capture::sha256(source_);
     effective_ = j.dump();
 }

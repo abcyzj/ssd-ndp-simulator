@@ -5,6 +5,7 @@
 #include "backend/preload_window.h"
 #include "host/PCIe_Switch.h"
 #include "profile.h"
+#include "utils/Logical_Address_Partitioning_Unit.h"
 #include <memory>
 namespace ndpsim {
 // Single controlled-profile device, ordinary NVMe, deterministic page preload.
@@ -20,13 +21,22 @@ public:
     uint64_t namespace_sectors = 0;
     explicit OrdinaryDevice(uint64_t sectors,
                             const std::string& name = "native-small",
-                            uint64_t resource_budget = uint64_t(4) * 1024 * 1024 * 1024) {
-        const auto& profile = device_profile(name);
-        if (!sectors || sectors % profile.page_sectors || sectors > profile.raw_sectors)
-            throw std::invalid_argument(
-                "layout/preload exceeds profile raw capacity or page alignment");
-        if (profile.metadata_estimate > resource_budget)
-            throw std::invalid_argument("profile metadata estimate exceeds resource budget");
+                            uint64_t resource_budget = uint64_t(4) * 1024 * 1024 * 1024)
+        : OrdinaryDevice(sectors, checked_profile(name, resource_budget)) {
+    }
+    OrdinaryDevice(uint64_t sectors,
+                   const DeviceConfig& configuration,
+                   const layout::Layout& layout)
+        : OrdinaryDevice(sectors, checked_layout(configuration, layout, sectors)) {
+    }
+    OrdinaryDevice(uint64_t sectors,
+                   const DeviceConfig& configuration,
+                   uint64_t layout_capacity = 0,
+                   uint64_t layout_page_bytes = 0) {
+        const auto& profile = configuration.geometry();
+        configuration.validate_layout(layout_capacity ? layout_capacity : sectors,
+                                      layout_page_bytes ? layout_page_bytes : profile.page_bytes,
+                                      sectors);
         channels.resize(profile.channels);
         chips.resize(profile.chips);
         dies.resize(profile.dies);
@@ -50,16 +60,12 @@ public:
         partition.Priority_Class = IO_Flow_Priority_Class::HIGH;
         partition.Device_Level_Data_Caching_Mode = SSD_Components::Caching_Mode::TURNED_OFF;
         partitions.push_back(&partition);
-        std::string text(profile.xml);
-        std::vector<char> xml(text.begin(), text.end());
-        xml.push_back(0);
-        rapidxml::xml_document<> doc;
-        doc.parse<rapidxml::parse_validate_closing_tags>(xml.data());
+        configuration.activate();
         Execution_Parameter_Set config;
-        config.XML_deserialize(doc.first_node("Execution_Parameter_Set"));
         Simulator->Reset();
         device = std::make_unique<SSD_Device>(&config.SSD_Device_Configuration, &partitions);
-        link = std::make_unique<Host_Components::PCIe_Link>("link", nullptr, nullptr);
+        link = std::make_unique<Host_Components::PCIe_Link>(
+            "link", nullptr, nullptr, profile.lane_bandwidth, profile.lanes);
         sw = std::make_unique<Host_Components::PCIe_Switch>(link.get(), device->Host_interface);
         root = std::make_unique<Host_Components::PCIe_Root_Complex>(
             link.get(), HostInterface_Types::NVME, nullptr, &flows);
@@ -67,7 +73,7 @@ public:
         link->Set_pcie_switch(sw.get());
         device->Attach_to_host(sw.get());
         flow = std::make_unique<ExternalFlow>(
-            root.get(), device->Host_interface->Get_max_logical_sector_address());
+            root.get(), profile.namespace_sectors - 1, profile.queue_depth);
         flows.push_back(flow.get());
         root->data_arrived = [this](uint64_t a, unsigned n) {
             flow->data(a, n);
@@ -82,7 +88,10 @@ public:
         Simulator->AddObject(link.get());
         Simulator->AddObject(flow.get());
         namespace_sectors = flow->Get_end_lsa_address_on_device() + 1;
-        if (sectors > namespace_sectors)
+        if (namespace_sectors != profile.namespace_sectors || sectors > namespace_sectors ||
+            device->Host_interface->Get_max_logical_sector_address() != profile.namespace_sectors ||
+            Utils::Logical_Address_Partitioning_Unit::End_lha_available_to_flow(0) + 1 !=
+                profile.namespace_sectors)
             throw std::invalid_argument("layout/preload exceeds actual MQSim namespace");
         window = std::make_unique<PreloadWindow>(*flow, sectors, profile.page_sectors);
     }
@@ -97,6 +106,17 @@ public:
     }
 
 private:
+    static const DeviceConfig&
+    checked_layout(const DeviceConfig& config, const layout::Layout& layout, uint64_t sectors) {
+        config.validate_layout(layout, sectors);
+        return config;
+    }
+    static const DeviceConfig& checked_profile(const std::string& name, uint64_t budget) {
+        const auto& p = device_profile(name);
+        if (p.metadata_estimate > budget)
+            throw std::invalid_argument("profile metadata estimate exceeds resource budget");
+        return *p.config;
+    }
     std::vector<Host_Components::IO_Flow_Base*> flows;
     std::vector<flash_channel_ID_type> channels{0, 1};
     std::vector<flash_chip_ID_type> chips{0};

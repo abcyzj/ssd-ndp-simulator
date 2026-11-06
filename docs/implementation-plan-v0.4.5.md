@@ -2,7 +2,7 @@
 
 日期：2026-11-05（Asia/Shanghai）。依据 [正式 PRD](prd-v0.4.5.md)和[源码核查](source-audit-v0.4.5.md)。
 
-状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09 已完成（2026-11-06）；P10～P21 未开始，全部 AC 尚未验收。** 当前可运行交付仍为 V0.4。[P00 基线与迁移记录](baseline-v0.4.5.md)保存本次构建、93项CTest、小夹具与清单证据；[P01 契约与风险设计](contract-v0.4.5.md)已冻结并完成设计检查；[P02通用SDK与校验](capture-sdk-v0.4.5.md)已完成；[P03独立图搜索构建](native-v0.4.5.md)及[P04新IR采集与语义校验](capture-graph-v0.4.5.md)已完成（合成pilot），未运行本版正式采集或完整验收，不以旧版通过填充新任务状态。
+状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10 已完成（2026-11-06）；P11～P21 未开始，全部 AC 尚未验收。** 当前可运行交付仍为 V0.4。[P00 基线与迁移记录](baseline-v0.4.5.md)保存本次构建、93项CTest、小夹具与清单证据；[P01 契约与风险设计](contract-v0.4.5.md)已冻结并完成设计检查；[P02通用SDK与校验](capture-sdk-v0.4.5.md)已完成；[P03独立图搜索构建](native-v0.4.5.md)及[P04新IR采集与语义校验](capture-graph-v0.4.5.md)已完成（合成pilot），未运行本版正式采集或完整验收，不以旧版通过填充新任务状态。
 
 ## 1. 实施原则与关键路线
 
@@ -61,7 +61,7 @@ P01 输出版本化 schema、头文件级接口设计和可执行最小夹具，
 
 ## 4. 任务清单
 
-状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09 完成；P10～P21 未开始**。每项共同保存：需求来源、输入与有效配置、源码／依赖／构建身份、命令／退出码、原始输出、独立断言、产物 hash、失败根因与适用限制。只有对应出口具备实际证据后才更新状态。
+状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10 完成；P11～P21 未开始**。每项共同保存：需求来源、输入与有效配置、源码／依赖／构建身份、命令／退出码、原始输出、独立断言、产物 hash、失败根因与适用限制。只有对应出口具备实际证据后才更新状态。
 
 ### M1：冻结与通用接口
 
@@ -87,7 +87,7 @@ P01 输出版本化 schema、头文件级接口设计和可执行最小夹具，
 | **P07 元数据 Runtime 与资源服务（已完成）**；FR01/07；AC03/10 | P01；runtime、HostCpu、FifoResource、BufferModel、EventBridge。 | 以描述／令牌替代 evaluate/Bytes；显式 Work／duration 输入；保留 FIFO/slots、异步四 phase、failure/drain、owner/pin 生命周期。独立手算、延迟注入、零服务、同刻 FIFO、失败不放后继及终态清零；无需功能算子链接。**实际出口**：[P07实现与检查](runtime-v0.4.5.md)，独立元数据Runtime/HostCpu/FIFO/credit、四phase与failure/drain；手算/延迟/零服务/slots1、2、4/owner-pin/失败不放后继通过，5项SST接线、根102项、定向ASan及P01/P00检查通过，342文件/102CTest迁移审计通过。未实现包级DAG/正式映射，未关闭新AC。 |
 | **P08 静态 DAG 执行器（已完成）**；FR01/03；AC02/03/10 | P02/P07；新静态 scheduler 替代 Replay 分支解析，GraphHost 仅保留通用 SST 接线。 | 从索引加载就绪依赖和阶段；多分支 fork/join 不额外串行，四种边都门控；请求接纳／worker／完成／排空；窗口边界、物理记录合法重排、循环拒绝及大 Q 元数据回收检查。**实际出口**：[P08实现与检查](dag-v0.4.5.md)，原始IR索引/SQLite定位、完整查询就绪队列、四边Visible门控、FIFO接纳/worker/失败排空、通用SST GraphHost；18项DAG/3个SST变体、根104项、定向ASan2项、SDK/P02/P01/P00检查通过；Q1/64/512活跃stage峰值4/8/8且终态清零，353文件/104CTest审计通过。未接正式图映射/模型/CLI，未关闭新AC。 |
 | **P09 无内容 Layout（已完成）**；FR06；AC07 | P01；ContentStore/Layout/ann_layout 和 Python 布局生成。 | 逻辑对象元数据到 extent 的独立解析器；图布局作为配置实例；普通／跨 sector/page／非对齐／空访问、重叠／容量／溢出负例；计算逻辑与物理字节的独立 oracle。模拟不构造 ContentStore。[实现与实际检查](layout-v0.4.5.md)；根CTest105/105，独立Layout及定向ASan通过；不计AC07完成。 |
-| **P10 MQSim 运行时配置**；FR06；AC05/07 | P09；device_profiles、profile.h、OrdinaryDevice、LifecycleBackend、preload_window。 | 外部 XML 解析一次并生成有效几何／partition，白名单与预算校验在设备分配前执行；不同路径运行、不重编译切配置；比对初态／预装载／CMT／排空。同步 oracle 配置输入，保留固定默认 XML 作为样例而非嵌入源码。 |
+| **P10 MQSim 运行时配置（已完成）**；FR06；AC05/07 | P09；device_profiles、profile.h、OrdinaryDevice、LifecycleBackend、preload_window。 | 外部 XML 解析一次并生成有效几何／partition，白名单与预算校验在设备分配前执行；不同路径运行、不重编译切配置；比对初态／预装载／CMT／排空。同步 oracle 配置输入，保留固定默认 XML 作为样例而非嵌入源码。**实际出口**：[P10实现与检查](device-config-v0.4.5.md)，严格外部XML/typed activation、有效几何/全资源partition、预算/namespace/Layout门控，设备/生命周期及PCIe/队列接线；根106项、配置11项、ASan4项通过，六个XML原生/fork/SST共同字段精确一致（SST各2次），368文件/106CTest审计通过；不计AC05/07或P16完成。 |
 | **P11 内存 timing-only 接线**；FR01/07/10；AC03/04 | P04/P05/P08；新 Host 映射、worker 策略、SST 接线，替代 replay_input/run_graph 的数据前置。 | 同一新包无 payload 运行，0 SSD 请求／无设备实例；阶段服务可追溯，1/1/1 时序手算，2/4 worker 配额定向检查。改变模型改变模拟时间，改变宿主执行负担不改变模拟时间；尚不宣称正式 CPU 精度。 |
 
 ### M3/M4：SSD 映射、入口与验证工具
@@ -220,4 +220,4 @@ P21 总交付以清理后最终执行源码为准。测试数量不是正确性�
 | 新XML几何／partition／初态不一致 | 拒绝相关配置；P10独立解析核对支持子集，不承诺任意MQSim选项。 |
 | 真实输入或资源预算不足 | 阻塞全规模采集／验收，不阻塞接口和小夹具；不得缩小规模后记正式通过。 |
 
-P00/P01/P02/P03/P04/P05/P06/P07/P08/P09已关闭；**P10～P21** 均未开始。正式实现前不需要再次决定目录命名等常规细节；如需改变PRD范围或精度门槛，应单独明确变更，不能在任务实现中隐式降低要求。
+P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10已关闭；**P11～P21** 均未开始。正式实现前不需要再次决定目录命名等常规细节；如需改变PRD范围或精度门槛，应单独明确变更，不能在任务实现中隐式降低要求。

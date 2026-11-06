@@ -1,0 +1,391 @@
+{
+  "format": "ndpsim-device-policy/1",
+  "description": "Supported external MQSim XML subset. Exact fields, no duplicate keys/attributes/entities/DTD; no omitted defaults. Geometry and budgets additionally checked in C++.",
+  "fields": [
+    {
+      "group": "host",
+      "key": "PCIe_Lane_Bandwidth",
+      "type": "decimal",
+      "minimum": 0.001,
+      "maximum": 64
+    },
+    {
+      "group": "host",
+      "key": "PCIe_Lane_Count",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "group": "host",
+      "key": "SATA_Processing_Delay",
+      "type": "uint",
+      "minimum": 0,
+      "maximum": 1000000000
+    },
+    {
+      "group": "host",
+      "key": "Enable_ResponseTime_Logging",
+      "const": "false"
+    },
+    {
+      "group": "host",
+      "key": "ResponseTime_Logging_Period_Length",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "device",
+      "key": "Seed",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 2147483600
+    },
+    {
+      "group": "device",
+      "key": "Enabled_Preconditioning",
+      "const": "false"
+    },
+    {
+      "group": "device",
+      "key": "Memory_Type",
+      "const": "FLASH"
+    },
+    {
+      "group": "device",
+      "key": "HostInterface_Type",
+      "const": "NVME"
+    },
+    {
+      "group": "device",
+      "key": "IO_Queue_Depth",
+      "type": "uint",
+      "minimum": 2,
+      "maximum": 1024
+    },
+    {
+      "group": "device",
+      "key": "Queue_Fetch_Size",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1023
+    },
+    {
+      "group": "device",
+      "key": "Caching_Mechanism",
+      "const": "SIMPLE"
+    },
+    {
+      "group": "device",
+      "key": "Data_Cache_Sharing_Mode",
+      "const": "SHARED"
+    },
+    {
+      "group": "device",
+      "key": "Data_Cache_Capacity",
+      "type": "uint",
+      "minimum": 4096,
+      "maximum": 1073741824
+    },
+    {
+      "group": "device",
+      "key": "Data_Cache_DRAM_Row_Size",
+      "type": "uint",
+      "minimum": 512,
+      "maximum": 65536
+    },
+    {
+      "group": "device",
+      "key": "Data_Cache_DRAM_Data_Rate",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    {
+      "group": "device",
+      "key": "Data_Cache_DRAM_Data_Busrt_Size",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1024
+    },
+    {
+      "group": "device",
+      "key": "Data_Cache_DRAM_tRCD",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "device",
+      "key": "Data_Cache_DRAM_tCL",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "device",
+      "key": "Data_Cache_DRAM_tRP",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "device",
+      "key": "Address_Mapping",
+      "const": "PAGE_LEVEL"
+    },
+    {
+      "group": "device",
+      "key": "Ideal_Mapping_Table",
+      "const": "false"
+    },
+    {
+      "group": "device",
+      "key": "CMT_Capacity",
+      "type": "uint",
+      "minimum": 128,
+      "maximum": 1073741824
+    },
+    {
+      "group": "device",
+      "key": "CMT_Sharing_Mode",
+      "const": "SHARED"
+    },
+    {
+      "group": "device",
+      "key": "Plane_Allocation_Scheme",
+      "const": "CWDP"
+    },
+    {
+      "group": "device",
+      "key": "Transaction_Scheduling_Policy",
+      "const": "PRIORITY_OUT_OF_ORDER"
+    },
+    {
+      "group": "device",
+      "key": "Overprovisioning_Ratio",
+      "type": "decimal",
+      "minimum": 0.05,
+      "maximum": 0.3
+    },
+    {
+      "group": "device",
+      "key": "GC_Exec_Threshold",
+      "const": "0.05000"
+    },
+    {
+      "group": "device",
+      "key": "GC_Block_Selection_Policy",
+      "const": "RGA"
+    },
+    {
+      "group": "device",
+      "key": "Use_Copyback_for_GC",
+      "const": "false"
+    },
+    {
+      "group": "device",
+      "key": "Preemptible_GC_Enabled",
+      "const": "false"
+    },
+    {
+      "group": "device",
+      "key": "GC_Hard_Threshold",
+      "const": "0.005000"
+    },
+    {
+      "group": "device",
+      "key": "Dynamic_Wearleveling_Enabled",
+      "const": "true"
+    },
+    {
+      "group": "device",
+      "key": "Static_Wearleveling_Enabled",
+      "const": "true"
+    },
+    {
+      "group": "device",
+      "key": "Static_Wearleveling_Threshold",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    {
+      "group": "device",
+      "key": "Preferred_suspend_erase_time_for_read",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "device",
+      "key": "Preferred_suspend_erase_time_for_write",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "device",
+      "key": "Preferred_suspend_write_time_for_read",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "device",
+      "key": "Flash_Channel_Count",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "group": "device",
+      "key": "Flash_Channel_Width",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "group": "device",
+      "key": "Channel_Transfer_Rate",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    {
+      "group": "device",
+      "key": "Chip_No_Per_Channel",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 8
+    },
+    {
+      "group": "device",
+      "key": "Flash_Comm_Protocol",
+      "const": "NVDDR2"
+    },
+    {
+      "group": "flash",
+      "key": "Flash_Technology",
+      "const": "MLC"
+    },
+    {
+      "group": "flash",
+      "key": "CMD_Suspension_Support",
+      "const": "ERASE"
+    },
+    {
+      "group": "flash",
+      "key": "Page_Read_Latency_LSB",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "flash",
+      "key": "Page_Read_Latency_CSB",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "flash",
+      "key": "Page_Read_Latency_MSB",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "flash",
+      "key": "Page_Program_Latency_LSB",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "flash",
+      "key": "Page_Program_Latency_CSB",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "flash",
+      "key": "Page_Program_Latency_MSB",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "flash",
+      "key": "Block_Erase_Latency",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "flash",
+      "key": "Block_PE_Cycles_Limit",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 10000000
+    },
+    {
+      "group": "flash",
+      "key": "Suspend_Erase_Time",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "flash",
+      "key": "Suspend_Program_Time",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    {
+      "group": "flash",
+      "key": "Die_No_Per_Chip",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 8
+    },
+    {
+      "group": "flash",
+      "key": "Plane_No_Per_Die",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 4
+    },
+    {
+      "group": "flash",
+      "key": "Block_No_Per_Plane",
+      "type": "uint",
+      "minimum": 64,
+      "maximum": 65536
+    },
+    {
+      "group": "flash",
+      "key": "Page_No_Per_Block",
+      "type": "uint",
+      "minimum": 16,
+      "maximum": 256
+    },
+    {
+      "group": "flash",
+      "key": "Page_Capacity",
+      "type": "uint",
+      "minimum": 512,
+      "maximum": 16384
+    },
+    {
+      "group": "flash",
+      "key": "Page_Metadat_Capacity",
+      "type": "uint",
+      "minimum": 1,
+      "maximum": 4096
+    }
+  ]
+}

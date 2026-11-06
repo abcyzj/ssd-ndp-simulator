@@ -32,29 +32,56 @@ public:
     bool measuring=false, small_cmt=false, single_read=false;
     unsigned baseline_read_misses=0;
     uint64_t origin=0;
-    OrdinaryFixture(bool miss=false,unsigned qd=1,bool single=false,uint64_t read_delay=0):target(qd),small_cmt(miss),single_read(single) {
+    unsigned page_sectors=8;
+    int initial_seed=321;
+    OrdinaryFixture(bool miss=false,unsigned qd=1,bool single=false,uint64_t read_delay=0,const ndpsim::DeviceConfig* runtime=nullptr):target(qd),small_cmt(miss),single_read(single) {
         if(read_delay>1000000000 || (single && qd!=1))throw std::invalid_argument("invalid isolated NAND experiment");
-        partition.Channel_No=2; partition.Channel_IDs=channels.data();
-        partition.Chip_No=1; partition.Chip_IDs=chips.data();
-        partition.Die_No=2; partition.Die_IDs=dies.data();
-        partition.Plane_No=1; partition.Plane_IDs=planes.data();
+        if(runtime) {
+            if(miss || read_delay)throw std::invalid_argument("runtime XML conflicts with test overrides");
+            const auto& g=runtime->geometry();
+            runtime->validate_layout(512,g.page_bytes,512);
+            channels.resize(g.channels);chips.resize(g.chips);dies.resize(g.dies);planes.resize(g.planes);
+            for(size_t i=0;i<channels.size();++i)channels[i]=i;
+            for(size_t i=0;i<chips.size();++i)chips[i]=i;
+            for(size_t i=0;i<dies.size();++i)dies[i]=i;
+            for(size_t i=0;i<planes.size();++i)planes[i]=i;
+            page_sectors=g.page_sectors;
+        }
+        partition.Channel_No=channels.size(); partition.Channel_IDs=channels.data();
+        partition.Chip_No=chips.size(); partition.Chip_IDs=chips.data();
+        partition.Die_No=dies.size(); partition.Die_IDs=dies.data();
+        partition.Plane_No=planes.size(); partition.Plane_IDs=planes.data();
         partition.Priority_Class=IO_Flow_Priority_Class::HIGH;
         partition.Device_Level_Data_Caching_Mode=SSD_Components::Caching_Mode::TURNED_OFF;
         partitions.push_back(&partition);
-        std::string text(ndpsim::lifecycle_xml);
+        Execution_Parameter_Set config;
+        if(runtime) {
+#ifdef NDPSIM_NATIVE_ORACLE
+            // The locked upstream XML deserializer independently applies the
+            // same raw file; it does not reuse the platform's typed activation.
+            std::vector<char> xml(runtime->source_bytes().begin(),runtime->source_bytes().end());xml.push_back(0);
+            rapidxml::xml_document<> doc;doc.parse<rapidxml::parse_validate_closing_tags>(xml.data());
+            config.XML_deserialize(doc.first_node("Execution_Parameter_Set"));
+#else
+            runtime->activate();
+#endif
+        } else {
+        std::string text(ndpsim::device_profile("native-small").xml);
         if(miss) text.replace(text.find("<CMT_Capacity>65536"),19,"<CMT_Capacity>128");
         std::vector<char> xml(text.begin(),text.end()); xml.push_back(0);
         rapidxml::xml_document<> doc; doc.parse<rapidxml::parse_validate_closing_tags>(xml.data());
-        Execution_Parameter_Set config; config.XML_deserialize(doc.first_node("Execution_Parameter_Set"));
+        config.XML_deserialize(doc.first_node("Execution_Parameter_Set"));
+        }
+        initial_seed=Device_Parameter_Set::Seed;
         Flash_Parameter_Set::Page_Read_Latency_LSB+=read_delay;
         Flash_Parameter_Set::Page_Read_Latency_CSB+=read_delay;
         Flash_Parameter_Set::Page_Read_Latency_MSB+=read_delay;
         Simulator->Reset(); device=std::make_unique<SSD_Device>(&config.SSD_Device_Configuration,&partitions);
-        link=std::make_unique<Host_Components::PCIe_Link>("link",nullptr,nullptr);
+        link=std::make_unique<Host_Components::PCIe_Link>("link",nullptr,nullptr,Host_Parameter_Set::PCIe_Lane_Bandwidth,Host_Parameter_Set::PCIe_Lane_Count);
         sw=std::make_unique<Host_Components::PCIe_Switch>(link.get(),device->Host_interface);
         root=std::make_unique<Host_Components::PCIe_Root_Complex>(link.get(),HostInterface_Types::NVME,nullptr,&flows);
         link->Set_root_complex(root.get()); link->Set_pcie_switch(sw.get()); device->Attach_to_host(sw.get());
-        flow=std::make_unique<ndpsim::ExternalFlow>(root.get(),device->Host_interface->Get_max_logical_sector_address()); flows.push_back(flow.get());
+        flow=std::make_unique<ndpsim::ExternalFlow>(root.get(),runtime?runtime->geometry().namespace_sectors-1:device->Host_interface->Get_max_logical_sector_address(),Device_Parameter_Set::IO_Queue_Depth); flows.push_back(flow.get());
 #ifndef NDPSIM_NATIVE_ORACLE
         root->data_arrived=[this](uint64_t a,unsigned n){flow->data(a,n);};
 #endif
@@ -62,7 +89,8 @@ public:
         auto* q=flow->Get_nvme_queue_pair_info();
         host->Create_new_stream(IO_Flow_Priority_Class::HIGH,0,flow->Get_end_lsa_address_on_device(),q->Submission_queue_memory_base_address,q->Completion_queue_memory_base_address);
         Simulator->AddObject(link.get()); Simulator->AddObject(flow.get());
-        window=std::make_unique<ndpsim::PreloadWindow>(*flow,512,8);
+        window=std::make_unique<ndpsim::PreloadWindow>(*flow,512,page_sectors);
+        if(runtime)std::printf("CONFIG sha256=%s namespace_sectors=%llu page_sectors=%u\n",runtime->source_sha256().c_str(),runtime->geometry().namespace_sectors,page_sectors);
         flow->completed=[this](ndpsim::ExternalFlow::Completion c){
             std::printf("IO %llu %llu %u %u %llu\n",c.token,c.lba,c.sectors,c.write,c.time);
             if(measuring) ++done; else ++preload;
@@ -87,7 +115,7 @@ public:
     void poll() {
         if(!measuring && window->advance(!next_time(),Simulator->Time())) {
             origin=Simulator->Time(); measuring=true;
-            std::printf("INITIAL seed=321 preload=0:512 data_cache=off pending=0 time=%llu\n",origin);
+            std::printf("INITIAL seed=%d preload=0:512 data_cache=off pending=0 time=%llu\n",initial_seed,origin);
             auto* amu=static_cast<SSD_Components::FTL*>(device->Firmware)->Address_Mapping_Unit;
             std::printf("CMT capacity=%u preconditioning_entries=%u misses=%u\n",amu->Get_cmt_capacity(),amu->Get_current_cmt_occupancy_for_stream(0),SSD_Components::Stats::CMT_miss);
             baseline_read_misses=SSD_Components::Stats::readTR_CMT_miss;
@@ -99,7 +127,7 @@ public:
 #else
             std::printf("CACHE %s\n",static_cast<SSD_Components::Address_Mapping_Unit_Page_Level*>(amu)->Snapshot_cmt(0).c_str());
 #endif
-            for(unsigned i=0;i<64;++i) {
+            for(unsigned i=0;i<512/page_sectors;++i) {
                 PPA_type ppa; page_status_type state;
                 auto* page=static_cast<SSD_Components::Address_Mapping_Unit_Page_Level*>(amu);
 #ifdef NDPSIM_NATIVE_ORACLE

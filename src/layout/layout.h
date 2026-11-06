@@ -37,6 +37,9 @@ public:
     uint64_t sector_bytes() const {
         return sector_;
     }
+    uint64_t mapped_end_sectors() const {
+        return mapped_end_;
+    }
     uint64_t page_bytes() const {
         return page_;
     }
@@ -63,7 +66,7 @@ private:
     };
     std::map<std::pair<std::string, uint64_t>, Object> objects_;
     Limits limits_;
-    uint64_t capacity_ = 0, sector_ = 0, page_ = 0;
+    uint64_t capacity_ = 0, sector_ = 0, page_ = 0, mapped_end_ = 0;
     std::filesystem::path path_;
     std::string source_, hash_, effective_;
 };

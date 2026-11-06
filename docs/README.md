@@ -1,6 +1,6 @@
 # 文档入口
 
-下一版正式需求为 [V0.4.5 PRD](prd-v0.4.5.md)：面向发布的 timing-only 平台与静态 IR、算子、映射和硬件成本扩展。V0.4.5 的[源码核查](source-audit-v0.4.5.md)与[22项实施计划](implementation-plan-v0.4.5.md)已完成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)、[P03独立图搜索构建](native-v0.4.5.md)、[P04新IR采集与语义校验](capture-graph-v0.4.5.md)、[P05通用模型与注册接口](cost-model-v0.4.5.md)、[P06独立拟合／制表](fit-v0.4.5.md)、[P07元数据Runtime与资源服务](runtime-v0.4.5.md)、[P08静态DAG执行器](dag-v0.4.5.md)和[P09无内容Layout](layout-v0.4.5.md)已完成，P10～P21 未开始、全部新AC未验收；当前可运行版本仍为 V0.4。新版本与旧兼容、功能重算和回归要求的替代关系见新 PRD §2。
+下一版正式需求为 [V0.4.5 PRD](prd-v0.4.5.md)：面向发布的 timing-only 平台与静态 IR、算子、映射和硬件成本扩展。V0.4.5 的[源码核查](source-audit-v0.4.5.md)与[22项实施计划](implementation-plan-v0.4.5.md)已完成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)、[P03独立图搜索构建](native-v0.4.5.md)、[P04新IR采集与语义校验](capture-graph-v0.4.5.md)、[P05通用模型与注册接口](cost-model-v0.4.5.md)、[P06独立拟合／制表](fit-v0.4.5.md)、[P07元数据Runtime与资源服务](runtime-v0.4.5.md)、[P08静态DAG执行器](dag-v0.4.5.md)、[P09无内容Layout](layout-v0.4.5.md)和[P10 MQSim运行时配置](device-config-v0.4.5.md)已完成，P11～P21 未开始、全部新AC未验收；当前可运行版本仍为 V0.4。新版本与旧兼容、功能重算和回归要求的替代关系见新 PRD §2。
 
 V0.4 已交付范围见 [V0.4 PRD](prd-v0.4.md)：现有图搜索的独立原生程序、Profiler、CPU Cost Model、内存驻留单线程精度验证及盘控条件预测。需求与[18项实施清单](implementation-plan-v0.4.md)已整理，V04-0开工冻结、V04-1a纯算法核心、V04-1b原生构建与运行、V04-1c参考路径语义出口、V04-2a契约、V04-2b Profiler与静态IR采集、V04-2c训练采集与 A/B/A 、V04-3a 模型接口与失败关闭、V04-3b 训练拟合与冻结、V04-3c 静态执行与内存驻留及 V04-3d worker 与 CPU 顺序、V04-4a Validator 框架已完成。V04-4b 已完成，AC-04-04 按两点口径通过。V04-4c 已完成，两点单线程 Level B/C 及 Host 静态语义通过，[V04-4d 已完成](workers-v0.4.md)，AC-04-07 诊断通过；[V04-5a](offload-v0.4.md) 条件预测及 [V04-5b](regression-v0.4.md) 兼容继承已完成；[V04-5c 总交付](releases/v0.4.md)已完成，12/12配置和12/12 AC通过；[定向复核](source-audit-v0.4.md)记录此前核查与当前commit一致及证据边界。2/4 worker 为诊断项，真实 SSD/盘控硬件校准不在本版范围。
 
@@ -15,6 +15,7 @@ V0.4 新路径已修订为原生真实搜索插桩采集完整静态 IR，随后
 | V0.4.5 任务依赖、配置矩阵、测试迁移与实施出口 | [实施计划](implementation-plan-v0.4.5.md) |
 | V0.4.5 P08 静态DAG、完整查询索引、配额/失败排空和Q梯度 | [P08实现记录](dag-v0.4.5.md) |
 | V0.4.5 P09 无内容Layout、extent范围/分块/字节oracle与配置快照 | [P09实现记录](layout-v0.4.5.md) |
+| V0.4.5 P10 外部MQSim XML、几何/partition/预算、初态与独立配置对拍 | [P10实现记录](device-config-v0.4.5.md) |
 | V0.4.5 P07 元数据令牌、资源服务、失败排空和SST手算 | [P07实现记录](runtime-v0.4.5.md) |
 | V0.4.5 P06 独立拟合、质量/分组隔离和逐调用表 | [P06实现记录](fit-v0.4.5.md) |
 | V0.4.5 P05 通用公式、注册、Profile加载及独立数值检查 | [P05实现记录](cost-model-v0.4.5.md) |

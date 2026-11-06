@@ -16,14 +16,14 @@ public:
     };
     std::function<void(Completion)> completed;
     std::function<void(uint64_t, uint64_t, unsigned)> submitted;
-    ExternalFlow(Host_Components::PCIe_Root_Complex* root, uint64_t end)
+    ExternalFlow(Host_Components::PCIe_Root_Complex* root, uint64_t end, uint16_t queue_depth = 16)
         : IO_Flow_Base("external",
                        0,
                        0,
                        end,
                        1,
-                       16,
-                       16,
+                       queue_depth,
+                       queue_depth,
                        IO_Flow_Priority_Class::HIGH,
                        UINT64_MAX,
                        0,

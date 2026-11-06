@@ -17,7 +17,7 @@ V0.4常规验收为 [12个模拟配置](../docs/validation-matrix-v0.4.md)，总
 | `benchmark_artifacts.py` | build/check-index/exact/official/check-truth；[图与真值](../docs/index-truth-v2.md) |
 | `m0/build_builder.py`、`m0/CMakeLists.txt` | 锁定离线 Faiss、正式索引适配器及 receipt；仍是生产准备依赖 |
 | `simulation_input.py` | experiment-v2 与数据/图/真值身份校验；[仿真输入](../docs/simulation-input.md) |
-| `device_profiles.py` | 根 CMake 与运行器共用的设备生成器；[内容/profile](../docs/content-profiles.md) |
+| `device_profiles.py` | 迁移期外部XML样例读取与CMake include/path shim；[P10运行时配置](../docs/device-config-v0.4.5.md) |
 | `verify_m0.py`、`source_snapshot.py` | 共用完整原始文件校验、哈希、进程测量及源码身份；被运行/准备工具导入，不是废弃阶段脚本 |
 | `scan_compute_ratio.py` | 可选算力敏感性扫描；参数与历史结果见[归档实验](../docs/archive/v0.2/t6-compute-ratio.md)，不属于固定验收矩阵 |
 

@@ -175,7 +175,7 @@ def main():
             with tarfile.open(archive) as t:t.extractall(native,filter='data')
             sources=sorted(x for x in (native/'src').rglob('*.cpp') if x.name!='main.cpp')
             parameters['native_oracle']=dict(commit=commit,archive_sha256=digest(archive),directory=str(native),source_sha256={str(x.relative_to(native)):digest(x) for x in (native/'src').rglob('*') if x.is_file()})
-            command('native-build',[lock['tools']['cxx']['path'],'-isysroot',lock['target']['sdk_path'],'-std=c++17','-O1','-Xclang','-mconstructor-aliases','-DNDPSIM_NATIVE_ORACLE','-I'+str(native/'src'),'-I'+str(ROOT/'src'),'-I'+str(ROOT/'tests'),'-I'+str(build/'generated'),ROOT/'tests/ordinary_native.cc',*sources,'-o',native/'probe'])
+            command('native-build',[lock['tools']['cxx']['path'],'-isysroot',lock['target']['sdk_path'],'-std=c++17','-O1','-Xclang','-mconstructor-aliases','-DNDPSIM_NATIVE_ORACLE','-I'+str(native/'src'),'-I'+str(ROOT/'src'),'-I'+str(ROOT/'tests'),'-I'+str(build/'generated'),'-I'+str(ROOT/'sdk/include'),'-I'+str(ROOT/'third_party/sst-core/external'),ROOT/'tests/ordinary_native.cc',ROOT/'src/backend/device_config.cc',ROOT/'sdk/src/sha256.cc',*sources,'-o',native/'probe'])
             prefix=('IO ','INITIAL ','MAP ','CMT ','CACHE ','FINAL ')
             for name,args,qd,miss in [('qd1',[],1,0),('qd32',['normal','concurrent'],32,0),('cmt-miss',['miss','concurrent'],32,1)]:
                 expected=rows(command(name+'-native',[native/'probe',*args]),prefix);assert any(l.startswith('IO ') for l in expected)

@@ -26,7 +26,7 @@ public:
         if ((blocks != 2048 && blocks != 16384) || !bytes_ || bytes_ % 4096 ||
             bytes_ > uint64_t(blocks) * 4 * 64 * 4096 * 9 / 10)
             throw std::invalid_argument("invalid M0 probe geometry/layout");
-        std::string xml(lifecycle_xml);
+        std::string xml(device_profile("native-small").xml);
         const std::string original = "<Block_No_Per_Plane>64</Block_No_Per_Plane>";
         auto at = xml.find(original);
         if (at == std::string::npos) throw std::logic_error("native profile changed");

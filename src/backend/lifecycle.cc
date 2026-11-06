@@ -24,7 +24,20 @@ struct LifecycleBackend::Impl {
     bool initialized = false;
     bool finished = false;
 
-    Impl() {
+    Impl(const DeviceConfig& configuration) {
+        const auto& g = configuration.geometry();
+        channels.resize(g.channels);
+        chips.resize(g.chips);
+        dies.resize(g.dies);
+        planes.resize(g.planes);
+        for (size_t i = 0; i < channels.size(); ++i)
+            channels[i] = i;
+        for (size_t i = 0; i < chips.size(); ++i)
+            chips[i] = i;
+        for (size_t i = 0; i < dies.size(); ++i)
+            dies[i] = i;
+        for (size_t i = 0; i < planes.size(); ++i)
+            planes[i] = i;
         // One inactive namespace defines address/resource partitioning. No host
         // flow, PCIe attachment, workload, or application request exists yet.
         partition.Channel_No = channels.size();
@@ -38,11 +51,8 @@ struct LifecycleBackend::Impl {
         partition.Priority_Class = IO_Flow_Priority_Class::HIGH;
         partition.Device_Level_Data_Caching_Mode = SSD_Components::Caching_Mode::TURNED_OFF;
         partitions.push_back(&partition);
-        std::vector<char> xml(std::begin(lifecycle_xml), std::end(lifecycle_xml));
-        rapidxml::xml_document<> doc;
-        doc.parse<rapidxml::parse_validate_closing_tags>(xml.data());
+        configuration.activate();
         Execution_Parameter_Set config;
-        config.XML_deserialize(doc.first_node("Execution_Parameter_Set"));
         Simulator->Reset();
         device = std::make_unique<SSD_Device>(&config.SSD_Device_Configuration, &partitions);
     }
@@ -65,7 +75,15 @@ LifecycleBackend::LifecycleBackend(unsigned device_count, const std::string& pro
     if (device_claimed)
         throw std::logic_error("Only one MQSim device lifetime per process is supported");
     device_claimed = true; // Intentionally never released: singleton state is not reusable.
-    impl_ = std::make_unique<Impl>();
+    impl_ = std::make_unique<Impl>(*device_profile(profile).config);
+}
+LifecycleBackend::LifecycleBackend(const DeviceConfig& configuration, unsigned device_count) {
+    if (device_count != 1)
+        throw std::invalid_argument("Unsupported: device_count must be 1");
+    if (device_claimed)
+        throw std::logic_error("Only one MQSim device lifetime per process is supported");
+    device_claimed = true;
+    impl_ = std::make_unique<Impl>(configuration);
 }
 LifecycleBackend::~LifecycleBackend() = default;
 void LifecycleBackend::initialize() {

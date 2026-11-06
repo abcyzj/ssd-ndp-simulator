@@ -129,6 +129,33 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：data"
     },
     {
+      "path": "configs/devices/ann-16g-v1.xml",
+      "policy": "runtime-device-config",
+      "decision": "保留",
+      "tasks": "P10/P12/P16/P20",
+      "replacement_assertions": "外部XML严格白名单/预算/几何/partition及初态/CMT排空；独立XML解释；不重编译切配置",
+      "deletion_gate": "P10定向检查和根CTest通过，最终P16/P20出口保留",
+      "reason": "PRD FR06/11；P10运行时设备配置"
+    },
+    {
+      "path": "configs/devices/ann-2g-v1.xml",
+      "policy": "runtime-device-config",
+      "decision": "保留",
+      "tasks": "P10/P12/P16/P20",
+      "replacement_assertions": "外部XML严格白名单/预算/几何/partition及初态/CMT排空；独立XML解释；不重编译切配置",
+      "deletion_gate": "P10定向检查和根CTest通过，最终P16/P20出口保留",
+      "reason": "PRD FR06/11；P10运行时设备配置"
+    },
+    {
+      "path": "configs/devices/native-small.xml",
+      "policy": "runtime-device-config",
+      "decision": "保留",
+      "tasks": "P10/P12/P16/P20",
+      "replacement_assertions": "外部XML严格白名单/预算/几何/partition及初态/CMT排空；独立XML解释；不重编译切配置",
+      "deletion_gate": "P10定向检查和根CTest通过，最终P16/P20出口保留",
+      "reason": "PRD FR06/11；P10运行时设备配置"
+    },
+    {
       "path": "configs/experiments/controller.json",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -777,6 +804,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "schemas/ndpsim-device-policy-v1.json",
+      "policy": "runtime-device-config",
+      "decision": "保留",
+      "tasks": "P10/P12/P16/P20",
+      "replacement_assertions": "外部XML严格白名单/预算/几何/partition及初态/CMT排空；独立XML解释；不重编译切配置",
+      "deletion_gate": "P10定向检查和根CTest通过，最终P16/P20出口保留",
+      "reason": "PRD FR06/11；P10运行时设备配置"
+    },
+    {
       "path": "schemas/ndpsim-effective-config-v1.schema.json",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -946,6 +982,24 @@
       "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
       "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "src/backend/device_config.cc",
+      "policy": "runtime-device-config",
+      "decision": "保留",
+      "tasks": "P10/P12/P16/P20",
+      "replacement_assertions": "外部XML严格白名单/预算/几何/partition及初态/CMT排空；独立XML解释；不重编译切配置",
+      "deletion_gate": "P10定向检查和根CTest通过，最终P16/P20出口保留",
+      "reason": "PRD FR06/11；P10运行时设备配置"
+    },
+    {
+      "path": "src/backend/device_config.h",
+      "policy": "runtime-device-config",
+      "decision": "保留",
+      "tasks": "P10/P12/P16/P20",
+      "replacement_assertions": "外部XML严格白名单/预算/几何/partition及初态/CMT排空；独立XML解释；不重编译切配置",
+      "deletion_gate": "P10定向检查和根CTest通过，最终P16/P20出口保留",
+      "reason": "PRD FR06/11；P10运行时设备配置"
     },
     {
       "path": "src/backend/event_bridge.h",
@@ -1686,6 +1740,15 @@
       "reason": "PRD FR01/03；P08 静态DAG执行器"
     },
     {
+      "path": "tests/device_config_probe.cc",
+      "policy": "runtime-device-config",
+      "decision": "保留",
+      "tasks": "P10/P12/P16/P20",
+      "replacement_assertions": "外部XML严格白名单/预算/几何/partition及初态/CMT排空；独立XML解释；不重编译切配置",
+      "deletion_gate": "P10定向检查和根CTest通过，最终P16/P20出口保留",
+      "reason": "PRD FR06/11；P10运行时设备配置"
+    },
+    {
       "path": "tests/event_bridge_probe.cc",
       "policy": "bridge",
       "decision": "改造保留",
@@ -2206,6 +2269,15 @@
       "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
       "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
       "reason": "PRD FR01/03；P08 静态DAG执行器"
+    },
+    {
+      "path": "tests/test_v045_device_config.py",
+      "policy": "runtime-device-config",
+      "decision": "保留",
+      "tasks": "P10/P12/P16/P20",
+      "replacement_assertions": "外部XML严格白名单/预算/几何/partition及初态/CMT排空；独立XML解释；不重编译切配置",
+      "deletion_gate": "P10定向检查和根CTest通过，最终P16/P20出口保留",
+      "reason": "PRD FR06/11；P10运行时设备配置"
     },
     {
       "path": "tests/test_v045_fitting.py",

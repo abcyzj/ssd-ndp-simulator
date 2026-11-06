@@ -20,7 +20,7 @@ int main() {
         partition.Priority_Class=IO_Flow_Priority_Class::HIGH;
         partition.Device_Level_Data_Caching_Mode=SSD_Components::Caching_Mode::TURNED_OFF;
         std::vector<IO_Flow_Parameter_Set*> partitions{&partition};
-        std::vector<char> xml(std::begin(ndpsim::lifecycle_xml), std::end(ndpsim::lifecycle_xml));
+        std::vector<char> xml(std::begin(ndpsim::device_profile("native-small").xml), std::end(ndpsim::device_profile("native-small").xml));
         rapidxml::xml_document<> doc; doc.parse<rapidxml::parse_validate_closing_tags>(xml.data());
         Execution_Parameter_Set config; config.XML_deserialize(doc.first_node("Execution_Parameter_Set"));
         Simulator->Reset();
