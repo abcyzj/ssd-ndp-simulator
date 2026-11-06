@@ -759,3 +759,6 @@ if(BUILD_TESTING)
         "${PROJECT_SOURCE_DIR}/tests/test_v045_mqsim.py" "${PROJECT_BINARY_DIR}")
     set_tests_properties(mqsim_oracle_v045 PROPERTIES TIMEOUT 120)
 endif()
+
+# P17: compile-time teaching extension registration; implementation stays external.
+add_subdirectory(examples/extension)

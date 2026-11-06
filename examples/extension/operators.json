@@ -1,0 +1,68 @@
+{
+  "format": "ndpsim-operator-registry/1",
+  "operators": [
+    {
+      "id": "example.BLOCK_SUM",
+      "locations": [
+        "host",
+        "controller"
+      ],
+      "semantic_validator": "example-independent-sum/1",
+      "stages": [
+        {
+          "contexts": [
+            "example-readonly/1"
+          ],
+          "decomposition_rules": [
+            "none/1"
+          ],
+          "feature_units": {},
+          "inputs": [
+            {
+              "cardinality": "one",
+              "name": "left",
+              "required": false,
+              "type": "example.u64",
+              "unit": "B"
+            },
+            {
+              "cardinality": "one",
+              "name": "right",
+              "required": false,
+              "type": "example.u64",
+              "unit": "B"
+            }
+          ],
+          "kind": "sum",
+          "output_size_rule": "example.eight/1",
+          "outputs": [
+            {
+              "cardinality": "one",
+              "name": "out",
+              "required": true,
+              "type": "example.u64",
+              "unit": "B"
+            }
+          ],
+          "work_units": {
+            "elements": "count"
+          }
+        }
+      ],
+      "version": "1"
+    }
+  ],
+  "rules": [
+    {
+      "bytes": {
+        "out": 8
+      },
+      "id": "example.eight/1",
+      "kind": "fixed-outputs/1"
+    }
+  ],
+  "units": [
+    "B",
+    "count"
+  ]
+}

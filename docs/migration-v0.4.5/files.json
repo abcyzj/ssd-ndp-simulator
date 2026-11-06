@@ -408,6 +408,105 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：build"
     },
     {
+      "path": "examples/extension/CMakeLists.txt",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
+      "path": "examples/extension/README.md",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
+      "path": "examples/extension/contract.h",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
+      "path": "examples/extension/native.cc",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
+      "path": "examples/extension/operators.json",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
+      "path": "examples/extension/probe.cc",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
+      "path": "examples/extension/run.h",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
+      "path": "examples/extension/simulate.py",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
+      "path": "examples/extension/sst.cc",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
+      "path": "examples/extension/test_extension.py",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
+      "path": "examples/extension/tutorial.py",
+      "policy": "extension-example",
+      "decision": "保留",
+      "tasks": "P17/P20/P21",
+      "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
+      "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
+      "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
+    },
+    {
       "path": "examples/ir/graph-contract.json",
       "policy": "config",
       "decision": "改造配置或样例",
