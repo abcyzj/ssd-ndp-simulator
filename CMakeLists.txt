@@ -676,6 +676,9 @@ if(NOT NDPSIM_SANITIZE)
         add_test(NAME sst_memory_timing_v045 COMMAND "${Python3_EXECUTABLE}"
             "${PROJECT_SOURCE_DIR}/tests/test_v045_memory.py" "${PROJECT_BINARY_DIR}")
         set_tests_properties(sst_memory_timing_v045 PROPERTIES TIMEOUT 120)
+        add_test(NAME unified_cli_v045 COMMAND "${Python3_EXECUTABLE}"
+            "${PROJECT_SOURCE_DIR}/tests/test_v045_cli.py" "${PROJECT_BINARY_DIR}")
+        set_tests_properties(unified_cli_v045 PROPERTIES TIMEOUT 180)
     endif()
 endif()
 

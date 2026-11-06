@@ -7,7 +7,7 @@ validation. Schemas are bundled; a regression test requires byte equality with
 the frozen root schemas. The C++ SDK has no JSON/hash third-party dependency.
 
 The development module `python3 -m ndpsim.capture_cli` exposes `seal` and `check`.
-It does not install or pretend to be the unified `ndpsim` CLI planned for P14.
+The installed `ndpsim` CLI and `python -m ndpsim` are now available; see [CLI.md](CLI.md). The developer module remains a migration interface until P20.
 Every output package/report must be new. Reports are outside input/output
 package directories. Errors return nonzero; failed validation reports cannot
 claim semantic success. `check --expected-package-sha256 <external-hash>` binds

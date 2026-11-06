@@ -186,6 +186,7 @@ Plan::lower(const dag::Stage& s, timing::HostCpu& cpu, const std::string& locati
                            {"features", Json::object()},
                            {"duration_ns", ns},
                            {"source", r.at("source")},
+                           {"location", location},
                            {"formula", r.value("formula", "measured-table")}};
             for (const auto& p : in.work)
                 last_demand["work"][p.first] = {{"value", p.second.first},

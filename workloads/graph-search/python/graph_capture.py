@@ -258,8 +258,15 @@ def run(config_path,binary,operators,output,mode,package=None,stride=1):
         save(output/'commands.json',commands);save(output/'status.json',dict(passed=False,error=str(exc),full_acceptance_passed=False));raise
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['capture','sample','benchmark','uninstrumented','check']);p.add_argument('--config',required=True);p.add_argument('--operators',required=True);p.add_argument('--output',required=True);p.add_argument('--binary');p.add_argument('--package');p.add_argument('--reference');p.add_argument('--stride',type=int,default=1);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['capture','sample','benchmark','uninstrumented','check','structure']);p.add_argument('--config');p.add_argument('--operators',required=True);p.add_argument('--output',required=True);p.add_argument('--binary');p.add_argument('--package');p.add_argument('--reference');p.add_argument('--stride',type=int,default=1);p.add_argument('--allow-fixture',action='store_true');a=p.parse_args()
     require(a.stride>0,'stride must be positive')
+    if a.mode=='structure':
+        out=Path(a.output);require(not out.exists(),'output must not exist');out.mkdir(parents=True)
+        reg=registry(a.operators)
+        require(load(a.operators)==reg.descriptor,'external graph registry/implementation identity mismatch')
+        save(out/'structural.json',validate_package(a.package,reg,allow_fixture=a.allow_fixture))
+        return
+    require(a.config is not None,'config required')
     if a.mode=='check':
         v,_=configuration(a.config);out=Path(a.output);require(not out.exists(),'output must not exist');out.mkdir(parents=True)
         try:

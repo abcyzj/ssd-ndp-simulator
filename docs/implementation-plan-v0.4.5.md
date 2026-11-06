@@ -2,7 +2,7 @@
 
 日期：2026-11-05（Asia/Shanghai）。依据 [正式 PRD](prd-v0.4.5.md)和[源码核查](source-audit-v0.4.5.md)。
 
-状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13 已完成（2026-11-06）；P14～P21 未开始，全部 AC 尚未验收。** 当前可运行交付仍为 V0.4。[P00 基线与迁移记录](baseline-v0.4.5.md)保存本次构建、93项CTest、小夹具与清单证据；[P01 契约与风险设计](contract-v0.4.5.md)已冻结并完成设计检查；[P02通用SDK与校验](capture-sdk-v0.4.5.md)已完成；[P03独立图搜索构建](native-v0.4.5.md)及[P04新IR采集与语义校验](capture-graph-v0.4.5.md)已完成（合成pilot），未运行本版正式采集或完整验收，不以旧版通过填充新任务状态。
+状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13/P14 已完成（2026-11-06）；P15～P21 未开始，全部 AC 尚未验收。** 当前可运行交付仍为 V0.4。[P00 基线与迁移记录](baseline-v0.4.5.md)保存本次构建、93项CTest、小夹具与清单证据；[P01 契约与风险设计](contract-v0.4.5.md)已冻结并完成设计检查；[P02通用SDK与校验](capture-sdk-v0.4.5.md)已完成；[P03独立图搜索构建](native-v0.4.5.md)及[P04新IR采集与语义校验](capture-graph-v0.4.5.md)已完成（合成pilot），未运行本版正式采集或完整验收，不以旧版通过填充新任务状态。
 
 ## 1. 实施原则与关键路线
 
@@ -61,7 +61,7 @@ P01 输出版本化 schema、头文件级接口设计和可执行最小夹具，
 
 ## 4. 任务清单
 
-状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13 完成；P14～P21 未开始**。每项共同保存：需求来源、输入与有效配置、源码／依赖／构建身份、命令／退出码、原始输出、独立断言、产物 hash、失败根因与适用限制。只有对应出口具备实际证据后才更新状态。
+状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13/P14 完成；P15～P21 未开始**。每项共同保存：需求来源、输入与有效配置、源码／依赖／构建身份、命令／退出码、原始输出、独立断言、产物 hash、失败根因与适用限制。只有对应出口具备实际证据后才更新状态。
 
 ### M1：冻结与通用接口
 
@@ -96,7 +96,7 @@ P01 输出版本化 schema、头文件级接口设计和可执行最小夹具，
 | --- | --- | --- |
 | **P12 元数据传输与 Controller 资源（已完成）**；FR01/05/07；AC03/06 | P05/P07/P09/P10；messages/pcie、Controller、local_read、conversation。 | 大小明确的传输描述，去 query_values/scores/L2/content Handles；复用本地读、staging、compute、credit 与会话排空。独立算 wire/payload、PCIe 取整和方向；输入／服务／返回延迟注入、容量不足及在途失败清理。不得分配与逻辑 payload 同大小的占位缓冲。**实际出口**：[P12实现与检查](controller-timing-v0.4.5.md)，独立size-only消息/PCIe/本地读与Controller、P05需求来源、credit部分释放与Close排空；27项定向（含10项SST）、根135项、ASan19项、P00/P01及384文件/135CTest审计通过；保留首轮P11空格路径失败并修复测试参数传递。不计AC03/06或正式SSD账本完成。 |
 | **P13 图搜索 SSD 两放置（已完成）**；FR05/09；AC06 | P04/P08/P12；extensions/graph 的 Host 普通读与 Controller 本地读计划。 | 同包更换放置，逻辑操作／Work 一致；物理 chunk 拆分有规则，query/IDs/adjacency/results/ACK 和 SQ/CQ 分层账本，Controller 完整向量 D2H=0；未知映射／不可分解 Work 拒绝；不把 resident_random Profile 默套到 SSD。**实际出口**：[P13实现与检查](graph-ssd-v0.4.5.md)，同IR/2包实际SST双放置、固定完整item分块与独立物理需求、SQ/CQ/平台/NAND/buffer分层trace；7项定向、根136项、ASan19项、P01/P00及390文件/136CTest审计通过，未知映射/规则/Work/实测表分摊拒绝，Controller向量D2H=0。仅小夹具，不计AC06或P19正式账本完成。 |
-| **P14 统一 CLI／报告**；FR06/10/12；AC07/11 | P04/P06/P11/P13；抽取 run_native/run_graph/run_config/run_experiment、experiment_output 的可用模块。 | 安装 `ndpsim`，子命令见 §5；有效配置与输入快照，错误退出码、预算和新目录输出；不自动构建或跑验收；报告区分参考结果、服务预测、实测表、目标硬件和宿主。相对路径、带空格路径与外部 cwd 验证。 |
+| **P14 统一 CLI／报告（已完成）**；FR06/10/12；AC07/11 | P04/P06/P11/P13；抽取 run_native/run_graph/run_config/run_experiment、experiment_output 的可用模块。 | 安装 `ndpsim`，子命令见 §5；有效配置与输入快照，错误退出码、预算和新目录输出；不自动构建或跑验收；报告区分参考结果、服务预测、实测表、目标硬件和宿主。相对路径、带空格路径与外部 cwd 验证。**实际出口**：[P14统一CLI/报告](cli-v0.4.5.md)，安装后采集/校验/拟合/三放置模拟/描述比较，资源预算及身份快照；verify明确拒绝未实现总验收，三层Validator仍属P15；定向7项、根137项、ASan2项、P01/P00及398文件迁移审计通过，不计AC07/11或总AC完成。 |
 | **P15 三层 Validator**；FR09～12；AC02/04/06/08/12 | P04/P06/P11/P13/P14；拆 validate_v04 和 compare_reference_paths 的独立核对。 | capture 语义／Work，simulate 调度／账本，native-vs-sim 精度分别生成报告；按稳定键关联但不依赖模拟器真实结果。删样本、篡改表、重复配置、少重复、quick／失败均不能出总通过。 |
 | **P16 独立 MQSim 对拍工具**；FR11；AC05 | P10/P12；从 verify_acceptance 的 AC-08 提取独立 oracle 导出／构建，不调用旧总 AC。 | 锁定原生 commit 独立导出；固定请求清单、共同配置／初态和独立账本，QD1/QD32/small-CMT 至少各两次；共同顺序／LBA／size／完成时间及指定状态统计严格一致。新增配置修改用例证明两边加载相同文件；平台扩展另由 P12/P19 验证。 |
 | **P17 教学扩展全链路**；FR04/05/07/12；AC09 | P02/P05/P08/P12/P14；examples/extension。 | 建议小型只读块求和：原生真实计算／采集，两个独立分支汇合；Host／Controller 映射、显式输入输出大小和独立常数或线性成本。仅扩展目录及注册清单变化，不改核心调度或 MQSim；教程可独立复现，无第二负载精度承诺。 |
@@ -112,7 +112,7 @@ P01 输出版本化 schema、头文件级接口设计和可执行最小夹具，
 
 ## 5. 计划命令与运行职责
 
-以下为**待实现接口及将来验证命令**，不是当前可运行命令；P14 完成后同步实际 help 与文档。
+以下为 P14 已实现入口，详见 [CLI 使用说明](../python/CLI.md)。`compare` 只做描述性比较；`verify` 保留命令形状但退出3，完整验收聚合留待 P15/P21，不计作已实现验收。
 
 ```sh
 # 独立原生：显式 SDK 源路径；无 SST/MQSim 前置
@@ -125,12 +125,12 @@ cmake --build build/v0.4.5 -j2
 ctest --test-dir build/v0.4.5 --output-on-failure
 
 # CLI；独立图程序也保留自身 benchmark/capture/sample 命令
-ndpsim capture --workload graph --config <capture.json> --output <new-directory>
-ndpsim check --package <package> --report <capture-validation.json>
-ndpsim fit --recipe <recipe.json> --measurements <training.json> --output <new-directory>
+ndpsim capture --workload graph --adapter workloads/graph-search/python/graph_capture.py --native <native-binary> --operators extensions/graph/operators.json --config <capture.json> --output <new-directory>
+ndpsim check --package <package> --registry <registry.json> --adapter workloads/graph-search/python/graph_capture.py --report <capture-validation.json>
+ndpsim fit --manifest <training.json> --budget <execution-budget.json> --output <new-directory>
 ndpsim simulate --config <experiment.json> --build <build-directory> --output <new-directory>
 ndpsim compare --spec <comparison.json> --output <new-directory>
-ndpsim verify --spec <acceptance.json> --output <new-directory>
+ndpsim verify --spec <acceptance.json> --output <new-directory> # 退出3，P15/P21待实现
 ```
 
 `check` 区分结构和业务语义验证；后者由负载扩展在原生侧访问原数据。`simulate` 只读包、配置、Profile 和校验报告，不要求输入数据集。`verify` 负责构建检查／完整日程及聚合，不隐藏在 simulate 中。原生 benchmark、CPU sample、capture 分别运行；便捷 capture 不把采样墙钟写为调度时间。
@@ -220,4 +220,4 @@ P21 总交付以清理后最终执行源码为准。测试数量不是正确性�
 | 新XML几何／partition／初态不一致 | 拒绝相关配置；P10独立解析核对支持子集，不承诺任意MQSim选项。 |
 | 真实输入或资源预算不足 | 阻塞全规模采集／验收，不阻塞接口和小夹具；不得缩小规模后记正式通过。 |
 
-P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13已关闭；**P14～P21** 均未开始。正式实现前不需要再次决定目录命名等常规细节；如需改变PRD范围或精度门槛，应单独明确变更，不能在任务实现中隐式降低要求。
+P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13/P14已关闭；**P15～P21** 均未开始。正式实现前不需要再次决定目录命名等常规细节；如需改变PRD范围或精度门槛，应单独明确变更，不能在任务实现中隐式降低要求。

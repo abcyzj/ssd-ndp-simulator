@@ -669,6 +669,15 @@
       "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
     },
     {
+      "path": "python/CLI.md",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P14/P20/P21",
+      "replacement_assertions": "安装CLI、外部cwd/空格路径、配置身份/预算/失败关闭、三放置报告、独立采集/拟合",
+      "deletion_gate": "P14定向/根CTest及P20干净入口核验",
+      "reason": "PRD FR06/10/12；统一入口和输出，不隐式构建/验收"
+    },
+    {
       "path": "python/FITTING.md",
       "policy": "model",
       "decision": "保留",
@@ -705,6 +714,15 @@
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
     },
     {
+      "path": "python/ndpsim/__main__.py",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P14/P20/P21",
+      "replacement_assertions": "安装CLI、外部cwd/空格路径、配置身份/预算/失败关闭、三放置报告、独立采集/拟合",
+      "deletion_gate": "P14定向/根CTest及P20干净入口核验",
+      "reason": "PRD FR06/10/12；统一入口和输出，不隐式构建/验收"
+    },
+    {
       "path": "python/ndpsim/capture_cli.py",
       "policy": "p02-generic-capture",
       "decision": "保留通用SDK/封包校验与回归",
@@ -714,6 +732,15 @@
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
     },
     {
+      "path": "python/ndpsim/cli.py",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P14/P20/P21",
+      "replacement_assertions": "安装CLI、外部cwd/空格路径、配置身份/预算/失败关闭、三放置报告、独立采集/拟合",
+      "deletion_gate": "P14定向/根CTest及P20干净入口核验",
+      "reason": "PRD FR06/10/12；统一入口和输出，不隐式构建/验收"
+    },
+    {
       "path": "python/ndpsim/cost_models.py",
       "policy": "model",
       "decision": "保留",
@@ -721,6 +748,15 @@
       "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
       "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
       "reason": "PRD FR08；P06独立拟合／制表"
+    },
+    {
+      "path": "python/ndpsim/execution.py",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P14/P20/P21",
+      "replacement_assertions": "安装CLI、外部cwd/空格路径、配置身份/预算/失败关闭、三放置报告、独立采集/拟合",
+      "deletion_gate": "P14定向/根CTest及P20干净入口核验",
+      "reason": "PRD FR06/10/12；统一入口和输出，不隐式构建/验收"
     },
     {
       "path": "python/ndpsim/fit_cli.py",
@@ -748,6 +784,15 @@
       "replacement_assertions": "无ContentStore的Layout；extent完整覆盖/重叠/范围/溢出/预算拒绝；独立逐字节oracle；外部路径与快照hash",
       "deletion_gate": "P09定向检查、根CTest及后续正式映射/配置出口通过",
       "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
+    },
+    {
+      "path": "python/ndpsim/reporting.py",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P14/P20/P21",
+      "replacement_assertions": "安装CLI、外部cwd/空格路径、配置身份/预算/失败关闭、三放置报告、独立采集/拟合",
+      "deletion_gate": "P14定向/根CTest及P20干净入口核验",
+      "reason": "PRD FR06/10/12；统一入口和输出，不隐式构建/验收"
     },
     {
       "path": "python/ndpsim/schemas/ndpsim-contract-v2.schema.json",
@@ -784,6 +829,24 @@
       "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
       "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "python/ndpsim/sst/memory.py",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P14/P20/P21",
+      "replacement_assertions": "安装CLI、外部cwd/空格路径、配置身份/预算/失败关闭、三放置报告、独立采集/拟合",
+      "deletion_gate": "P14定向/根CTest及P20干净入口核验",
+      "reason": "PRD FR06/10/12；统一入口和输出，不隐式构建/验收"
+    },
+    {
+      "path": "python/ndpsim/sst/ssd.py",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P14/P20/P21",
+      "replacement_assertions": "安装CLI、外部cwd/空格路径、配置身份/预算/失败关闭、三放置报告、独立采集/拟合",
+      "deletion_gate": "P14定向/根CTest及P20干净入口核验",
+      "reason": "PRD FR06/10/12；统一入口和输出，不隐式构建/验收"
     },
     {
       "path": "python/ndpsim/static_ir.py",
@@ -2404,6 +2467,15 @@
       "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
       "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
+    },
+    {
+      "path": "tests/test_v045_cli.py",
+      "policy": "v045-cli",
+      "decision": "保留",
+      "tasks": "P14/P20/P21",
+      "replacement_assertions": "安装CLI、外部cwd/空格路径、配置身份/预算/失败关闭、三放置报告、独立采集/拟合",
+      "deletion_gate": "P14定向/根CTest及P20干净入口核验",
+      "reason": "PRD FR06/10/12；统一入口和输出，不隐式构建/验收"
     },
     {
       "path": "tests/test_v045_contract_design.py",

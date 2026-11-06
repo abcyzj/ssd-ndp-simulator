@@ -3,7 +3,7 @@
 Install `python/` with Python 3.9+, jsonschema and referencing as described in
 [README](README.md). No C++ compiler, SST/MQSim, business payload or historical
 results directory is needed. The module entry point is available now; the unified
-`ndpsim` CLI remains P14 work.
+`ndpsim fit --manifest ... --budget ... --output ...` CLI is documented in [CLI.md](CLI.md).
 
 ```sh
 python -m ndpsim.fit_cli check --manifest input.json --output new-quality-directory

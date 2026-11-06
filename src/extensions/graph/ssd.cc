@@ -156,6 +156,7 @@ SsdRun::SsdRun(const std::filesystem::path& path, EventBridge& b, EventBridge::C
     cpu_.observations().sink = [this](const auto& x) {
         emit({{"type", "cpu"},
               {"key", x.key},
+              {"submitted", x.submitted},
               {"start", x.start},
               {"end", x.end},
               {"duration_ns", x.duration_ns}});
@@ -170,6 +171,7 @@ SsdRun::SsdRun(const std::filesystem::path& path, EventBridge& b, EventBridge::C
     controller_->compute_observations().sink = [this](const auto& x) {
         emit({{"type", "controller_compute"},
               {"key", x.key},
+              {"submitted", x.submitted},
               {"start", x.start},
               {"end", x.end},
               {"duration_ns", x.duration_ns}});

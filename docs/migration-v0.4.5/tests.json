@@ -3463,6 +3463,19 @@
       "replacement_assertions": "新图包双放置实际SST、Work/字节/分块/门控/资源排空与负例；ASan用原生时间驱动仅作探针",
       "deletion_gate": "正式SSD账本及映射替代出口通过前保留",
       "reason": "P13定向接线验证，不计AC06通过"
+    },
+    {
+      "name": "unified_cli_v045",
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v045_cli.py",
+        "${BUILD}"
+      ],
+      "decision": "保留",
+      "tasks": "P14/P20/P21",
+      "replacement_assertions": "安装CLI全链路、预算/错误拒绝、三放置报告和外部路径",
+      "deletion_gate": "P14统一入口定向、P20清理和P21干净复现",
+      "reason": "PRD FR10/12"
     }
   ],
   "standalone_tests": [
