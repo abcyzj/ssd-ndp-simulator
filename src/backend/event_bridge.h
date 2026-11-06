@@ -37,7 +37,7 @@ public:
             });
         arm();
     }
-    void enqueue(uint64_t time, Phase phase, std::string cause, std::function<void()> action) {
+    uint64_t enqueue(uint64_t time, Phase phase, std::string cause, std::function<void()> action) {
         if (time < clock_())
             fail("past platform insertion");
         uint64_t delta = 0;
@@ -45,10 +45,23 @@ public:
             delta = delta_ + (phase < phase_);
         if (sequence_ == UINT64_MAX || delta == UINT64_MAX)
             fail("counter overflow");
-        queue_.emplace(Key{time, delta, phase, sequence_++},
+        auto id = sequence_++;
+        queue_.emplace(Key{time, delta, phase, id},
                        Item{std::move(cause), std::move(action)});
         if (!running_)
             arm();
+        return id;
+    }
+    // Cancel a pending platform continuation (e.g. an unaccepted offered query).
+    // Issued backend/resource service is never cancelled by this operation.
+    bool cancel(uint64_t id) {
+        for (auto it = queue_.begin(); it != queue_.end(); ++it)
+            if (std::get<3>(it->first) == id) {
+                queue_.erase(it);
+                if (!running_) arm();
+                return true;
+            }
+        return false;
     }
     bool wake(uint64_t generation) {
         if (generation != generation_)

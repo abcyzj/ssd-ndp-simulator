@@ -309,6 +309,15 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "configs/regression/static_dag.py",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
+    },
+    {
       "path": "configs/regression/timing_runtime.py",
       "policy": "timing-runtime",
       "decision": "新增保留",
@@ -708,8 +717,8 @@
       "path": "python/ndpsim/static_ir.py",
       "policy": "p02-generic-capture",
       "decision": "保留通用SDK/封包校验与回归",
-      "tasks": "P02/P03/P04/P06/P08/P15/P20",
-      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
+      "tasks": "P02/P03/P04/P06/P08/P15/P20/P08",
+      "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列；P08取消未接纳offered事件/按稳定键核对物理index重排，保留失败关闭",
       "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
     },
@@ -915,8 +924,8 @@
       "path": "src/backend/event_bridge.h",
       "policy": "bridge",
       "decision": "改造保留",
-      "tasks": "P07/P10/P12/P16",
-      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "tasks": "P07/P10/P12/P16/P08",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空；P08取消未接纳offered事件/按稳定键核对物理index重排，保留失败关闭",
       "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
     },
@@ -1009,6 +1018,42 @@
       "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
       "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：content"
+    },
+    {
+      "path": "src/dag/executor.cc",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
+    },
+    {
+      "path": "src/dag/executor.h",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
+    },
+    {
+      "path": "src/dag/package.cc",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
+    },
+    {
+      "path": "src/dag/package.h",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
     },
     {
       "path": "src/ir/embedded.h.in",
@@ -1317,6 +1362,24 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
     },
     {
+      "path": "src/sst/dag_host.cc",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
+    },
+    {
+      "path": "src/sst/dag_host.h",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
+    },
+    {
       "path": "src/sst/event_bridge.cc",
       "policy": "bridge",
       "decision": "改造保留",
@@ -1437,8 +1500,8 @@
       "path": "src/timing/runtime.cc",
       "policy": "timing-runtime",
       "decision": "新增保留",
-      "tasks": "P07/P08/P11/P12/P20",
-      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零",
+      "tasks": "P07/P08/P11/P12/P20/P08",
+      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零；P08就绪队列接线只扫描依赖等待集合，桥非空不构建停滞诊断",
       "deletion_gate": "手算、延迟/零服务、失败排空、SST集成及无功能链接测试通过；P20最终接线复验",
       "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
     },
@@ -1446,8 +1509,8 @@
       "path": "src/timing/runtime.h",
       "policy": "timing-runtime",
       "decision": "新增保留",
-      "tasks": "P07/P08/P11/P12/P20",
-      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零",
+      "tasks": "P07/P08/P11/P12/P20/P08",
+      "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零；P08就绪队列接线只扫描依赖等待集合，桥非空不构建停滞诊断",
       "deletion_gate": "手算、延迟/零服务、失败排空、SST集成及无功能链接测试通过；P20最终接线复验",
       "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
     },
@@ -1558,6 +1621,24 @@
       "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
       "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：model"
+    },
+    {
+      "path": "tests/dag_executor_probe.cc",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
+    },
+    {
+      "path": "tests/dag_sst_probe.cc",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
     },
     {
       "path": "tests/event_bridge_probe.cc",
@@ -2053,6 +2134,24 @@
       "replacement_assertions": "通用公式独立数值/单位/范围/溢出，表完整键/Work/身份及编译期注册失败关闭",
       "deletion_gate": "新模型接口数值/负例及后续timing-only接线通过；不因旧图Profile迁移删除有效断言",
       "reason": "PRD FR04/07；P05通用模型与注册接口"
+    },
+    {
+      "path": "tests/test_v045_dag.py",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
+    },
+    {
+      "path": "tests/test_v045_dag_sst.py",
+      "policy": "static-dag",
+      "decision": "新增保留",
+      "tasks": "P08/P11/P12/P20",
+      "replacement_assertions": "完整查询索引/依赖门控；四种边/多分支/多终态/重排与随机定位；接纳/worker/失败排空/大Q活跃元数据回收；无功能链接",
+      "deletion_gate": "P08手算/负例/配额/重排/Q梯度/SST检查通过；P20最终接线复验",
+      "reason": "PRD FR01/03；P08 静态DAG执行器"
     },
     {
       "path": "tests/test_v045_fitting.py",

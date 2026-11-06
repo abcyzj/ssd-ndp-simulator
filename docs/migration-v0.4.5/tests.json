@@ -2465,6 +2465,63 @@
       "replacement_assertions": "元数据手算/延迟注入/零服务/同刻FIFO、失败排空/生命周期；原生探针无功能链接，SST唯一时间",
       "deletion_gate": "P07通过且P20最终构建/接线复验",
       "reason": "PRD AC03/10；P07定向出口，不作为完整AC"
+    },
+    {
+      "backtrace": 205,
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v045_dag.py",
+        "${BUILD}/dag_executor_probe"
+      ],
+      "name": "static_dag_v045",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "tests/test_v045_dag.py",
+        "tests/dag_executor_probe.cc"
+      ],
+      "decision": "新增保留",
+      "tasks": "P08/P20",
+      "replacement_assertions": "静态DAG手算、四边/返回门控、多分支无额外串行、重排、配额、失败排空、回收、SST时间；不作为完整AC",
+      "deletion_gate": "P08通过且P20最终身份复验",
+      "reason": "PRD AC02/03/10；P08定向验证"
+    },
+    {
+      "backtrace": 207,
+      "command": [
+        "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
+        "${ROOT}/tests/test_v045_dag_sst.py",
+        "${BUILD}"
+      ],
+      "name": "sst_static_dag_v045",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 60.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/Users/yezijie/Documents/Projects/SSD_NDP_Simulator/build/delivery"
+        }
+      ],
+      "sources": [
+        "tests/test_v045_dag_sst.py",
+        "tests/dag_sst_probe.cc",
+        "src/sst/dag_host.cc"
+      ],
+      "decision": "新增保留",
+      "tasks": "P08/P20",
+      "replacement_assertions": "静态DAG手算、四边/返回门控、多分支无额外串行、重排、配额、失败排空、回收、SST时间；不作为完整AC",
+      "deletion_gate": "P08通过且P20最终身份复验",
+      "reason": "PRD AC02/03/10；P08定向验证"
     }
   ],
   "standalone_tests": [

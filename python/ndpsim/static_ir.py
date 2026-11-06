@@ -384,11 +384,16 @@ def validate_package(package,registry,*,allow_fixture=False,limits=Limits(),expe
         try:
             for offset,raw,op in _lines(package/'operations.jsonl',effective.line_bytes,effective.total_bytes):scan.operation(op,offset,len(raw))
             scan.finish(manifest['terminals']);require(scan.counts==manifest['counts'],'actual package counts mismatch')
-            expected=iter(scan.index())
+            # Index order is physical storage, not an implicit ORDER dependency.
+            scan.db.execute('CREATE TABLE checked_index(q TEXT,op TEXT,st TEXT,PRIMARY KEY(q,op,st))')
             for _,raw,index in _lines(package/'index.jsonl',effective.line_bytes,effective.total_bytes):
-                check_schema(index,'index');wanted=next(expected,None)
-                require(wanted is not None and index==decode(wanted),'index location/coverage/hash/dependency mismatch')
-            require(next(expected,None) is None,'truncated/missing index record')
+                check_schema(index,'index');key=_key(index['key'])
+                wanted=scan.db.execute('SELECT idx FROM stages WHERE q=? AND op=? AND st=?',key).fetchone()
+                require(wanted is not None and index==decode(wanted[0]),'index location/coverage/hash/dependency mismatch')
+                try:scan.db.execute('INSERT INTO checked_index VALUES(?,?,?)',key)
+                except sqlite3.IntegrityError as exc:raise ValidationError('duplicate index record') from exc
+                scan.disk_check()
+            require(scan.db.execute('SELECT count(*) FROM checked_index').fetchone()[0]==scan.counts['stages'],'truncated/missing index record')
             # Bind the bytes actually inspected, including after relational validation.
             require(manifest_hash==file_hash(package/'manifest.json'),'manifest changed')
             for row in rows:require(file_hash(package/row['path'])==row['sha256'],'file changed after validation')

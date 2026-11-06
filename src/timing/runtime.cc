@@ -24,7 +24,9 @@ std::shared_ptr<Record> Runtime::checked(CompletionToken t) const {
     return t.record_;
 }
 void Runtime::transition(const std::shared_ptr<Record>& r, State state) {
+    if (r->state == State::WaitingDependencies) dependency_waiters_.erase(r->id);
     r->state = state;
+    if (state == State::WaitingDependencies) dependency_waiters_.insert(r->id);
     transitions_.push_back({now_(), r->id, state});
 }
 void Runtime::defer(const std::shared_ptr<Record>& r, EventBridge::Phase phase,
@@ -205,8 +207,8 @@ void Runtime::publish(const std::shared_ptr<Record>& r) {
         defer(r, EventBridge::ContinueSubmit, [r, done = std::move(done)] { done({r->failure}); });
     // Copy ready records: failure propagation may reclaim entries during callbacks.
     std::vector<std::shared_ptr<Record>> waiting;
-    for (const auto& entry : tasks_)
-        if (entry.second->state == State::WaitingDependencies) waiting.push_back(entry.second);
+    for (auto id : dependency_waiters_)
+        waiting.push_back(tasks_.at(id));
     for (auto& w : waiting)
         defer(w, EventBridge::ContinueSubmit, [this, w] { ready(w); });
 }
@@ -228,6 +230,7 @@ size_t Runtime::pins() const {
     return n;
 }
 void Runtime::require_progress() const {
+    if (!bridge_.idle()) return; // Only an empty bridge can be stalled.
     size_t unfinished = 0;
     std::string diagnostic;
     for (const auto& entry : tasks_) {

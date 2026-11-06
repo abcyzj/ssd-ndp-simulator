@@ -3,6 +3,7 @@
 #include "timing/resources.h"
 #include <memory>
 #include <optional>
+#include <set>
 
 namespace ndpsim::timing {
 enum class State { Submitted, WaitingDependencies, WaitingResource, Running,
@@ -58,6 +59,7 @@ private:
     uint64_t next_ = 0;
     std::map<uint64_t, std::shared_ptr<Record>> tasks_;
     History<Transition> transitions_;
+    std::set<uint64_t> dependency_waiters_;
     std::shared_ptr<Record> checked(CompletionToken) const;
     void defer(const std::shared_ptr<Record>&, EventBridge::Phase, std::function<void()>);
     void transition(const std::shared_ptr<Record>&, State);
