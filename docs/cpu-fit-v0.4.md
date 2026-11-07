@@ -1,6 +1,6 @@
 # V04-3b CPU Profile 训练拟合与冻结
 
-[冻结 v3 Profile](../configs/profiles/v04-merge-split.json) 提供拟合模型与既有回放的复现基线。按新版验收矩阵，用下述工具生成绑定单一静态包的 v4 Profile。v4 的 `merge_append` 只使用逐调用实测表，`merge_finalize` 保留非负线性模型，dedup 保留浅层 GBDT。
+[冻结 v3 Profile](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/configs/profiles/v04-merge-split.json) 提供拟合模型与既有回放的复现基线。按新版验收矩阵，用下述工具生成绑定单一静态包的 v4 Profile。v4 的 `merge_append` 只使用逐调用实测表，`merge_finalize` 保留非负线性模型，dedup 保留浅层 GBDT。
 
 ```text
 Profile SHA256  1f52e9333a501a2f078504cf4794099712dd8bdf79c2666e70d8d5b5ef3e66ec

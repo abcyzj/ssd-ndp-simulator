@@ -44,12 +44,4 @@ private:
     struct Data;
     std::shared_ptr<const Data> data_;
 };
-// Migration-only named defaults. Values come from external sample XML at run
-// time. New callers must use DeviceConfig with explicit declaring-file binding.
-struct DeviceProfile {
-    std::string name, xml, xml_sha256;
-    uint64_t channels, chips, dies, planes, page_sectors, raw_sectors, metadata_estimate;
-    std::shared_ptr<const DeviceConfig> config;
-};
-const DeviceProfile& device_profile(const std::string&);
 } // namespace ndpsim

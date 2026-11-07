@@ -6,7 +6,7 @@
 
 - 必需 `observation.json`（`ndpsim-observation/1`）记录有效 engine、实际 IR/schema/operator catalog/mapping 身份、statistics/detail、逐查询决策摘要及初始比较状态 `not_checked`。direct 的 IR 专属字段为 null，不伪造 IR 执行。源/依赖/配置/数据/图/真值/查询身份继续在 manifest 中；新产物登记 hash。
 - IR 的 `statistics.json.resources.ir_summary` / `ir_summary.csv` 记录七算子（含未使用算子的零值）的 submitted/completed/failed、活动/峰值 op/value；这是管理统计，不是额外目标服务。终态活动数必须为零。原结果、Recall、时间、资源、初态、Unsupported、测量口径保留。
-- detail 在原 `events.jsonl` 内输出版本化 IR 记录，不另建一份 DAG 或张量文件。闭合 envelope 定义在 [诊断 schema](../../../schemas/ndpsim-ir-diagnostics-v1.schema.json)，operation 直接复用 `urn:ndpsim:ir:1` 的 Operation schema。JSON Schema 检查使用 jsonschema 4.26.0 / referencing（本机锁定 Python 环境已有），不安装或升级软件。
+- detail 在原 `events.jsonl` 内输出版本化 IR 记录，不另建一份 DAG 或张量文件。闭合 envelope 定义在 [诊断 schema](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/schemas/ndpsim-ir-diagnostics-v1.schema.json)，operation 直接复用 `urn:ndpsim:ir:1` 的 Operation schema。JSON Schema 检查使用 jsonschema 4.26.0 / referencing（本机锁定 Python 环境已有），不安装或升级软件。
 - `ir_operation` 在 submitted / visible / failed / reclaimed 写出操作结构、端口、依赖、scope、实际 Runtime 父 task 和模拟时间。Visible 时每端口只有序列化长度与 FNV-1a64 摘要，不复制完整状态/张量；FNV 仅为诊断摘要，不是密码学身份。Runtime 阶段由 `ir_runtime` 的原状态枚举 0～7 说明。
 - `ir_binding(op, task)` 连接真实读取、CPU 或 Controller 评分批；`ir_task_edge(parent_task, task)` 连接 Controller 评分批与实际 chunk；`ir_session(query, open|close, task)` 连接一次 Open/Close。经 read_submit/read_complete 的 request、local_request 的 transaction、message 的 task/id 以及 link 的 platform_id 继续追踪。value 由 `(producer_op, port)` 标识，state_ref 保留 query/state_id/version。
 - scope.query 为现有运行期 query ID，query_ordinal 为输入行序号；原始 benchmark ID 由 results/observation 的 original_query_id 显式关联，固定输入身份和顺序参与比较，不把运行序号冒充原始 SIFT ID。

@@ -54,10 +54,14 @@ def budget(value):
 
 def preflight(output, b, input_bytes=0):
     if sys.platform == 'darwin':
-        physical = int(subprocess.check_output(['/usr/sbin/sysctl', '-n', 'hw.memsize'], text=True, timeout=10))
-        pressure = subprocess.check_output(['/usr/bin/memory_pressure', '-Q'], text=True, timeout=10)
         import re
-        percent = int(re.search(r'System-wide memory free percentage: (\d+)%', pressure)[1])
+        pressure = subprocess.check_output(['/usr/bin/memory_pressure', '-Q'], text=True, timeout=10)
+        ram = re.search(r'The system has (\d+) \(', pressure)
+        free_percent = re.search(r'System-wide memory free percentage: (\d+)%', pressure)
+        require(ram is not None and free_percent is not None, 'cannot determine macOS RAM budget')
+        physical = int(ram[1])
+        percent = int(free_percent[1])
+        require(physical > 0 and 0 <= percent <= 100, 'invalid macOS RAM budget')
         available = physical*percent//100
     else:
         physical = os.sysconf('SC_PHYS_PAGES')*os.sysconf('SC_PAGE_SIZE')

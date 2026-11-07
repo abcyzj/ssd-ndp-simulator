@@ -1,3 +1,4 @@
+#include "device_fixture.h"
 #include "backend/lifecycle.h"
 #include "sim/Engine.h"
 #include "ssd/NVM_Channel_Base.h"
@@ -15,7 +16,7 @@ int main(int argc, char** argv) {
     try {
         const std::string mode = argc > 1 ? argv[1] : "normal";
         if (mode == "early") {
-            { ndpsim::LifecycleBackend backend; }
+            { ndpsim::LifecycleBackend backend(ndpsim::test::device_fixture()); }
             if (Simulator->GetObject("SSDDevice") || Simulator->Has_started()) return 11;
             std::puts("PASS: teardown before initialization clears device registry"); return 0;
         }
@@ -37,17 +38,17 @@ int main(int argc, char** argv) {
             }
             return 3;
         }
-        ndpsim::LifecycleBackend backend;
+        ndpsim::LifecycleBackend backend(ndpsim::test::device_fixture());
         try { backend.finish(); return 4; } catch (const std::logic_error&) {}
         backend.initialize();
         if (backend.time_ns() != 0 || !Simulator->Has_started()) return 5;
         try { backend.initialize(); return 6; } catch (const std::logic_error&) {}
-        try { ndpsim::LifecycleBackend second; return 7; } catch (const std::logic_error&) {}
+        try { ndpsim::LifecycleBackend second(ndpsim::test::device_fixture()); return 7; } catch (const std::logic_error&) {}
         backend.finish();
         backend.finish();
         if (Simulator->GetObject("SSDDevice") || Simulator->Has_started()) return 8;
         try { backend.initialize(); return 9; } catch (const std::logic_error&) {}
-        try { ndpsim::LifecycleBackend reused; return 10; } catch (const std::logic_error&) {}
+        try { ndpsim::LifecycleBackend reused(ndpsim::test::device_fixture()); return 10; } catch (const std::logic_error&) {}
         std::puts("PASS: initialize/finish, transitions, single device and registry cleanup");
         return 0;
     } catch (const std::exception& error) { std::fprintf(stderr, "%s\n", error.what()); return 1; }

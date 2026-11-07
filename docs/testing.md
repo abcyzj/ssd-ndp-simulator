@@ -1,6 +1,8 @@
 # 持续维护的测试与验收
 
-V0.4采用独立的 [12配置验收矩阵](validation-matrix-v0.4.md)（[`tools/verify_v04.py`](../tools/verify_v04.py)，[复现与证据](releases/v0.4.md)），配置数不含原生/模拟重复、训练、A/B/A、detail8及定向/继承测试。交付保留根构建/全CTest、完整V0.1 AC、T3/T4/T5及相关IR定向与独立核对；V0.3的52条及配套效率/Q梯度按矩阵触发条件执行。旧52条门槛和以下现行命令语义不改，少跑不能标作完整V0.3通过。
+> 历史说明。以下命令和路径属于 V0.4 及其继承版本。当前 V0.4.5 开发入口见 [项目 README](../README.md)。
+
+V0.4采用独立的 [12配置验收矩阵](validation-matrix-v0.4.md)（[`tools/verify_v04.py`](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/tools/verify_v04.py)，[复现与证据](releases/v0.4.md)），配置数不含原生/模拟重复、训练、A/B/A、detail8及定向/继承测试。交付保留根构建/全CTest、完整V0.1 AC、T3/T4/T5及相关IR定向与独立核对；V0.3的52条及配套效率/Q梯度按矩阵触发条件执行。旧52条门槛和以下现行命令语义不改，少跑不能标作完整V0.3通过。
 
 修订后的V0.4 A/D/O须显式静态IR执行，R组继续direct/动态ir。[原生采集和离线包校验](profiler-v0.4.md)已实现，仿真执行及 SSD 接线已完成，实际边界见 [静态回放](replay-v0.4.md) 和 [SSD 条件预测](offload-v0.4.md)。持续回归须覆盖完整包与查询/终态/依赖/状态负例、真实值及Work核验、延迟门控/未来地址旁路、同包成本切换、旧包拒绝/重采、流式回收和同映射旧成本下的静态/动态/direct时序账本对照；全evaluation128执行IR不能抽样或缩为detail8。具体出口见 [PRD](prd-v0.4.md#83-必须覆盖的功能与负例) 和矩阵，不降低CPU精度标准。
 

@@ -1,4 +1,0 @@
-#pragma once
-namespace ndpsim::model::embedded {
-inline constexpr const char* cpu_profile_schema = R"CPUSCHEMA(@CPU_PROFILE_SCHEMA@)CPUSCHEMA";
-}

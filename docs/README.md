@@ -1,15 +1,12 @@
 # 文档入口
 
-下一版正式需求为 [V0.4.5 PRD](prd-v0.4.5.md)：面向发布的 timing-only 平台与静态 IR、算子、映射和硬件成本扩展。V0.4.5 的[源码核查](source-audit-v0.4.5.md)与[22项实施计划](implementation-plan-v0.4.5.md)已完成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)、[P03独立图搜索构建](native-v0.4.5.md)、[P04新IR采集与语义校验](capture-graph-v0.4.5.md)、[P05通用模型与注册接口](cost-model-v0.4.5.md)、[P06独立拟合／制表](fit-v0.4.5.md)、[P07元数据Runtime与资源服务](runtime-v0.4.5.md)、[P08静态DAG执行器](dag-v0.4.5.md)、[P09无内容Layout](layout-v0.4.5.md)、[P10 MQSim运行时配置](device-config-v0.4.5.md)、[P11内存timing-only接线](memory-timing-v0.4.5.md)、[P12元数据传输与Controller资源](controller-timing-v0.4.5.md)、[P13图搜索SSD两放置](graph-ssd-v0.4.5.md)、[P14统一CLI/报告](cli-v0.4.5.md)、[P15三层Validator](validator-v0.4.5.md)和[P16独立MQSim对拍](mqsim-oracle-v0.4.5.md)及[P17教学扩展全链路](extension-v0.4.5.md)已完成，P18 已完成配方三版及 A01/A02 正式驻留 CPU 精度验证（见 docs/resident-accuracy-v0.4.5.md），[P19 正式 SSD 账本与条件预测](ssd-accounting-v0.4.5.md)已完成，P20～P21 未开始、全部新AC未验收；当前可运行版本仍为 V0.4。新版本与旧兼容、功能重算和回归要求的替代关系见新 PRD §2。
+下一版正式需求为 [V0.4.5 PRD](prd-v0.4.5.md)：面向发布的 timing-only 平台与静态 IR、算子、映射和硬件成本扩展。V0.4.5 的[源码核查](source-audit-v0.4.5.md)与[22项实施计划](implementation-plan-v0.4.5.md)已完成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)、[P03独立图搜索构建](native-v0.4.5.md)、[P04新IR采集与语义校验](capture-graph-v0.4.5.md)、[P05通用模型与注册接口](cost-model-v0.4.5.md)、[P06独立拟合／制表](fit-v0.4.5.md)、[P07元数据Runtime与资源服务](runtime-v0.4.5.md)、[P08静态DAG执行器](dag-v0.4.5.md)、[P09无内容Layout](layout-v0.4.5.md)、[P10 MQSim运行时配置](device-config-v0.4.5.md)、[P11内存timing-only接线](memory-timing-v0.4.5.md)、[P12元数据传输与Controller资源](controller-timing-v0.4.5.md)、[P13图搜索SSD两放置](graph-ssd-v0.4.5.md)、[P14统一CLI/报告](cli-v0.4.5.md)、[P15三层Validator](validator-v0.4.5.md)和[P16独立MQSim对拍](mqsim-oracle-v0.4.5.md)及[P17教学扩展全链路](extension-v0.4.5.md)已完成，P18 已完成配方三版及 A01/A02 正式驻留 CPU 精度验证（见 docs/resident-accuracy-v0.4.5.md），[P19 正式 SSD 账本与条件预测](ssd-accounting-v0.4.5.md)已完成，[P20 旧路径清理与回归](cleanup-v0.4.5.md)已完成，P21 未开始，新 AC 发布汇总尚未执行；当前可运行版本仍为 V0.4。新版本与旧兼容、功能重算和回归要求的替代关系见新 PRD §2。
 
-V0.4 已交付范围见 [V0.4 PRD](prd-v0.4.md)：现有图搜索的独立原生程序、Profiler、CPU Cost Model、内存驻留单线程精度验证及盘控条件预测。需求与[18项实施清单](implementation-plan-v0.4.md)已整理，V04-0开工冻结、V04-1a纯算法核心、V04-1b原生构建与运行、V04-1c参考路径语义出口、V04-2a契约、V04-2b Profiler与静态IR采集、V04-2c训练采集与 A/B/A 、V04-3a 模型接口与失败关闭、V04-3b 训练拟合与冻结、V04-3c 静态执行与内存驻留及 V04-3d worker 与 CPU 顺序、V04-4a Validator 框架已完成。V04-4b 已完成，AC-04-04 按两点口径通过。V04-4c 已完成，两点单线程 Level B/C 及 Host 静态语义通过，[V04-4d 已完成](workers-v0.4.md)，AC-04-07 诊断通过；[V04-5a](offload-v0.4.md) 条件预测及 [V04-5b](regression-v0.4.md) 兼容继承已完成；[V04-5c 总交付](releases/v0.4.md)已完成，12/12配置和12/12 AC通过；[定向复核](source-audit-v0.4.md)记录此前核查与当前commit一致及证据边界。2/4 worker 为诊断项，真实 SSD/盘控硬件校准不在本版范围。
-
-当前可运行交付为 [V0.4](releases/v0.4.md)，V0.3 为继承基线，继承语义先读 [PRD](prd-v0.3.md) 与 [IR 规范](ir-v0.3.md)。V0.3 阶段历史统一从[归档索引](archive/v0.3/README.md)追溯；下表只列现行开发与接口入口。V0.4 按实施清单分项推进，历史通过不替代本轮验收。
-
-V0.4 新路径已修订为原生真实搜索插桩采集完整静态 IR，随后输入仿真器按依赖执行，见 [PRD §6.4](prd-v0.4.md#64-静态-ir-输入依赖执行与资源调度)。包契约、离线预检、原生采集器和内存驻留执行入口已实现；旧动态 `ir` 和 `direct` 保留，V0.3 诊断日志不自动成为可执行包。全查询执行输入与 detail8 诊断分开。新版矩阵允许列名阶段使用实测 CPU 服务表，模型训练仍隔离，整机精度门槛保持。查表已接入单线程驻留回放与单点 Validator。
+当前检出的开发入口见 [项目 README](../README.md)。V0.4 及更早的命令、配置和验证记录是历史说明。复现 V0.4 时使用交付源码 `8cf48fc`；链接到已删除源码的历史记录指向 P20 清理前的固定快照。
 
 | 目的 | 现行入口 |
 | --- | --- |
+| V0.4.5 P20 旧路径清理、回归与正式复验 | [执行记录与限制](cleanup-v0.4.5.md) |
 | V0.4.5 P17 教学算子、真实采集、双映射与独立核对 | [实现记录](extension-v0.4.5.md)、[复现教程](../examples/extension/README.md) |
 | V0.4.5 P18 新图身份、逐调用表与正式驻留精度 | [执行记录与限制](resident-accuracy-v0.4.5.md) |
 | V0.4.5 P19 正式 SSD 账本与条件预测 | [执行记录与限制](ssd-accounting-v0.4.5.md) |
@@ -60,7 +57,7 @@ V0.4 新路径已修订为原生真实搜索插桩采集完整静态 IR，随后
 | V0.3 已实现算子、host/controller 映射与验证 | [V03-3 接口与收口](archive/v0.3/ir-mapping.md) |
 | V0.3 动态前端、engine 配置、旁路审计与验证 | [V03-4 接口与收口](archive/v0.3/ir-frontend.md) |
 | V0.3 观测、日志关联、规范化与独立比较器 | [V03-5 接口与收口](archive/v0.3/ir-observation.md) |
-| 构建、日常实验与复建 | [项目 README](../README.md)、[复建交付](delivery.md) |
+| 当前构建与运行 | [项目 README](../README.md)、[统一 CLI](../python/CLI.md) |
 | 模块职责、有效设计决定 | [架构](architecture.md) |
 | 时间、消息、可见性与唯一计费 | [契约](contracts.md) |
 | C++ 接口与扩展 | [扩展指南](extensions.md) |
@@ -70,7 +67,7 @@ V0.4 新路径已修订为原生真实搜索插桩采集完整静态 IR，随后
 | mmap、公式布局与设备 profile | [内容与设备](content-profiles.md) |
 | 观测、资源回收与输出 | [观测与生命周期](observation-lifecycle.md)、[输出口径](output.md) |
 | SIFT1M 准备、固定矩阵与严格复用 | [SIFT1M 实验](sift1m.md) |
-| 持续测试与继承验收 | [测试说明](testing.md)、[工具分类](../tools/README.md)、[配置分类](../configs/README.md) |
+| 测试与入口分类 | [当前迁移清单](migration-v0.4.5/tests.json)、[工具](../tools/README.md)、[配置](../configs/README.md) |
 | 未校准参数、Unsupported 和已知问题 | [模型限制](model-limitations.md) |
 | 依赖维护、原生 oracle 与许可证 | [MQSim 维护](mqsim-source-management.md)、[锁文件](../deps.lock.json) |
 

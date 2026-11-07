@@ -1,19 +1,21 @@
 # V0.1 架构与设计决定
 
+> 历史说明。以下命令和路径属于 V0.4 及其继承版本。当前 V0.4.5 开发入口见 [项目 README](../README.md)。
+
 平台为单进程、单 SST Component、单 rank/线程、单 SSD；每次实验新进程。主机控制简化图搜索，真实平方 L2 结果决定后续邻接和向量访问。当前运行默认值见[搜索](search.md)，范围外能力及问题见[限制](model-limitations.md)。这里描述现行结构；原源码调研和阶段取舍见[历史规划](archive/v0.1/implementation-plan.md)。
 
 ## 模块与接口
 
 | 模块 | 责任与源码 |
 | --- | --- |
-| SST 接线 | [graph_host.cc](../src/sst/graph_host.cc) 连接配置、查询接纳、搜索、资源和结果输出；Python 运行器准备输入，不计算模拟性能 |
+| SST 接线 | [graph_host.cc](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/sst/graph_host.cc) 连接配置、查询接纳、搜索、资源和结果输出；Python 运行器准备输入，不计算模拟性能 |
 | 时间桥 | [event_bridge.h](../src/backend/event_bridge.h) 在 SST now 驱动 MQSim 当前时间片；稳定四 phase/delta、generation 与停滞诊断 |
-| 内容与布局 | [content.h](../src/content/content.h) 保存不可变真实字节、对象到 LBA extent、位置句柄及请求关联；512 B sector 对齐，跨页交后端拆分；PPA 仅观测 |
-| 只读后端 | [ordinary_device.h](../src/backend/ordinary_device.h)、[external_flow.h](../src/backend/external_flow.h) 管理普通 NVMe/DMA/CQ；[local_read.h](../src/backend/local_read.h) 管理本地读请求/事务汇总 |
-| 可见性运行时 | [runtime.h](../src/runtime/runtime.h) 私有功能结果、服务/返回门控与异步 continuation；算法不接触 ContentStore 原始字节 |
-| 算法与主机成本 | [graph.h](../src/search/graph.h)、[operators.h](../src/operators/operators.h)、[host_cpu.h](../src/model/host_cpu.h)：固定批次图搜索、真实 L2 和候选比较、共享 FIFO/slots |
-| 传输与盘控 | [messages.h](../src/transport/messages.h)、[pcie.h](../src/transport/pcie.h)、[controller.h](../src/model/controller.h)：显式消息编码、共享 MQSim 链路、独立缓冲 credit 与评分服务 |
-| 观测与结果 | [observation.h](../src/backend/observation.h)、[experiment_output.py](../tools/experiment_output.py)：被动事件、区间并集、能力声明和 JSON/CSV；统计不依赖可选日志 |
+| 内容与布局 | [content.h](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/content/content.h) 保存不可变真实字节、对象到 LBA extent、位置句柄及请求关联；512 B sector 对齐，跨页交后端拆分；PPA 仅观测 |
+| 只读后端 | [ordinary_device.h](../src/backend/ordinary_device.h)、[external_flow.h](../src/backend/external_flow.h) 管理普通 NVMe/DMA/CQ；[local_read.h](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/backend/local_read.h) 管理本地读请求/事务汇总 |
+| 可见性运行时 | [runtime.h](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/runtime/runtime.h) 私有功能结果、服务/返回门控与异步 continuation；算法不接触 ContentStore 原始字节 |
+| 算法与主机成本 | [graph.h](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/search/graph.h)、[operators.h](../workloads/graph-search/src/operators/operators.h)、[host_cpu.h](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/model/host_cpu.h)：固定批次图搜索、真实 L2 和候选比较、共享 FIFO/slots |
+| 传输与盘控 | [messages.h](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/transport/messages.h)、[pcie.h](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/transport/pcie.h)、[controller.h](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/model/controller.h)：显式消息编码、共享 MQSim 链路、独立缓冲 credit 与评分服务 |
+| 观测与结果 | [observation.h](../src/backend/observation.h)、[experiment_output.py](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/tools/experiment_output.py)：被动事件、区间并集、能力声明和 JSON/CSV；统计不依赖可选日志 |
 
 ## 保留的决定与原因
 

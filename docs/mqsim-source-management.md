@@ -38,6 +38,6 @@ MQSim 适配与修复直接在 `third_party/MQSim` 子模块中开发，平台 C
 | 共享 PCIe 与平台 envelope | host/PCIe_Link.h、host/PCIe_Link.cpp、host/PCIe_Message.h、host/PCIe_Root_Complex.h | 平台显式发消息，普通读共用双向 FIFO；保留原生计费/截断，增加参数检查和重入保护；AC-06/08/11、混发探针 |
 | 请求/channel/die 观测 | sim/Observation.h、nvm_chip/flash_memory/Flash_Chip.h、nvm_chip/flash_memory/Flash_Chip.cpp | 显式 observer，未订阅时无平台统计；回调不新增模拟延迟；AC-09 独立区间并集与日志开关对照 |
 
-准确差异以 `git -C third_party/MQSim diff --binary 51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16 --` 为准；当前列表不替代 diff。统一 [交付入口](../tools/run.py) 在构建/验收前后比较实际源码快照，manifest 保存 native_base_commit、head_commit、diff_from_native_base_sha256 和 files_sha256。原生 commit 和空 patches 字段在 deps.lock.json 中仅表示未修改 oracle，不表示开发 fork 无差异。
+准确差异以 `git -C third_party/MQSim diff --binary 51f0f2d3fed92d88ef4a0fa61a38024b07bf9d16 --` 为准；当前列表不替代 diff。统一 [交付入口](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/tools/run.py) 在构建/验收前后比较实际源码快照，manifest 保存 native_base_commit、head_commit、diff_from_native_base_sha256 和 files_sha256。原生 commit 和空 patches 字段在 deps.lock.json 中仅表示未修改 oracle，不表示开发 fork 无差异。
 
 维护时先说明改动目的/开关/普通路径影响，在子模块原处编辑并测试；涉及存储、时间、初态或链路时必须独立导出原生 oracle 运行 AC-08，不能只比较两份共享适配代码。新功能还须验证其 AC、资源守恒、错误清理并更新本表与限制。保存 fork 提交并使其可取得后才更新主仓 gitlink；原生 oracle commit 不随 fork 适配提交自动移动，SST 不改动。升级上游是单独工作，须重新核查许可证、差异、回归和模型结论，不能承诺无冲突升级。本轮没有执行任何提交、推送、初始化或升级。

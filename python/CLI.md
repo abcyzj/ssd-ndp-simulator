@@ -71,6 +71,11 @@ truth, legacy engine or historical results are needed by simulate. A missing
 build fails with instructions to build explicitly. Layout/XML/resources can be
 changed without rebuilding; the backend still validates every supported field.
 
+Legacy direct, dynamic IR and Replay configurations must be migrated. Capture
+a complete IR/2 package from the workload and supply a new run configuration
+and compatible Profile. The simulator rejects legacy formats before launch.
+Historical commands are documented in the [V0.4 release](../docs/releases/v0.4.md).
+
 The new output directory contains exact input snapshots (`inputs/`, including
 the metadata package), `run-input.json`, `experiment-input.json`, resolved
 `effective-config.json`, `input-identities.json`, `preflight.json`, invocation,

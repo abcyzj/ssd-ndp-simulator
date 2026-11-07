@@ -1,5 +1,7 @@
 # SIFT1M 准备与固定基线矩阵
 
+> 历史说明。以下命令和路径属于 V0.4 及其继承版本。当前 V0.4.5 开发入口见 [项目 README](../README.md)。 本版新图和正式采集见 [P18](resident-accuracy-v0.4.5.md)。
+
 `tools/verify_t6.py` 执行完整 1,000,000×128 SIFT base 上的锁定 Faiss NSG 图和项目 `ndpsim-ranked-expansion-v1` 搜索。配置为 `configs/experiments/v0.2/sift1m.json`，查询身份和预算继续使用 M0 冻结的两个 JSON，不重新抽样、不用评价集选择配置。V0.3 继承这些输入和配置；本入口尚未实现 direct/ir 双路径验收。
 
 分开准备与运行（锁定 Python；目录必须不存在）：

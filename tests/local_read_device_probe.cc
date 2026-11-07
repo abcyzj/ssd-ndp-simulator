@@ -1,7 +1,7 @@
 #include "exec/Execution_Parameter_Set.h"
 #include "exec/SSD_Device.h"
 #include "sim/Engine.h"
-#include "profile.h"
+#include "device_fixture.h"
 #include <memory>
 #include <cstdio>
 #include <stdexcept>
@@ -20,7 +20,9 @@ int main() {
         partition.Priority_Class=IO_Flow_Priority_Class::HIGH;
         partition.Device_Level_Data_Caching_Mode=SSD_Components::Caching_Mode::TURNED_OFF;
         std::vector<IO_Flow_Parameter_Set*> partitions{&partition};
-        std::vector<char> xml(std::begin(ndpsim::device_profile("native-small").xml), std::end(ndpsim::device_profile("native-small").xml));
+        const auto fixture = ndpsim::test::device_fixture();
+        const auto& source = fixture.source_bytes();
+        std::vector<char> xml(source.begin(), source.end());
         rapidxml::xml_document<> doc; doc.parse<rapidxml::parse_validate_closing_tags>(xml.data());
         Execution_Parameter_Set config; config.XML_deserialize(doc.first_node("Execution_Parameter_Set"));
         Simulator->Reset();

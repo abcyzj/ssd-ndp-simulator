@@ -1,3 +1,4 @@
+#include "device_fixture.h"
 #include <sst/core/sst_config.h>
 #include <sst/core/component.h>
 #include <sst/core/link.h>
@@ -31,7 +32,7 @@ public:
             if (count != "1")
                 throw std::invalid_argument("Unsupported: device_count must be 1");
             backend_ = std::make_unique<LifecycleBackend>(
-                1, params.find<std::string>("profile", "native-small"));
+                test::device_fixture(params.find<std::string>("profile", "native-small")));
             registerAsPrimaryComponent();
             primaryComponentDoNotEndSim();
             wake_ = configureSelfLink(

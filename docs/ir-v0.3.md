@@ -253,7 +253,7 @@ V03-5实际将操作/绑定流合并在可选`events.jsonl`中，另写必需`ob
 
 ## 11. 实现边界与测试重点
 
-现有代码可复用：[Runtime](../src/runtime/runtime.h)、[EventBridge](../src/backend/event_bridge.h)、[Content/Handles/Layout](../src/content/content.h)、[HostCpu](../src/model/host_cpu.h)、[Controller](../src/model/controller.h)、[功能算子](../src/operators/operators.h)。[GraphSearch](../src/search/graph.cc)和[组件接线](../src/sst/graph_host.cc)是迁移与旁路审计重点。链接说明基线位置，不承诺未来文件划分或现成通用API。
+现有代码可复用：[Runtime](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/runtime/runtime.h)、[EventBridge](../src/backend/event_bridge.h)、[Content/Handles/Layout](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/content/content.h)、[HostCpu](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/model/host_cpu.h)、[Controller](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/model/controller.h)、[功能算子](../workloads/graph-search/src/operators/operators.h)。[GraphSearch](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/search/graph.cc)和[组件接线](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/sst/graph_host.cc)是迁移与旁路审计重点。链接说明基线位置，不承诺未来文件划分或现成通用API。
 
 至少需要：结构与非法引用测试、运行时动态越界拒绝、类型与状态版本、真实值改变后继、三阶段延迟扰动、空依赖异步、跨页/多chunk汇合、同刻仲裁、错误后不产生后继、credit与会话排空、生命周期ASan、Q梯度、statistics/detail等价、小规模四组合以及完整SIFT矩阵。机器可读schema必须与内存结构和诊断输出一致，不能各自演进。
 

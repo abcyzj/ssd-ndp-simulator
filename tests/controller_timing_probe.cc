@@ -245,9 +245,92 @@ static void isolated(double rate) {
     check(done == 5 && f.now == before, "zero payload added time");
     Simulator->Reset();
 }
+// Migrate the local-read completion guards from the payload adapter.
+static void local_reads(const std::string& mode) {
+    Driver driver;
+    OrdinaryDevice device(512, ndpsim::test::device_fixture());
+    auto& host = *static_cast<SSD_Components::Host_Interface_NVMe*>(device.device->Host_interface);
+    MetadataLocalReads reads(host, driver.bridge, [&] { return driver.now; });
+    layout::Plan plan{1080, 2048, {{7, 3, {}}, {32, 1, {}}}};
+    bool launched = false;
+    unsigned local = 0, ordinary = 0, dma = 0;
+    std::vector<MetadataLocalReads::Request> held;
+    std::string rejection;
+    device.root->data_arrived = [&](uint64_t address, unsigned bytes) {
+        if (launched)
+            dma += bytes;
+        device.flow->data(address, bytes);
+    };
+    device.flow->completed = [&](ExternalFlow::Completion c) {
+        if (launched) {
+            check(!c.write && c.lba == 48 && c.sectors == 1, "ordinary extent after local reads");
+            ++ordinary;
+        }
+    };
+    device.start();
+    driver.bridge.start();
+    driver.drain([&] {
+        if (!launched && device.window->advance(!Simulator->Peek_next_time(), driver.now)) {
+            launched = true;
+            auto bad = plan;
+            bad.reads.back().lba = UINT64_MAX;
+            auto initial = host.Pending_local_reads();
+            rejects([&] { reads.submit(bad, {0, "bad", "test"}, [](auto) {}); });
+            check(!reads.pending() && host.Pending_local_reads() == initial &&
+                      !Simulator->Peek_next_time(), "partial invalid local submission");
+            for (unsigned i = 0; i < 2; ++i)
+                reads.submit(plan, {i, "read", "test"}, [&, i](auto c) {
+                    check(c.context.query == i && c.context.op == "read" &&
+                              c.requests.size() == 2 && c.plan.logical_bytes == 1080 &&
+                              c.plan.sector_bytes == 2048 && !dma, "local aggregate/identity/DMA");
+                    if (++local == 2) {
+                        check(!reads.pending() && !reads.pending_requests() &&
+                                  !host.Pending_local_reads(), "local records retained");
+                        device.window->read(48, 1);
+                    }
+                });
+        }
+        if (!rejection.empty())
+            return;
+        for (auto& c : host.Take_local_completions())
+            held.push_back(std::move(c));
+        if (held.size() != 4)
+            return;
+        std::reverse(held.begin(), held.end());
+        try {
+            if (mode == "request")
+                ++held.front().bytes;
+            if (mode == "transaction")
+                held.front().transactions.front().completed = false;
+            if (mode == "unknown")
+                held.front().token = UINT64_MAX;
+            if (mode == "duplicate")
+                reads.accept(held.front());
+            for (auto& c : held)
+                reads.accept(std::move(c));
+        } catch (const std::runtime_error& e) {
+            rejection = e.what();
+        }
+        held.clear();
+        check(!local, "local completion published inline");
+    });
+    if (mode == "reverse") {
+        check(rejection.empty() && local == 2 && ordinary == 1 && dma == 512 &&
+                  driver.bridge.idle() && !device.flow->pending(), "local/ordinary drain");
+    } else {
+        const std::string expected = mode == "request" ? "request metadata/time mismatch" :
+                                     mode == "transaction" ? "transaction metadata/completion mismatch" :
+                                     "unknown/duplicate local completion";
+        check(rejection.find(expected) != std::string::npos && !local && !ordinary && !dma,
+              "corrupt completion was accepted or reached a successor");
+        rejects([&] { reads.submit(plan, {0, "retry", "test"}, [](auto) {}); });
+    }
+}
 int main(int argc, char** argv) {
     try {
-        if (argc > 1) {
+        if (argc > 2 && std::string(argv[1]) == "local") {
+            local_reads(argv[2]);
+        } else if (argc > 1) {
             Driver f;
             Scenario s(
                 f.bridge,

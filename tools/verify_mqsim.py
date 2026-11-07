@@ -227,7 +227,7 @@ def main():
                          ROOT/'src/backend/preload_window.h', ROOT/'src/backend/device_config.cc',
                          ROOT/'src/backend/device_config.h',ROOT/'src/sst/ordinary_io.cc',
                          ROOT/'src/backend/event_bridge.h',ROOT/'configs/regression/ordinary.py',
-                         ROOT/'configs/devices/native-small.xml',build/'generated/profile.h']
+                         ROOT/'configs/devices/native-small.xml',ROOT/'tests/device_fixture.h']
         report['inputs_sha256'] = {str(p):sha(p) for p in source_inputs}
         native = out/'native';native.mkdir()
         commit = lock['dependencies']['MQSim']['commit']
@@ -241,7 +241,8 @@ def main():
         compiler += shlex.split(lock['build'].get('mqsim_extra_cxxflags',''))
         command('compiler-identity',[compiler[0],'--version'])
         command('native-build', [*compiler,'-DNDPSIM_NATIVE_ORACLE',
-            *['-I'+str(p) for p in (native/'src',ROOT/'src',ROOT/'tests',build/'generated',
+            '-DNDPSIM_TEST_DEVICE_DIR='+json.dumps(str(ROOT/'configs/devices')),
+            *['-I'+str(p) for p in (native/'src',ROOT/'src',ROOT/'tests',
                                     ROOT/'sdk/include',ROOT/'third_party/sst-core/external')],
             ROOT/'tests/ordinary_native.cc',ROOT/'src/backend/device_config.cc',ROOT/'sdk/src/sha256.cc',
             *sorted(p for p in (native/'src').rglob('*.cpp') if p.name!='main.cpp'),'-o',native/'probe'])

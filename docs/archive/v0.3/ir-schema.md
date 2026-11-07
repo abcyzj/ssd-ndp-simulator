@@ -4,10 +4,10 @@
 
 ## 产物与使用
 
-- [C++ 接口](../../../src/ir/schema.h)：Manifest、DataObject、Type/动态 shape、四类 ValueRef、Scope、端口、Operation 和四类依赖；`parse(Json)`、`encode(Document)`、`validate(Document)` 共用校验，合法输入与内存结构往返保持一致。核心位置、操作、类型和依赖为枚举；算子特有参数及身份元信息为严格 schema 约束的 JSON 记录。数据对象仅表示只读逻辑集合，不授予内容读取权限。
-- [JSON Schema](../../../schemas/ndpsim-ir-v1.schema.json)：Draft 2020-12 结构约束。[生成器](../../../tools/generate_ir_schema.py) 同时生成 schema 和[能力目录](../../../schemas/ndpsim-ir-v1.capabilities.json)，`--check` 只读检查生成物是否过期；CMake 将两者嵌入校验器，无运行目录依赖。C++ 复用锁定 SST 源树现有 MIT nlohmann/json 头文件，不改动 SST。
-- [合法样例](../../../examples/ir/graph-contract.json)：七个 version 1 算子的合成结构夹具，含 manifest、三个逻辑对象、静态入口与动态地址、状态引用和汇合；零 hash 是明确的合成占位身份，不能当作真实输入或模拟运行证据，也不能独立回放。
-- [命令行校验器](../../../src/ir/validate.cc)：`ir_validate FILE` 输出 JSON 校验摘要；`--schema`、`--capabilities`、`--catalog-hash` 导出实际嵌入的结构与能力身份。错误非零退出，携带 code/path/query/IR op/相关 producer/cause/detail；静态校验没有模拟时间，`time_ns=null`。
+- [C++ 接口](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/ir/schema.h)：Manifest、DataObject、Type/动态 shape、四类 ValueRef、Scope、端口、Operation 和四类依赖；`parse(Json)`、`encode(Document)`、`validate(Document)` 共用校验，合法输入与内存结构往返保持一致。核心位置、操作、类型和依赖为枚举；算子特有参数及身份元信息为严格 schema 约束的 JSON 记录。数据对象仅表示只读逻辑集合，不授予内容读取权限。
+- [JSON Schema](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/schemas/ndpsim-ir-v1.schema.json)：Draft 2020-12 结构约束。[生成器](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/tools/generate_ir_schema.py) 同时生成 schema 和[能力目录](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/schemas/ndpsim-ir-v1.capabilities.json)，`--check` 只读检查生成物是否过期；CMake 将两者嵌入校验器，无运行目录依赖。C++ 复用锁定 SST 源树现有 MIT nlohmann/json 头文件，不改动 SST。
+- [合法样例](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/examples/ir/graph-contract.json)：七个 version 1 算子的合成结构夹具，含 manifest、三个逻辑对象、静态入口与动态地址、状态引用和汇合；零 hash 是明确的合成占位身份，不能当作真实输入或模拟运行证据，也不能独立回放。
+- [命令行校验器](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/ir/validate.cc)：`ir_validate FILE` 输出 JSON 校验摘要；`--schema`、`--capabilities`、`--catalog-hash` 导出实际嵌入的结构与能力身份。错误非零退出，携带 code/path/query/IR op/相关 producer/cause/detail；静态校验没有模拟时间，`time_ns=null`。
 
 ```sh
 cmake -S . -B build/delivery -DBUILD_TESTING=ON

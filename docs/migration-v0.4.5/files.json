@@ -75,15 +75,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：history"
     },
     {
-      "path": "configs/archive/v0.2/m0_preload.py",
-      "policy": "history",
-      "decision": "历史追溯保留",
-      "tasks": "P20/P21",
-      "replacement_assertions": "保留历史来源、锁/原始query selection和许可证，不计新版本验收",
-      "deletion_gate": "公开入口不依赖历史工具/本机结果；归档链接注明历史",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：history"
-    },
-    {
       "path": "configs/archive/v0.3/README.md",
       "policy": "history",
       "decision": "历史追溯保留",
@@ -156,24 +147,6 @@
       "reason": "PRD FR06/11；P10运行时设备配置"
     },
     {
-      "path": "configs/experiments/controller.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "configs/experiments/host.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
       "path": "configs/experiments/v0.2/sift1m.json",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -237,34 +210,7 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
-      "path": "configs/profiles/devices.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "configs/profiles/v04-merge-split.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
       "path": "configs/regression/bridge_poc.py",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "configs/regression/controller.py",
       "policy": "config",
       "decision": "改造配置或样例",
       "tasks": "P01/P09/P10/P14/P20",
@@ -291,33 +237,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
-      "path": "configs/regression/host-branch.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "configs/regression/host_cost.py",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "configs/regression/ir.py",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
       "path": "configs/regression/lifecycle.py",
       "policy": "config",
       "decision": "改造配置或样例",
@@ -327,43 +246,7 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
-      "path": "configs/regression/local_read.py",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
       "path": "configs/regression/ordinary.py",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "configs/regression/pcie.py",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "configs/regression/placements-branch.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "configs/regression/runtime.py",
       "policy": "config",
       "decision": "改造配置或样例",
       "tasks": "P01/P09/P10/P14/P20",
@@ -388,15 +271,6 @@
       "replacement_assertions": "无payload完成令牌；显式Work/duration；四phase/FIFO/slots；失败不放后继与实际排空；buffer owner/pin终态清零",
       "deletion_gate": "手算、延迟/零服务、失败排空、SST集成及无功能链接测试通过；P20最终接线复验",
       "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
-    },
-    {
-      "path": "configs/sst/graph.py",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
       "path": "deps.lock.json",
@@ -505,15 +379,6 @@
       "replacement_assertions": "独立真实计算/采集与Python数值Work oracle、fork/join、SST双映射和分层字节/排空、非法模型拒绝",
       "deletion_gate": "P17教学全链路与当前根回归；不计正式精度或总AC",
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
-    },
-    {
-      "path": "examples/ir/graph-contract.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
       "path": "examples/p01-contract/effective-config.json",
@@ -649,105 +514,6 @@
       "replacement_assertions": "独立C++17显式元数据/四类依赖、规范JSON/增量hash、通用schema与磁盘索引、封包完整性/身份/预算/类型/单位/端口/状态/终态；失败不发布、结构与语义分列",
       "deletion_gate": "迁移或替代必须保留有效P02正负例、独立hash/位置核对和无模拟依赖边界；P20实际替代出口通过后才删除",
       "reason": "P02实现及合成夹具；不含业务语法或功能算子，未接入生产模拟器"
-    },
-    {
-      "path": "examples/v04-contract/base.bin",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "examples/v04-contract/binding.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "examples/v04-contract/cpu-profile.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "examples/v04-contract/effective-config.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "examples/v04-contract/graph.bin",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "examples/v04-contract/measurement.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "examples/v04-contract/package/index.jsonl",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "examples/v04-contract/package/manifest.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "examples/v04-contract/package/operations.jsonl",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "examples/v04-contract/package/tail.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "examples/v04-contract/queries.bin",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
       "path": "extensions/graph/fit-recipe-v2.json",
@@ -1029,15 +795,6 @@
       "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
     },
     {
-      "path": "schemas/ndpsim-cpu-profile-v1.schema.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
       "path": "schemas/ndpsim-device-policy-v1.json",
       "policy": "runtime-device-config",
       "decision": "保留",
@@ -1045,15 +802,6 @@
       "replacement_assertions": "外部XML严格白名单/预算/几何/partition及初态/CMT排空；独立XML解释；不重编译切配置",
       "deletion_gate": "P10定向检查和根CTest通过，最终P16/P20出口保留",
       "reason": "PRD FR06/11；P10运行时设备配置"
-    },
-    {
-      "path": "schemas/ndpsim-effective-config-v1.schema.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
       "path": "schemas/ndpsim-effective-config-v2.schema.json",
@@ -1065,33 +813,6 @@
       "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
     },
     {
-      "path": "schemas/ndpsim-ir-diagnostics-v1.schema.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "schemas/ndpsim-ir-v1.capabilities.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
-      "path": "schemas/ndpsim-ir-v1.schema.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
       "path": "schemas/ndpsim-layout-v1.schema.json",
       "policy": "metadata-layout",
       "decision": "保留",
@@ -1101,15 +822,6 @@
       "reason": "PRD FR06；P09无内容Layout新增实现/配置/测试"
     },
     {
-      "path": "schemas/ndpsim-measurement-v1.schema.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
-    },
-    {
       "path": "schemas/ndpsim-measurement-v2.schema.json",
       "policy": "p01-contract-design",
       "decision": "保留设计契约/迁后续实现",
@@ -1117,15 +829,6 @@
       "replacement_assertions": "新版本封闭schema、分离身份/Work/阶段、typed及variadic端口、四边返回门控、fork/join、零服务phase、字节/分解及失败关闭；纯合成设计证据，不计生产AC",
       "deletion_gate": "后续生产接口或测试替代须保持P01冻结契约；P20对应出口实际通过且清净引用后才可移除设计夹具",
       "reason": "P01设计出口；公共schema或合成元数据样例，不是旧包升级器/生产校验器"
-    },
-    {
-      "path": "schemas/ndpsim-static-ir-v1.schema.json",
-      "policy": "config",
-      "decision": "改造配置或样例",
-      "tasks": "P01/P09/P10/P14/P20",
-      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
-      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
       "path": "schemas/ndpsim-static-ir-v2.schema.json",
@@ -1272,15 +975,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
     },
     {
-      "path": "src/backend/local_read.h",
-      "policy": "bridge",
-      "decision": "改造保留",
-      "tasks": "P07/P10/P12/P16",
-      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
-      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
       "path": "src/backend/observation.h",
       "policy": "bridge",
       "decision": "改造保留",
@@ -1306,33 +1000,6 @@
       "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
       "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
-      "path": "src/content/content.cc",
-      "policy": "content",
-      "decision": "拆分迁移",
-      "tasks": "P03/P09/P10",
-      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
-      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
-    },
-    {
-      "path": "src/content/content.h",
-      "policy": "content",
-      "decision": "拆分迁移",
-      "tasks": "P03/P09/P10",
-      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
-      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
-    },
-    {
-      "path": "src/content/sha256.cc",
-      "policy": "content",
-      "decision": "拆分迁移",
-      "tasks": "P03/P09/P10",
-      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
-      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
     },
     {
       "path": "src/dag/executor.cc",
@@ -1389,87 +1056,6 @@
       "reason": "P13 FR05/09；图特定lowering与SST接线，不链接功能库"
     },
     {
-      "path": "src/ir/embedded.h.in",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/ir/encode.cc",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/ir/executor.cc",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/ir/executor.h",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/ir/mapping.cc",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/ir/mapping.h",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/ir/schema.cc",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/ir/schema.h",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/ir/validate.cc",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
       "path": "src/layout/layout.cc",
       "policy": "metadata-layout",
       "decision": "保留",
@@ -1504,24 +1090,6 @@
       "replacement_assertions": "元数据包/Profile接线；无payload/设备；稳定键逐阶段计费、SST依赖与worker/slots/FIFO/失败排空",
       "deletion_gate": "替代内存映射及最终发布检查通过后才删除",
       "reason": "PRD FR01/07/10；P11 内存 timing-only"
-    },
-    {
-      "path": "src/model/controller.cc",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
-      "path": "src/model/controller.h",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
     },
     {
       "path": "src/model/cost/CMakeLists.txt",
@@ -1560,51 +1128,6 @@
       "reason": "PRD FR04/07；P05通用模型与注册接口"
     },
     {
-      "path": "src/model/cpu_profile.cc",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
-      "path": "src/model/cpu_profile.h",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
-      "path": "src/model/cpu_profile_schema.h.in",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
-      "path": "src/model/host_cpu.cc",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
-      "path": "src/model/host_cpu.h",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
       "path": "src/observation/history.h",
       "policy": "output",
       "decision": "保留改造",
@@ -1632,78 +1155,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：output"
     },
     {
-      "path": "src/observation/output.h",
-      "policy": "output",
-      "decision": "保留改造",
-      "tasks": "P14/P15",
-      "replacement_assertions": "统计窗口/分位数/逻辑物理账本/资源峰值/排空及流式有界输出，参考结果明确标记",
-      "deletion_gate": "新报告独立统计及缺失/错误字段负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：output"
-    },
-    {
-      "path": "src/runtime/runtime.cc",
-      "policy": "runtime",
-      "decision": "改造保留",
-      "tasks": "P07/P08",
-      "replacement_assertions": "依赖/输入/服务/返回门控，零服务异步，owner/pin生命周期，失败不放后继及终态清零",
-      "deletion_gate": "令牌替代Bytes后保留全部因果和资源断言",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runtime"
-    },
-    {
-      "path": "src/runtime/runtime.h",
-      "policy": "runtime",
-      "decision": "改造保留",
-      "tasks": "P07/P08",
-      "replacement_assertions": "依赖/输入/服务/返回门控，零服务异步，owner/pin生命周期，失败不放后继及终态清零",
-      "deletion_gate": "令牌替代Bytes后保留全部因果和资源断言",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runtime"
-    },
-    {
-      "path": "src/search/graph.cc",
-      "policy": "reference",
-      "decision": "迁移期参考后删除候选",
-      "tasks": "P03/P04/P15/P20",
-      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
-      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：reference"
-    },
-    {
-      "path": "src/search/graph.h",
-      "policy": "reference",
-      "decision": "迁移期参考后删除候选",
-      "tasks": "P03/P04/P15/P20",
-      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
-      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：reference"
-    },
-    {
-      "path": "src/search/ir_graph.h",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/search/replay.cc",
-      "policy": "static",
-      "decision": "重写迁移",
-      "tasks": "P02/P04/P08/P15",
-      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
-      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：static"
-    },
-    {
-      "path": "src/search/replay.h",
-      "policy": "static",
-      "decision": "重写迁移",
-      "tasks": "P02/P04/P08/P15",
-      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
-      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：static"
-    },
-    {
       "path": "src/serialization/json_schema.h",
       "policy": "static",
       "decision": "重写迁移",
@@ -1720,15 +1171,6 @@
       "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
       "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
-      "path": "src/sst/controller_validation.cc",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
     },
     {
       "path": "src/sst/dag_host.cc",
@@ -1758,51 +1200,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
     },
     {
-      "path": "src/sst/graph_host.cc",
-      "policy": "reference",
-      "decision": "迁移期参考后删除候选",
-      "tasks": "P03/P04/P15/P20",
-      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
-      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：reference"
-    },
-    {
-      "path": "src/sst/host_validation.cc",
-      "policy": "bridge",
-      "decision": "改造保留",
-      "tasks": "P07/P10/P12/P16",
-      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
-      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
-      "path": "src/sst/ir_validation.cc",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "src/sst/local_read_validation.cc",
-      "policy": "bridge",
-      "decision": "改造保留",
-      "tasks": "P07/P10/P12/P16",
-      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
-      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
-      "path": "src/sst/m0_preload.cc",
-      "policy": "bridge",
-      "decision": "改造保留",
-      "tasks": "P07/P10/P12/P16",
-      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
-      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
       "path": "src/sst/memory_host.cc",
       "policy": "metadata-memory",
       "decision": "保留",
@@ -1819,24 +1216,6 @@
       "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
       "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
-      "path": "src/sst/pcie_validation.cc",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
-      "path": "src/sst/runtime_validation.cc",
-      "policy": "runner",
-      "decision": "收敛入口",
-      "tasks": "P03/P14/P20",
-      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
-      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
     },
     {
       "path": "src/sst/ssd_host.cc",
@@ -1947,96 +1326,6 @@
       "reason": "PRD FR01/07；P07 元数据Runtime与资源服务"
     },
     {
-      "path": "src/transport/conversation.h",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
-      "path": "src/transport/messages.cc",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
-      "path": "src/transport/messages.h",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
-      "path": "src/transport/pcie.h",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
-      "path": "tests/content_backend_probe.cc",
-      "policy": "content",
-      "decision": "拆分迁移",
-      "tasks": "P03/P09/P10",
-      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
-      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
-    },
-    {
-      "path": "tests/content_probe.cc",
-      "policy": "content",
-      "decision": "拆分迁移",
-      "tasks": "P03/P09/P10",
-      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
-      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
-    },
-    {
-      "path": "tests/contracts_abi_probe.cc",
-      "policy": "bridge",
-      "decision": "改造保留",
-      "tasks": "P07/P10/P12/P16",
-      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
-      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
-      "path": "tests/controller_probe.cc",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
-      "path": "tests/controller_resource_probe.cc",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
-      "path": "tests/controller_scenario.h",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
       "path": "tests/controller_timing_probe.cc",
       "policy": "metadata-controller",
       "decision": "保留",
@@ -2073,15 +1362,6 @@
       "reason": "PRD FR04/07；P05通用模型与注册接口"
     },
     {
-      "path": "tests/cpu_profile_probe.cc",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
       "path": "tests/dag_executor_probe.cc",
       "policy": "static-dag",
       "decision": "新增保留",
@@ -2107,6 +1387,15 @@
       "replacement_assertions": "外部XML严格白名单/预算/几何/partition及初态/CMT排空；独立XML解释；不重编译切配置",
       "deletion_gate": "P10定向检查和根CTest通过，最终P16/P20出口保留",
       "reason": "PRD FR06/11；P10运行时设备配置"
+    },
+    {
+      "path": "tests/device_fixture.h",
+      "policy": "bridge",
+      "decision": "保留测试夹具",
+      "tasks": "P20",
+      "replacement_assertions": "显式加载 XML 的低层与独立 MQSim 对拍",
+      "deletion_gate": "仅测试目标或独立 oracle 使用",
+      "reason": "取代生产命名设备默认值"
     },
     {
       "path": "tests/event_bridge_probe.cc",
@@ -2154,24 +1443,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
     },
     {
-      "path": "tests/formal_local_read_probe.cc",
-      "policy": "bridge",
-      "decision": "改造保留",
-      "tasks": "P07/P10/P12/P16",
-      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
-      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
-      "path": "tests/graph_probe.cc",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
-    },
-    {
       "path": "tests/graph_ssd_probe.cc",
       "policy": "timing-only-graph-mapping",
       "decision": "保留",
@@ -2181,24 +1452,6 @@
       "reason": "P13 FR05/09；图特定lowering与SST接线，不链接功能库"
     },
     {
-      "path": "tests/host_scenario.h",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
-    },
-    {
-      "path": "tests/integer_native.cc",
-      "policy": "bridge",
-      "decision": "改造保留",
-      "tasks": "P07/P10/P12/P16",
-      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
-      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
       "path": "tests/integer_requests.h",
       "policy": "bridge",
       "decision": "改造保留",
@@ -2206,51 +1459,6 @@
       "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
       "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
-      "path": "tests/ir_executor_probe.cc",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "tests/ir_frontend_causal_probe.cc",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "tests/ir_mapping_probe.cc",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "tests/ir_scenario.h",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "tests/ir_schema_probe.cc",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
     },
     {
       "path": "tests/layout_metadata_probe.cc",
@@ -2289,24 +1497,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
     },
     {
-      "path": "tests/local_read_scenario.h",
-      "policy": "bridge",
-      "decision": "改造保留",
-      "tasks": "P07/P10/P12/P16",
-      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
-      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
-      "path": "tests/mapped_content_probe.cc",
-      "policy": "content",
-      "decision": "拆分迁移",
-      "tasks": "P03/P09/P10",
-      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
-      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
-    },
-    {
       "path": "tests/memory_plan_probe.cc",
       "policy": "metadata-memory",
       "decision": "保留",
@@ -2316,15 +1506,6 @@
       "reason": "PRD FR01/07/10；P11 内存 timing-only"
     },
     {
-      "path": "tests/observation_lifecycle_probe.cc",
-      "policy": "bridge",
-      "decision": "改造保留",
-      "tasks": "P07/P10/P12/P16",
-      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
-      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
       "path": "tests/observation_probe.cc",
       "policy": "bridge",
       "decision": "改造保留",
@@ -2332,15 +1513,6 @@
       "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
       "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
-    },
-    {
-      "path": "tests/operator_probe.cc",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
     },
     {
       "path": "tests/ordinary_fixture.h",
@@ -2370,33 +1542,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：bridge"
     },
     {
-      "path": "tests/pcie_contract_probe.cc",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
-      "path": "tests/pcie_probe.cc",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
-      "path": "tests/pcie_scenario.h",
-      "policy": "controller",
-      "decision": "改造保留",
-      "tasks": "P12/P13",
-      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
-      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：controller"
-    },
-    {
       "path": "tests/profile_probe.cc",
       "policy": "content",
       "decision": "拆分迁移",
@@ -2404,15 +1549,6 @@
       "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
       "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：content"
-    },
-    {
-      "path": "tests/runtime_probe.cc",
-      "policy": "runtime",
-      "decision": "改造保留",
-      "tasks": "P07/P08",
-      "replacement_assertions": "依赖/输入/服务/返回门控，零服务异步，owner/pin生命周期，失败不放后继及终态清零",
-      "deletion_gate": "令牌替代Bytes后保留全部因果和资源断言",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runtime"
     },
     {
       "path": "tests/test_benchmark_artifacts.py",
@@ -2433,160 +1569,7 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：data"
     },
     {
-      "path": "tests/test_device_profiles.py",
-      "policy": "content",
-      "decision": "拆分迁移",
-      "tasks": "P03/P09/P10",
-      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
-      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
-    },
-    {
-      "path": "tests/test_direct_baseline.py",
-      "policy": "reference",
-      "decision": "迁移期参考后删除候选",
-      "tasks": "P03/P04/P15/P20",
-      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
-      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：reference"
-    },
-    {
-      "path": "tests/test_ir_frontend.py",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "tests/test_ir_mapping.py",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "tests/test_ir_matrix.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tests/test_ir_observation.py",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "tests/test_ir_schema.py",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
       "path": "tests/test_m0.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tests/test_native_observation.py",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
-    },
-    {
-      "path": "tests/test_native_search.py",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
-    },
-    {
-      "path": "tests/test_reference_paths.py",
-      "policy": "reference",
-      "decision": "迁移期参考后删除候选",
-      "tasks": "P03/P04/P15/P20",
-      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
-      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：reference"
-    },
-    {
-      "path": "tests/test_search_core.py",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
-    },
-    {
-      "path": "tests/test_simulation_input.py",
-      "policy": "data",
-      "decision": "保留迁负载工具",
-      "tasks": "P03/P04/P18/P21",
-      "replacement_assertions": "数据获取/导入/完整hash/原始ID切分、锁定NSG建图/真值独立核对与预算",
-      "deletion_gate": "独立原生可按公开步骤重建输入；不能作为simulate前置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：data"
-    },
-    {
-      "path": "tests/test_static_replay.py",
-      "policy": "static",
-      "decision": "重写迁移",
-      "tasks": "P02/P04/P08/P15",
-      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
-      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：static"
-    },
-    {
-      "path": "tests/test_streaming_output.py",
-      "policy": "output",
-      "decision": "保留改造",
-      "tasks": "P14/P15",
-      "replacement_assertions": "统计窗口/分位数/逻辑物理账本/资源峰值/排空及流式有界输出，参考结果明确标记",
-      "deletion_gate": "新报告独立统计及缺失/错误字段负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：output"
-    },
-    {
-      "path": "tests/test_t6_matrix.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tests/test_v02_delivery.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tests/test_v03_delivery.py",
       "policy": "delivery",
       "decision": "提取门控后删除候选",
       "tasks": "P14/P15/P20/P21",
@@ -2728,60 +1711,6 @@
       "replacement_assertions": "三层独立证据、全阶段稳定键、唯一计费/依赖/SSD账本、严格精度/质量及删改负例；P19完整SSD点、逐包PCIe生命周期与分方向字节、配置来源篡改拒绝",
       "deletion_gate": "P15分层断言不可丢失；P21正式AC另验",
       "reason": "FR09～12；P15分层Validator与独立账本"
-    },
-    {
-      "path": "tests/test_v04_contract.py",
-      "policy": "static",
-      "decision": "重写迁移",
-      "tasks": "P02/P04/P08/P15",
-      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
-      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：static"
-    },
-    {
-      "path": "tests/test_v04_cpu_fit.py",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
-      "path": "tests/test_v04_delivery.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tests/test_v04_regression.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tests/test_v04_start.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tests/test_v04_validator.py",
-      "policy": "static",
-      "decision": "重写迁移",
-      "tasks": "P02/P04/P08/P15",
-      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
-      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：static"
     },
     {
       "path": "tests/timing_runtime_probe.cc",
@@ -3009,15 +1938,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：p00"
     },
     {
-      "path": "tools/bench_host_cpu.cc",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
       "path": "tools/benchmark_artifacts.py",
       "policy": "data",
       "decision": "保留迁负载工具",
@@ -3034,159 +1954,6 @@
       "replacement_assertions": "数据获取/导入/完整hash/原始ID切分、锁定NSG建图/真值独立核对与预算",
       "deletion_gate": "独立原生可按公开步骤重建输入；不能作为simulate前置",
       "reason": "PRD FR11/12；实施计划§7职责迁移：data"
-    },
-    {
-      "path": "tools/bind_v04_merge_append.py",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
-      "path": "tools/collect_v04_level_a.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/collect_v04_training.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/compare_engines.py",
-      "policy": "reference",
-      "decision": "迁移期参考后删除候选",
-      "tasks": "P03/P04/P15/P20",
-      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
-      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：reference"
-    },
-    {
-      "path": "tools/compare_placements.py",
-      "policy": "reference",
-      "decision": "迁移期参考后删除候选",
-      "tasks": "P03/P04/P15/P20",
-      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
-      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：reference"
-    },
-    {
-      "path": "tools/compare_reference_paths.py",
-      "policy": "reference",
-      "decision": "迁移期参考后删除候选",
-      "tasks": "P03/P04/P15/P20",
-      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
-      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：reference"
-    },
-    {
-      "path": "tools/device_profiles.py",
-      "policy": "content",
-      "decision": "拆分迁移",
-      "tasks": "P03/P09/P10",
-      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
-      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：content"
-    },
-    {
-      "path": "tools/evaluate_v04_level_a.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/evaluate_v04_level_bc.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/evaluate_v04_offload.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/experiment_output.py",
-      "policy": "output",
-      "decision": "保留改造",
-      "tasks": "P14/P15",
-      "replacement_assertions": "统计窗口/分位数/逻辑物理账本/资源峰值/排空及流式有界输出，参考结果明确标记",
-      "deletion_gate": "新报告独立统计及缺失/错误字段负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：output"
-    },
-    {
-      "path": "tools/fit_v04_cpu_profile.py",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
-      "path": "tools/fit_v04_merge_profile.py",
-      "policy": "model",
-      "decision": "拆分迁移",
-      "tasks": "P05/P06/P18",
-      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
-      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：model"
-    },
-    {
-      "path": "tools/freeze_direct_baseline.py",
-      "policy": "reference",
-      "decision": "迁移期参考后删除候选",
-      "tasks": "P03/P04/P15/P20",
-      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
-      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：reference"
-    },
-    {
-      "path": "tools/freeze_v04_start.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/generate_ir_schema.py",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "tools/ir_frontend.py",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
     },
     {
       "path": "tools/m0/CMakeLists.txt",
@@ -3216,15 +1983,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：data"
     },
     {
-      "path": "tools/native_observation.py",
-      "policy": "native",
-      "decision": "迁原生",
-      "tasks": "P03/P04",
-      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
-      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：native"
-    },
-    {
       "path": "tools/offline/index_builder.cc",
       "policy": "data",
       "decision": "保留迁负载工具",
@@ -3243,87 +2001,6 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：build"
     },
     {
-      "path": "tools/replay_input.py",
-      "policy": "runner",
-      "decision": "收敛入口",
-      "tasks": "P03/P14/P20",
-      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
-      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
-    },
-    {
-      "path": "tools/run.py",
-      "policy": "runner",
-      "decision": "收敛入口",
-      "tasks": "P03/P14/P20",
-      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
-      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
-    },
-    {
-      "path": "tools/run_config.py",
-      "policy": "runner",
-      "decision": "收敛入口",
-      "tasks": "P03/P14/P20",
-      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
-      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
-    },
-    {
-      "path": "tools/run_experiment.py",
-      "policy": "runner",
-      "decision": "收敛入口",
-      "tasks": "P03/P14/P20",
-      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
-      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
-    },
-    {
-      "path": "tools/run_graph.py",
-      "policy": "runner",
-      "decision": "收敛入口",
-      "tasks": "P03/P14/P20",
-      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
-      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
-    },
-    {
-      "path": "tools/run_native.py",
-      "policy": "runner",
-      "decision": "收敛入口",
-      "tasks": "P03/P14/P20",
-      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
-      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
-    },
-    {
-      "path": "tools/run_pair.py",
-      "policy": "runner",
-      "decision": "收敛入口",
-      "tasks": "P03/P14/P20",
-      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
-      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：runner"
-    },
-    {
-      "path": "tools/scan_compute_ratio.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/simulation_input.py",
-      "policy": "data",
-      "decision": "保留迁负载工具",
-      "tasks": "P03/P04/P18/P21",
-      "replacement_assertions": "数据获取/导入/完整hash/原始ID切分、锁定NSG建图/真值独立核对与预算",
-      "deletion_gate": "独立原生可按公开步骤重建输入；不能作为simulate前置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：data"
-    },
-    {
       "path": "tools/source_snapshot.py",
       "policy": "build",
       "decision": "保留改造",
@@ -3331,105 +2008,6 @@
       "replacement_assertions": "根模拟构建/SST固定缓存、依赖实际hash/许可证；原生/拟合独立边界；MQSim XML运行时生效",
       "deletion_gate": "最终根CTest、隔离原生/拟合、无功能链接及不重编译切配置通过",
       "reason": "PRD FR11/12；实施计划§7职责迁移：build"
-    },
-    {
-      "path": "tools/stream_statistics.py",
-      "policy": "output",
-      "decision": "保留改造",
-      "tasks": "P14/P15",
-      "replacement_assertions": "统计窗口/分位数/逻辑物理账本/资源峰值/排空及流式有界输出，参考结果明确标记",
-      "deletion_gate": "新报告独立统计及缺失/错误字段负例通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：output"
-    },
-    {
-      "path": "tools/v04_contract.py",
-      "policy": "static",
-      "decision": "重写迁移",
-      "tasks": "P02/P04/P08/P15",
-      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
-      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：static"
-    },
-    {
-      "path": "tools/validate_v04.py",
-      "policy": "static",
-      "decision": "重写迁移",
-      "tasks": "P02/P04/P08/P15",
-      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
-      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：static"
-    },
-    {
-      "path": "tools/verify_acceptance.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_concurrency.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_contract.py",
-      "policy": "build",
-      "decision": "保留改造",
-      "tasks": "P03/P10/P20/P21",
-      "replacement_assertions": "根模拟构建/SST固定缓存、依赖实际hash/许可证；原生/拟合独立边界；MQSim XML运行时生效",
-      "deletion_gate": "最终根CTest、隔离原生/拟合、无功能链接及不重编译切配置通过",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：build"
-    },
-    {
-      "path": "tools/verify_delivery_docs.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_ir_frontend.py",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "tools/verify_ir_mapping.py",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
-    },
-    {
-      "path": "tools/verify_ir_matrix.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_ir_observation.py",
-      "policy": "ir",
-      "decision": "拆分后删除候选",
-      "tasks": "P02/P07/P08/P13/P20",
-      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
-      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：ir"
     },
     {
       "path": "tools/verify_m0.py",
@@ -3448,87 +2026,6 @@
       "replacement_assertions": "锁定原生独立导出、显式请求与独立账本、共同配置/初态/完成时间/统计精确对拍、篡改与失败拒绝",
       "deletion_gate": "P16共同设备行为核对必须保留，平台扩展由P12/P19另验",
       "reason": "P16独立对拍入口及输入驱动错误的独立核验，不调用旧总AC"
-    },
-    {
-      "path": "tools/verify_t2.py",
-      "policy": "data",
-      "decision": "保留迁负载工具",
-      "tasks": "P03/P04/P18/P21",
-      "replacement_assertions": "数据获取/导入/完整hash/原始ID切分、锁定NSG建图/真值独立核对与预算",
-      "deletion_gate": "独立原生可按公开步骤重建输入；不能作为simulate前置",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：data"
-    },
-    {
-      "path": "tools/verify_t3.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_t4.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_t5.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_t6.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_v02.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_v03.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_v04.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
-    },
-    {
-      "path": "tools/verify_v04_regression.py",
-      "policy": "delivery",
-      "decision": "提取门控后删除候选",
-      "tasks": "P14/P15/P20/P21",
-      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
-      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
-      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery"
     },
     {
       "path": "workloads/graph-search/CAPTURE.md",
@@ -3754,6 +2251,1856 @@
       "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
       "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
       "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    }
+  ],
+  "removed": [
+    {
+      "path": "configs/archive/v0.2/m0_preload.py",
+      "policy": "history",
+      "decision": "历史追溯保留",
+      "tasks": "P20/P21",
+      "replacement_assertions": "保留历史来源、锁/原始query selection和许可证，不计新版本验收",
+      "deletion_gate": "公开入口不依赖历史工具/本机结果；归档链接注明历史",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：history",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/experiments/controller.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/experiments/host.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/profiles/devices.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/profiles/v04-merge-split.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/regression/controller.py",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/regression/host-branch.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/regression/host_cost.py",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/regression/ir.py",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/regression/local_read.py",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/regression/pcie.py",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/regression/placements-branch.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/regression/runtime.py",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "configs/sst/graph.py",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/ir/graph-contract.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/base.bin",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/binding.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/cpu-profile.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/effective-config.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/graph.bin",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/measurement.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/package/index.jsonl",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/package/manifest.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/package/operations.jsonl",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/package/tail.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "examples/v04-contract/queries.bin",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "schemas/ndpsim-cpu-profile-v1.schema.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "schemas/ndpsim-effective-config-v1.schema.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "schemas/ndpsim-ir-diagnostics-v1.schema.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "schemas/ndpsim-ir-v1.capabilities.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "schemas/ndpsim-ir-v1.schema.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "schemas/ndpsim-measurement-v1.schema.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "schemas/ndpsim-static-ir-v1.schema.json",
+      "policy": "config",
+      "decision": "改造配置或样例",
+      "tasks": "P01/P09/P10/P14/P20",
+      "replacement_assertions": "冻结逻辑语义，字段权威/相对路径/容量/范围/溢出/配置快照；旧engine不进入新配置",
+      "deletion_gate": "新schema拒绝旧格式，运行时配置正负例通过后P20移除旧生产配置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：config",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/backend/local_read.h",
+      "policy": "bridge",
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/content/content.cc",
+      "policy": "content",
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/content/content.h",
+      "policy": "content",
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/content/sha256.cc",
+      "policy": "content",
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/ir/embedded.h.in",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/ir/encode.cc",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/ir/executor.cc",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/ir/executor.h",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/ir/mapping.cc",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/ir/mapping.h",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/ir/schema.cc",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/ir/schema.h",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/ir/validate.cc",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/model/controller.cc",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/model/controller.h",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/model/cpu_profile.cc",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/model/cpu_profile.h",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/model/cpu_profile_schema.h.in",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/model/host_cpu.cc",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/model/host_cpu.h",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/observation/output.h",
+      "policy": "output",
+      "decision": "保留改造",
+      "tasks": "P14/P15",
+      "replacement_assertions": "统计窗口/分位数/逻辑物理账本/资源峰值/排空及流式有界输出，参考结果明确标记",
+      "deletion_gate": "新报告独立统计及缺失/错误字段负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：output",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/runtime/runtime.cc",
+      "policy": "runtime",
+      "decision": "改造保留",
+      "tasks": "P07/P08",
+      "replacement_assertions": "依赖/输入/服务/返回门控，零服务异步，owner/pin生命周期，失败不放后继及终态清零",
+      "deletion_gate": "令牌替代Bytes后保留全部因果和资源断言",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runtime",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/runtime/runtime.h",
+      "policy": "runtime",
+      "decision": "改造保留",
+      "tasks": "P07/P08",
+      "replacement_assertions": "依赖/输入/服务/返回门控，零服务异步，owner/pin生命周期，失败不放后继及终态清零",
+      "deletion_gate": "令牌替代Bytes后保留全部因果和资源断言",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runtime",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/search/graph.cc",
+      "policy": "reference",
+      "decision": "迁移期参考后删除候选",
+      "tasks": "P03/P04/P15/P20",
+      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
+      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：reference",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/search/graph.h",
+      "policy": "reference",
+      "decision": "迁移期参考后删除候选",
+      "tasks": "P03/P04/P15/P20",
+      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
+      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：reference",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/search/ir_graph.h",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/search/replay.cc",
+      "policy": "static",
+      "decision": "重写迁移",
+      "tasks": "P02/P04/P08/P15",
+      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
+      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：static",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/search/replay.h",
+      "policy": "static",
+      "decision": "重写迁移",
+      "tasks": "P02/P04/P08/P15",
+      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
+      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：static",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/sst/controller_validation.cc",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/sst/graph_host.cc",
+      "policy": "reference",
+      "decision": "迁移期参考后删除候选",
+      "tasks": "P03/P04/P15/P20",
+      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
+      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：reference",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/sst/host_validation.cc",
+      "policy": "bridge",
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/sst/ir_validation.cc",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/sst/local_read_validation.cc",
+      "policy": "bridge",
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/sst/m0_preload.cc",
+      "policy": "bridge",
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/sst/pcie_validation.cc",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/sst/runtime_validation.cc",
+      "policy": "runner",
+      "decision": "收敛入口",
+      "tasks": "P03/P14/P20",
+      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
+      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runner",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/transport/conversation.h",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/transport/messages.cc",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/transport/messages.h",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "src/transport/pcie.h",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/content_backend_probe.cc",
+      "policy": "content",
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/content_probe.cc",
+      "policy": "content",
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/contracts_abi_probe.cc",
+      "policy": "bridge",
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/controller_probe.cc",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/controller_resource_probe.cc",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/controller_scenario.h",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/cpu_profile_probe.cc",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/formal_local_read_probe.cc",
+      "policy": "bridge",
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/graph_probe.cc",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/host_scenario.h",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/integer_native.cc",
+      "policy": "bridge",
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/ir_executor_probe.cc",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/ir_frontend_causal_probe.cc",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/ir_mapping_probe.cc",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/ir_scenario.h",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/ir_schema_probe.cc",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/local_read_scenario.h",
+      "policy": "bridge",
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/mapped_content_probe.cc",
+      "policy": "content",
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/observation_lifecycle_probe.cc",
+      "policy": "bridge",
+      "decision": "改造保留",
+      "tasks": "P07/P10/P12/P16",
+      "replacement_assertions": "SST唯一时间、MQSim不越界、同刻FIFO、四phase、请求完成及失败排空",
+      "deletion_gate": "新元数据/运行时配置接口通过对应手算及MQSim独立对拍",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：bridge",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/operator_probe.cc",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/pcie_contract_probe.cc",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/pcie_probe.cc",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/pcie_scenario.h",
+      "policy": "controller",
+      "decision": "改造保留",
+      "tasks": "P12/P13",
+      "replacement_assertions": "容量/credit/方向/wire取整/分块/返回门控/失败排空；Controller完整向量D2H=0",
+      "deletion_gate": "去真实L2/score/query payload后独立账本和延迟注入通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：controller",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/runtime_probe.cc",
+      "policy": "runtime",
+      "decision": "改造保留",
+      "tasks": "P07/P08",
+      "replacement_assertions": "依赖/输入/服务/返回门控，零服务异步，owner/pin生命周期，失败不放后继及终态清零",
+      "deletion_gate": "令牌替代Bytes后保留全部因果和资源断言",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runtime",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_device_profiles.py",
+      "policy": "content",
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_direct_baseline.py",
+      "policy": "reference",
+      "decision": "迁移期参考后删除候选",
+      "tasks": "P03/P04/P15/P20",
+      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
+      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：reference",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_ir_frontend.py",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_ir_mapping.py",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_ir_matrix.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_ir_observation.py",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_ir_schema.py",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_native_observation.py",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_native_search.py",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_reference_paths.py",
+      "policy": "reference",
+      "decision": "迁移期参考后删除候选",
+      "tasks": "P03/P04/P15/P20",
+      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
+      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：reference",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_search_core.py",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_simulation_input.py",
+      "policy": "data",
+      "decision": "保留迁负载工具",
+      "tasks": "P03/P04/P18/P21",
+      "replacement_assertions": "数据获取/导入/完整hash/原始ID切分、锁定NSG建图/真值独立核对与预算",
+      "deletion_gate": "独立原生可按公开步骤重建输入；不能作为simulate前置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：data",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_static_replay.py",
+      "policy": "static",
+      "decision": "重写迁移",
+      "tasks": "P02/P04/P08/P15",
+      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
+      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：static",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_streaming_output.py",
+      "policy": "output",
+      "decision": "保留改造",
+      "tasks": "P14/P15",
+      "replacement_assertions": "统计窗口/分位数/逻辑物理账本/资源峰值/排空及流式有界输出，参考结果明确标记",
+      "deletion_gate": "新报告独立统计及缺失/错误字段负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：output",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_t6_matrix.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_v02_delivery.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_v03_delivery.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_v04_contract.py",
+      "policy": "static",
+      "decision": "重写迁移",
+      "tasks": "P02/P04/P08/P15",
+      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
+      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：static",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_v04_cpu_fit.py",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_v04_delivery.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_v04_regression.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_v04_start.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tests/test_v04_validator.py",
+      "policy": "static",
+      "decision": "重写迁移",
+      "tasks": "P02/P04/P08/P15",
+      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
+      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：static",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/bench_host_cpu.cc",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/bind_v04_merge_append.py",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/collect_v04_level_a.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/collect_v04_training.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/compare_engines.py",
+      "policy": "reference",
+      "decision": "迁移期参考后删除候选",
+      "tasks": "P03/P04/P15/P20",
+      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
+      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：reference",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/compare_placements.py",
+      "policy": "reference",
+      "decision": "迁移期参考后删除候选",
+      "tasks": "P03/P04/P15/P20",
+      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
+      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：reference",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/compare_reference_paths.py",
+      "policy": "reference",
+      "decision": "迁移期参考后删除候选",
+      "tasks": "P03/P04/P15/P20",
+      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
+      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：reference",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/device_profiles.py",
+      "policy": "content",
+      "decision": "拆分迁移",
+      "tasks": "P03/P09/P10",
+      "replacement_assertions": "真实内容/mmap/hash核对迁原生；Layout范围/对齐/容量/溢出及逻辑物理字节独立核对留核心",
+      "deletion_gate": "独立原生内容测试及无ContentStore的Layout正负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：content",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/evaluate_v04_level_a.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/evaluate_v04_level_bc.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/evaluate_v04_offload.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/experiment_output.py",
+      "policy": "output",
+      "decision": "保留改造",
+      "tasks": "P14/P15",
+      "replacement_assertions": "统计窗口/分位数/逻辑物理账本/资源峰值/排空及流式有界输出，参考结果明确标记",
+      "deletion_gate": "新报告独立统计及缺失/错误字段负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：output",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/fit_v04_cpu_profile.py",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/fit_v04_merge_profile.py",
+      "policy": "model",
+      "decision": "拆分迁移",
+      "tasks": "P05/P06/P18",
+      "replacement_assertions": "成本单位/舍入/零值/溢出/范围/目标身份、模型与表分列、训练评价隔离、缺项失败关闭",
+      "deletion_gate": "通用模型独立期望值及独立拟合质量/身份/Work负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：model",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/freeze_direct_baseline.py",
+      "policy": "reference",
+      "decision": "迁移期参考后删除候选",
+      "tasks": "P03/P04/P15/P20",
+      "replacement_assertions": "拆出独立数值/搜索/Work/流量oracle；仅旧direct/ir多引擎等价退出",
+      "deletion_gate": "独立原生oracle及新调度/账本验证通过，参考身份已保存，再于P20删除比较入口",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：reference",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/freeze_v04_start.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/generate_ir_schema.py",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/ir_frontend.py",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/native_observation.py",
+      "policy": "native",
+      "decision": "迁原生",
+      "tasks": "P03/P04",
+      "replacement_assertions": "固定维序FP64 L2、独立top-k/搜索/逐操作Work、原始query ID与计数；完整采集及采样质量",
+      "deletion_gate": "独立原生隔离构建和独立数值/搜索/Work oracle通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：native",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/replay_input.py",
+      "policy": "runner",
+      "decision": "收敛入口",
+      "tasks": "P03/P14/P20",
+      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
+      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runner",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/run.py",
+      "policy": "runner",
+      "decision": "收敛入口",
+      "tasks": "P03/P14/P20",
+      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
+      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runner",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/run_config.py",
+      "policy": "runner",
+      "decision": "收敛入口",
+      "tasks": "P03/P14/P20",
+      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
+      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runner",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/run_experiment.py",
+      "policy": "runner",
+      "decision": "收敛入口",
+      "tasks": "P03/P14/P20",
+      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
+      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runner",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/run_graph.py",
+      "policy": "runner",
+      "decision": "收敛入口",
+      "tasks": "P03/P14/P20",
+      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
+      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runner",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/run_native.py",
+      "policy": "runner",
+      "decision": "收敛入口",
+      "tasks": "P03/P14/P20",
+      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
+      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runner",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/run_pair.py",
+      "policy": "runner",
+      "decision": "收敛入口",
+      "tasks": "P03/P14/P20",
+      "replacement_assertions": "构建/模拟/验收职责分离，新目录/预算/退出码/有效配置/hash/输出完整性；数据与truth归原生",
+      "deletion_gate": "统一CLI外部cwd/空格路径/错误退出测试通过；旧公开入口P20删除且无转发层",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：runner",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/scan_compute_ratio.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/simulation_input.py",
+      "policy": "data",
+      "decision": "保留迁负载工具",
+      "tasks": "P03/P04/P18/P21",
+      "replacement_assertions": "数据获取/导入/完整hash/原始ID切分、锁定NSG建图/真值独立核对与预算",
+      "deletion_gate": "独立原生可按公开步骤重建输入；不能作为simulate前置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：data",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/stream_statistics.py",
+      "policy": "output",
+      "decision": "保留改造",
+      "tasks": "P14/P15",
+      "replacement_assertions": "统计窗口/分位数/逻辑物理账本/资源峰值/排空及流式有界输出，参考结果明确标记",
+      "deletion_gate": "新报告独立统计及缺失/错误字段负例通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：output",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/v04_contract.py",
+      "policy": "static",
+      "decision": "重写迁移",
+      "tasks": "P02/P04/P08/P15",
+      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
+      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：static",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/validate_v04.py",
+      "policy": "static",
+      "decision": "重写迁移",
+      "tasks": "P02/P04/P08/P15",
+      "replacement_assertions": "包完整性/依赖/阶段特征/索引/截断/篡改；真实值重算迁采集侧，模拟只核调度和账本",
+      "deletion_gate": "新包及三层Validator正负例和全查询采集语义核对通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：static",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_acceptance.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_concurrency.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_contract.py",
+      "policy": "build",
+      "decision": "保留改造",
+      "tasks": "P03/P10/P20/P21",
+      "replacement_assertions": "根模拟构建/SST固定缓存、依赖实际hash/许可证；原生/拟合独立边界；MQSim XML运行时生效",
+      "deletion_gate": "最终根CTest、隔离原生/拟合、无功能链接及不重编译切配置通过",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：build",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_delivery_docs.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_ir_frontend.py",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_ir_mapping.py",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_ir_matrix.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_ir_observation.py",
+      "policy": "ir",
+      "decision": "拆分后删除候选",
+      "tasks": "P02/P07/P08/P13/P20",
+      "replacement_assertions": "类型/四类依赖/生命周期/资源账本迁通用IR；固定图语法和动态前端一致性退出",
+      "deletion_gate": "新通用契约/执行/映射对应断言通过；P20拆净import/CMake/文档引用后才删除旧动态路径",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：ir",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_t2.py",
+      "policy": "data",
+      "decision": "保留迁负载工具",
+      "tasks": "P03/P04/P18/P21",
+      "replacement_assertions": "数据获取/导入/完整hash/原始ID切分、锁定NSG建图/真值独立核对与预算",
+      "deletion_gate": "独立原生可按公开步骤重建输入；不能作为simulate前置",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：data",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_t3.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_t4.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_t5.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_t6.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_v02.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_v03.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_v04.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
+    },
+    {
+      "path": "tools/verify_v04_regression.py",
+      "policy": "delivery",
+      "decision": "提取门控后删除候选",
+      "tasks": "P14/P15/P20/P21",
+      "replacement_assertions": "缺项/篡改/quick/失败/少重复不可总通过；取消旧12/52数量和历史阶段成功依赖",
+      "deletion_gate": "新验收覆盖有效负例、独立MQSim提取完成且import清零，P20才移除旧编排",
+      "reason": "PRD FR11/12；实施计划§7职责迁移：delivery",
+      "p20": "removed",
+      "historical_source_commit": "64e2ca3c6427c34600ab3085c0d8101f1bc34b0d"
     }
   ]
 }

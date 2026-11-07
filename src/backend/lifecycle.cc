@@ -1,5 +1,5 @@
 #include "backend/lifecycle.h"
-#include "profile.h"
+#include "backend/device_config.h"
 #include "exec/Execution_Parameter_Set.h"
 #include "exec/SSD_Device.h"
 #include "sim/Engine.h"
@@ -67,16 +67,6 @@ struct LifecycleBackend::Impl {
     }
 };
 
-LifecycleBackend::LifecycleBackend(unsigned device_count, const std::string& profile) {
-    if (device_count != 1)
-        throw std::invalid_argument("Unsupported: device_count must be 1");
-    if (profile != "native-small")
-        throw std::invalid_argument("Unsupported: profile must be native-small");
-    if (device_claimed)
-        throw std::logic_error("Only one MQSim device lifetime per process is supported");
-    device_claimed = true; // Intentionally never released: singleton state is not reusable.
-    impl_ = std::make_unique<Impl>(*device_profile(profile).config);
-}
 LifecycleBackend::LifecycleBackend(const DeviceConfig& configuration, unsigned device_count) {
     if (device_count != 1)
         throw std::invalid_argument("Unsupported: device_count must be 1");

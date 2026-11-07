@@ -4,7 +4,7 @@
 
 ## 接口与映射
 
-[Mapping](../../../src/ir/mapping.h) 是受信后端边界，持有 Executor、Runtime、HostCpu、ContentStore、Layout、普通读取能力和可选 Controller。构造时校验空 run contract、placement/backend 和逻辑集合绑定的 kind/version；实际输入文件及集合内容身份仍由现有受信输入准备/打开流程负责。前端只能提交类型化 Operation 并消费 lease 的可见输出，不获得 ContentStore 或这些服务能力。
+[Mapping](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/ir/mapping.h) 是受信后端边界，持有 Executor、Runtime、HostCpu、ContentStore、Layout、普通读取能力和可选 Controller。构造时校验空 run contract、placement/backend 和逻辑集合绑定的 kind/version；实际输入文件及集合内容身份仍由现有受信输入准备/打开流程负责。前端只能提交类型化 Operation 并消费 lease 的可见输出，不获得 ContentStore 或这些服务能力。
 
 `admit(query, fp32_vector, initial_snapshot)` 在原接纳时刻登记初始主机 query/state；controller placement 在此调用一次原 Open，并由 Controller 持有其依赖。`submit(op, producers, snapshots)` 复用 Executor 的增量依赖、作用域、实际地址和 shape 校验。未知/关闭的 query、重复 QUERY_READY 或尚未 QUERY_READY 的操作明确拒绝；提交错误关联 query/op/time。`close(query)` 禁止新操作，独立持有当前活动 lease 并逐项等待，随后执行原 Controller Close/Ack；Open 失败已清理会话时保留失败根因并清理映射会话。操作完成即释放活动关联，不积累完整查询历史。
 

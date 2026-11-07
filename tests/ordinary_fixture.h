@@ -2,7 +2,7 @@
 #include "exec/Execution_Parameter_Set.h"
 #include "exec/SSD_Device.h"
 #include "sim/Engine.h"
-#include "profile.h"
+#include "device_fixture.h"
 #include <memory>
 #include <cstdio>
 #include <stdexcept>
@@ -87,7 +87,7 @@ public:
             runtime->activate();
 #endif
         } else {
-        std::string text(ndpsim::device_profile("native-small").xml);
+        std::string text(ndpsim::test::device_fixture().source_bytes());
         if(miss) text.replace(text.find("<CMT_Capacity>65536"),19,"<CMT_Capacity>128");
         std::vector<char> xml(text.begin(),text.end()); xml.push_back(0);
         rapidxml::xml_document<> doc; doc.parse<rapidxml::parse_validate_closing_tags>(xml.data());

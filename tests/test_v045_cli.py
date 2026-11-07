@@ -91,6 +91,15 @@ class Cli(unittest.TestCase):
     self.assertIsInstance(json.loads((out/'command.json').read_text())['exit_code'],int)
     spec,c=self.experiment();out=self.output('no build');self.invoke(['simulate','--config',spec,'--build',out/'absent','--output',out],False)
     self.assertFalse((out/'report.json').exists());self.assertFalse((out/'absent').exists())
+ def test_legacy_engines_require_migration(self):
+    for engine in ('direct','ir','replay'):
+      spec,_=self.experiment();decl=json.loads(spec.read_text())
+      (spec.parent/decl['run']).write_bytes(canonical(dict(execution_engine=engine)))
+      out=self.output('legacy '+engine)
+      p=self.invoke(['simulate','--config',spec,'--build',BUILD,'--output',out],False)
+      self.assertIn('old engines/configurations require migration',p.stderr)
+      self.assertFalse((out/'command.json').exists())
+      self.assertFalse((out/'report.json').exists())
  def test_structure_check_and_rejection(self):
     out=self.output('check.json');self.invoke(['check','--package',memory.Memory.package,'--registry',memory.Memory.root/'registry.json','--allow-fixture','--report',out])
     r=json.loads(out.read_text());self.assertTrue(r['structural_passed']);self.assertFalse(r['independent_semantic_passed'])

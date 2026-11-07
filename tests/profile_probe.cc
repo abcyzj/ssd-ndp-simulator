@@ -1,12 +1,14 @@
+#include "device_fixture.h"
 #include "backend/ordinary_device.h"
 #include <iostream>
 int main(int argc, char** argv) {
     std::string name = argc > 1 ? argv[1] : "native-small";
-    const auto& p = ndpsim::device_profile(name);
+    const auto config = ndpsim::test::device_fixture(name);
+    const auto& p = config.geometry();
     if (argc > 2) {
         bool rejected = false;
         try {
-            ndpsim::OrdinaryDevice bad(p.raw_sectors, name);
+            ndpsim::OrdinaryDevice bad(p.raw_sectors, config);
         } catch (const std::invalid_argument& e) {
             rejected = std::string(e.what()).find("actual MQSim namespace") != std::string::npos;
         }
@@ -18,22 +20,14 @@ int main(int argc, char** argv) {
     // Reject impossible layouts before MQSim allocates metadata.
     bool rejected = false;
     try {
-        ndpsim::OrdinaryDevice bad(p.raw_sectors + p.page_sectors, name);
+        ndpsim::OrdinaryDevice bad(p.raw_sectors + p.page_sectors, config);
     } catch (const std::invalid_argument&) {
         rejected = true;
     }
     if (!rejected)
         throw std::logic_error("raw capacity accepted");
-    rejected = false;
-    try {
-        ndpsim::OrdinaryDevice bad(p.page_sectors, name, 1);
-    } catch (const std::invalid_argument&) {
-        rejected = true;
-    }
-    if (!rejected)
-        throw std::logic_error("resource preflight accepted");
     // No full capacity preload: validate real namespace construction independently.
-    ndpsim::OrdinaryDevice device(p.page_sectors, name);
+    ndpsim::OrdinaryDevice device(p.page_sectors, config);
     if (!device.namespace_sectors || device.namespace_sectors >= p.raw_sectors)
         throw std::logic_error("actual namespace capacity");
     uint64_t target = name == "ann-2g-v1" ? 2000000 : name == "ann-16g-v1" ? 20000000 : 8;

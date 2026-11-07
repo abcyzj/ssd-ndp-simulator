@@ -1,82 +1,13 @@
 # 工具入口
 
-V0.4.5 独立MQSim对拍入口为 `verify_mqsim.py --build BUILD --output NEW_DIRECTORY`，只构建锁定原生oracle并对拍已有真实SST后端；[P16命令、证据与限制](../docs/mqsim-oracle-v0.4.5.md)。不调用旧总AC。
+采集、校验、拟合、模拟及比较通过 [ndpsim CLI](../python/CLI.md) 执行。下列独立开发工具各有明确用途。
 
-从仓库根目录执行。V03-7 已完成总交付，支持显式 direct/ir，日常默认 ir，旧自动化参考显式 direct；以下包含数据准备、IR阶段验证及继承回归工具；阶段编号保留兼容，不表示当前开发任务。
-
-V0.4常规验收为 [12个模拟配置](../docs/validation-matrix-v0.4.md)，总入口为 `verify_v04.py --output NEW_DIRECTORY`，使用锁定 Python；[复现与边界](../docs/releases/v0.4.md)。下列 `verify_ir_matrix.py` / `verify_v03.py` 仍保持完整52条及配套门槛，仅在V0.4需要深度回归时调用；不提供12配置开关，也不把旧工具的缺项失败改成通过。
-
-| 日常与准备工具 | 用途 |
+| 工具 | 用途 |
 | --- | --- |
-| `freeze_v04_start.py` | V04-0完整输入/历史参考身份核验、预算和历史14配置计划冻结、四组合新smoke；[命令与限制](../docs/start-freeze-v0.4.md)，不启动下一任务或完整验收 |
-| `collect_v04_level_a.py`、`evaluate_v04_level_a.py` | 冻结模型的四点原生 CPU 采样、覆盖核验和算子误差报告，见 [V04-4b](../docs/level-a-v0.4.md) |
-| `run_experiment.py` | 复用已有构建，只运行实验；见[README](../README.md) |
-| `run.py` | 根构建、CTest、两放置运行 |
-| `prepare_sst.py` | 根 CMake 调用的锁定 SST 准备/缓存 |
-| `run_config.py`、`run_graph.py`、`run_pair.py` | 配置执行、共用 SST 图搜索与两放置运行 |
-| `ann_data.py`、`experiment_output.py` | 合成输入、独立真值与统计导出 |
-| `benchmark_data.py` | 四种 benchmark 格式导入/check；[数据说明](../docs/data-v2.md) |
-| `benchmark_artifacts.py` | build/check-index/exact/official/check-truth；[图与真值](../docs/index-truth-v2.md) |
-| `m0/build_builder.py`、`m0/CMakeLists.txt` | 锁定离线 Faiss、正式索引适配器及 receipt；仍是生产准备依赖 |
-| `simulation_input.py` | experiment-v2 与数据/图/真值身份校验；[仿真输入](../docs/simulation-input.md) |
-| `device_profiles.py` | 迁移期外部XML样例读取与CMake include/path shim；[P10运行时配置](../docs/device-config-v0.4.5.md) |
-| `verify_m0.py`、`source_snapshot.py` | 共用完整原始文件校验、哈希、进程测量及源码身份；被运行/准备工具导入，不是废弃阶段脚本 |
-| `scan_compute_ratio.py` | 可选算力敏感性扫描；参数与历史结果见[归档实验](../docs/archive/v0.2/t6-compute-ratio.md)，不属于固定验收矩阵 |
+| [prepare_sst.py](prepare_sst.py) | 根构建使用的锁定 SST 缓存准备 |
+| [verify_mqsim.py](verify_mqsim.py) | 锁定原生 MQSim 与真实 SST 普通 I/O 对拍，需要测试构建 |
+| [audit_v045_baseline.py](audit_v045_baseline.py) | 核对文件、CTest 与正式矩阵的迁移清单 |
+| [benchmark_data.py](benchmark_data.py)、[benchmark_artifacts.py](benchmark_artifacts.py)、[m0/build_builder.py](m0/build_builder.py) | 原生数据导入、图和真值准备 |
+| [verify_m0.py](verify_m0.py) | 数据检查、命令测量和源码身份工具 |
 
-## 继承回归与基线复现
-
-| 入口 | 覆盖与说明 |
-| --- | --- |
-| `compare_placements.py` | 独立搜索、两放置逐批决策与资源账本核对 |
-| `verify_concurrency.py` | 并发、接纳与输出回归 |
-| `verify_acceptance.py` | 完整 V0.1 AC-01～11；`--quick` 仅为 CTest 小矩阵 |
-| `verify_contract.py` | 独立 ABI、语义账本与负例核查 |
-| `verify_t2.py` | SIFT 10k 重排子集、32 条诊断查询的图/精确真值及完整 base 官方真值导入 |
-| `verify_t3.py` | 真实小 SIFT 两放置、内容扰动与逐批账本；[接口](../docs/simulation-input.md) |
-| `verify_t4.py` | memory/mmap、2/16GiB profile、跨页与 credit；[接口](../docs/content-profiles.md) |
-| `verify_t5.py` | Q=32/128/512 三次重复、日志等价、回收与预算拒绝；[接口](../docs/observation-lifecycle.md) |
-| `verify_t6.py` | 完整 SIFT1M 准备、固定26次矩阵及严格复用；[入口](../docs/sift1m.md) |
-| `freeze_direct_baseline.py` | V03-0 新 direct 参考运行、身份/独立账本/预算冻结；[证据与复现](../docs/archive/v0.3/direct-baseline.md)，不执行 IR 或完整 AC |
-| `verify_ir_frontend.py` | V03-4 生产前端/engine、合成与真实SIFT10k四组合、扰动/因果、冻结direct和定向ASan；[接口与证据](../docs/archive/v0.3/ir-frontend.md)，不启动V03-5或完整矩阵 |
-| `verify_ir_mapping.py` | V03-3 算子映射、真实 MQSim 四组合/边界、继承 CTest、冻结 smoke 锚点和定向 ASan；[接口与证据](../docs/archive/v0.3/ir-mapping.md)，不启动生产 IR 前端或完整矩阵 |
-| `verify_v02.py --all` | V0.2 完整基线复现；[前置准备与命令](../docs/archive/v0.2/delivery.md) |
-
-完整方法见[测试说明](../docs/testing.md)。所有有效测试和断言保留；上述工具通过不能直接声明 V0.3 通过。`verify_t6.py --prepare-only` 与 `--prepared` 分离准备/仿真，`--reuse-runs` 必须逐项验证身份；旧结果不能冒充本轮 direct 冻结或 IR 结果。
-
-## 历史工具
-
-[V0.2 工具归档](archive/v0.2/README.md)保存一次性 M0 可行性探针与旧证据汇总；[V0.1 工具归档](archive/v0.1/README.md)保存早期阶段脚本，不作为默认开发入口。现行工具不导入这些归档脚本。
-
-`run_graph.py` / `run_pair.py` 的低层 CLI 默认 smoke 仍引用 V0.1 归档配置以保持行为；CTest 使用显式 regression 配置，日常入口使用 experiments 配置。输出目录与输入准备规则以各工具 `--help` 和接口文档为准，不覆盖历史证据。
-
-## 本机 HostCPU 粗测
-
-从根目录执行：
-
-```sh
-cmake -S . -B build/delivery -DBUILD_TESTING=ON
-cmake --build build/delivery --target bench_host_cpu -j2
-build/delivery/bench_host_cpu
-```
-
-固定随机种子 42、128 维 FP32、batch=1/16/32/128；直接运行现有距离和 candidates 算子，控制保留 top-10。每项预热 100 次后测 7 组、每组至少 20 ms，输出每调用耗时中位数及默认模型预测（距离 setup=3/rate=4，控制 setup=1/rate=1、两种权重均为1）。`measured_over_model` 大于1表示本机实现慢于模型。校验和防止结果被消除。
-
-这是单线程、重复访问相同输入的缓存热场景，包含解码、分配、ID检查、打包及测量循环开销；不是 SIMD 上限、随机冷内存、SST查询端到端或完整AC验收。请使用优化构建且关闭 NDPSIM_SLOW_FUNCTIONAL；记录机器型号、编译器、构建选项和负载状态再比较，不自动回填或宣称硬件参数已校准。
-
-## IR 工具与 V0.3 深度回归
-
-`generate_ir_schema.py --check` 核对 schema/能力目录；`compare_engines.py` 独立比较同 placement 的 direct/ir 或 statistics/detail；`ir_frontend.py`、`stream_statistics.py` 是现行共用模块。
-
-V0.3 阶段工具的职责、完整52条门槛和复现入口统一见 [V0.3 工具索引](archive/v0.3/README.md)。这些工具仍在原路径供 CTest、导入和 V0.4 继承回归调用；不按版本名迁移有效实现。V0.4 独立入口为 `verify_v04.py`；它不会调用旧52条入口来冒称12配置完整覆盖。
-
-## V0.4 SSD 条件预测
-
-evaluate_v04_offload.py 运行并核验固定 O01～O04，保存同包 SSD Host 参照与 Controller 0.5×/1×/2× 算力扫描。需要已准备完整输入、冻结后主配置采集包、冻结 tuning32 v3 模型及拟合报告、模拟构建。正式条件预测另传两点 Level A/B/C 前提报告。配置成本来源、命令及产物见 [V04-5a](../docs/offload-v0.4.md)。
-
-## V0.4 兼容与继承回归
-
-verify_v04_regression.py 在新目录执行 R01～R04、detail8、默认 smoke 与冻结对拍，以及完整 V0.1 AC、T3/T4/T5、IR/静态回放 ASan。需要锁定 Python、完整现有准备输入及发布参考。入口保存 source、dependency、command、assertion 和 artifact 身份，按本轮约束关闭深度执行，触发深度要求时拒绝通过。实际命令、范围和限制见 [V04-5b](../docs/regression-v0.4.md)。
-
-## V0.4 总交付
-
-`verify_v04.py --output NEW_DIRECTORY` 从根 CMake 构建和 CTest 开始，执行12配置的16次最低正式模拟、12次原生基准、三组A/B/A、detail8、单独无CPU探针语义对照、Level A计费和完整继承。采集包、实测表及模型是显式冻结输入，逐项复核，改变相关身份时先重采/重拟合。输出计划、配置、AC矩阵、命令、资源、依赖、hash及报告。无quick或缺项成功模式；深度要求触发时失败关闭。`verify_v04_regression.py --semantic-host` 只在兼容Host运行增加语义观测，便于总交付跨路径核对。
+`archive/` 记录对应历史版本的开发流程。旧模拟、兼容矩阵和阶段工具请在对应版本源码上复现。 [发布记录](../docs/README.md#版本基线与历史追溯)

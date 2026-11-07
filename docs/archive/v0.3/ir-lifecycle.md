@@ -4,9 +4,9 @@
 
 ## 接口与边界
 
-[Executor](../../../src/ir/executor.h) 每个 run 建立一个实例，使用无 operations 的已验证 Document 作为 contract。`submit(operation, producer_leases, trusted_adapter, snapshots)` 按 run 内递增非零 uint64 ID 接纳；ID 不复用，最大值作为溢出保护拒绝。引用只能指向此前已接纳且调用者持有有效 lease 的生产者，可以 Pending；不接受自引用、前向引用、跨 run/query/ordinal、错误端口/类型/shape、未知内容版本、缺失 ADDRESS/DATA 边或缺失逻辑读取 CONTROL 许可。ORDER 也等待实际完成；四类边为 AND，不额外产生传输或收费。重复语义边不重复执行生产者。
+[Executor](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/ir/executor.h) 每个 run 建立一个实例，使用无 operations 的已验证 Document 作为 contract。`submit(operation, producer_leases, trusted_adapter, snapshots)` 按 run 内递增非零 uint64 ID 接纳；ID 不复用，最大值作为溢出保护拒绝。引用只能指向此前已接纳且调用者持有有效 lease 的生产者，可以 Pending；不接受自引用、前向引用、跨 run/query/ordinal、错误端口/类型/shape、未知内容版本、缺失 ADDRESS/DATA 边或缺失逻辑读取 CONTROL 许可。ORDER 也等待实际完成；四类边为 AND，不额外产生传输或收费。重复语义边不重复执行生产者。
 
-静态校验复用 [schema](../../../src/ir/schema.cc) 的相同结构与语义检查。增量入口只重查新操作及提供的活动生产者描述，不递归要求此前已回收的祖先；诊断文件的完整有序校验保持原规则。接纳前失败不分配 Runtime 任务或 pin。全量动态地址、实际输入 shape 和状态绑定在任何 adapter grant/真实请求/credit 前校验；输出在受信 evaluate 后检查端口、实际类型/动态上界、读取/评分的实际批次长度及有限得分，失败不发布。
+静态校验复用 [schema](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/ir/schema.cc) 的相同结构与语义检查。增量入口只重查新操作及提供的活动生产者描述，不递归要求此前已回收的祖先；诊断文件的完整有序校验保持原规则。接纳前失败不分配 Runtime 任务或 pin。全量动态地址、实际输入 shape 和状态绑定在任何 adapter grant/真实请求/credit 前校验；输出在受信 evaluate 后检查端口、实际类型/动态上界、读取/评分的实际批次长度及有限得分，失败不发布。
 
 `Lease` 复制共享同一个释放位；独立 ownership 必须 `retain`，每个 lease 只 `release` 一次。消费者与 waiter 在提交时独立 pin 生产者，前端提前释放不影响已接纳消费者；回收后不能凭历史 op ID 建立新消费。`get` 只通过 Runtime 的 HostMemory 可见性门控，私有计算结果直到服务及必要返回完成才可读。操作及值的活动/峰值计数包括 Pending 的输出端口；累计 submitted/completed/failed 计数不保留历史图。`diagnostic/require_progress` 关联 query、IR op、Runtime task、依赖、owner/pin 和等待资源。
 

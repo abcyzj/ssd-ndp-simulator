@@ -1,4 +1,4 @@
-#include "profile.h"
+#include "backend/device_config.h"
 #include "layout/layout.h"
 #include "exec/Execution_Parameter_Set.h"
 #include "ndpsim/capture.h"
@@ -411,28 +411,5 @@ void DeviceConfig::activate() const {
 #undef H
 #undef D
 #undef F
-}
-const DeviceProfile& device_profile(const std::string& name) {
-    static std::map<std::string, DeviceProfile> profiles;
-    need(name == "native-small" || name == "ann-2g-v1" || name == "ann-16g-v1",
-         "Unsupported device profile: " + name);
-    if (!profiles.count(name)) {
-        auto config = std::make_shared<DeviceConfig>(
-            name + ".xml", std::filesystem::path(NDPSIM_DEFAULT_DEVICE_DIR) / "defaults.json");
-        auto g = config->geometry();
-        profiles.emplace(name,
-                         DeviceProfile{name,
-                                       config->source_bytes(),
-                                       config->source_sha256(),
-                                       g.channels,
-                                       g.chips,
-                                       g.dies,
-                                       g.planes,
-                                       g.page_sectors,
-                                       g.raw_sectors,
-                                       g.metadata_estimate,
-                                       std::move(config)});
-    }
-    return profiles.at(name);
 }
 } // namespace ndpsim

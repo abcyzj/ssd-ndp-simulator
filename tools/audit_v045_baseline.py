@@ -38,6 +38,18 @@ def validate(files, tests, actual_files, actual_tests, matrix):
     expected = [t['name'] for t in tests['tests']]
     if len(set(expected)) != len(expected) or set(expected) != {t['name'] for t in actual_tests}:
         raise ValueError('CTest inventory missing/duplicate/stale')
+    # P20 retains the original dispositions alongside the current inventories.
+    retired_paths = [r['path'] for r in files.get('removed', [])]
+    retired_tests = tests.get('removed', [])
+    retired_names = [r['name'] for r in retired_tests]
+    if len(set(retired_paths)) != len(retired_paths) or set(retired_paths) & set(names):
+        raise ValueError('retired file still present or duplicated')
+    if len(set(retired_names)) != len(retired_names) or set(retired_names) & set(expected):
+        raise ValueError('retired CTest still registered or duplicated')
+    for row in retired_tests:
+        replacements = row.get('current_assertions')
+        if not replacements or set(replacements) - set(expected):
+            raise ValueError('retired CTest lacks registered replacement assertions: '+row['name'])
     rows = matrix['configurations']
     points = [(32, 64), (64, 128)]
     required = {f'{prefix}{i:02}': (L, E, placement, provider, repeats)

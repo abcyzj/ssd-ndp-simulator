@@ -23,7 +23,7 @@ cmake -S workloads/graph-search -B build/graph-installed -DCMAKE_PREFIX_PATH="$P
 cmake --build build/graph-installed -j2
 ```
 
-功能模块分别为 `ndpsim_graph_values`（字节、错误、SDK hash 适配）、`ndpsim_graph_operators`（L2、候选排序）、`ndpsim_graph_algorithm`（frontier、去重、合并）。头文件位于 `src/`。没有 ContentStore、Layout、句柄、Runtime 或模拟资源依赖。根构建暂时直接复用本目录的功能源码；旧模拟功能链接留待 P20 删除。
+功能模块分别为 `ndpsim_graph_values`（字节、错误、SDK hash 适配）、`ndpsim_graph_operators`（L2、候选排序）、`ndpsim_graph_algorithm`（frontier、去重、合并）。头文件位于 `src/`。没有 ContentStore、Layout、句柄、Runtime 或模拟资源依赖。根 CTest 复用本工程，模拟模块独立于上述功能库。
 
 ## 自身运行入口
 
@@ -46,17 +46,17 @@ ndpsim_native N D Q R truth_k entry k L B E chunk workers admission
 
 `tests/test_native_search.py <absolute-binary>` 会生成临时11查询夹具，运行4组 worker/admission 并以独立 Python oracle 检查 top-k、Recall、七项 Work、计数与接纳。`tests/test_search_core.py --probe <absolute-probe>` 检查60组搜索的逐阶段 packed 值和 Work；额外检查 FP64 固定维序、极值、舍入与无效输入。
 
-算法、容器、计数、FP32 输入与固定维序 FP64 L2 保持原参考实现；所有功能目标显式禁 fast-math/FMA。`--build-info` 三行分别为来源指纹、编译器及有效编译选项。独立指纹包含实际工作负载源码/CMake和链接 SDK archive hash；根迁移构建有自己的来源指纹，不能混用两者的测量。二进制 hash、实际 flags/SDK hash 仍应随实验单独记录。
+算法、容器、计数、FP32 输入与固定维序 FP64 L2 保持原参考实现；所有功能目标显式禁 fast-math/FMA。`--build-info` 三行分别为来源指纹、编译器及有效编译选项。独立指纹包含实际工作负载源码/CMake和链接 SDK archive hash；测试构建和独立构建均需按实际身份绑定测量。二进制 hash、实际 flags/SDK hash 仍应随实验单独记录。
 
 ## 当前边界
 
 P03 保留旧原生 raw observation 能力，`static_capture` **不是 `ndpsim-static-ir/2` 包**，不能交给新仿真入口。新 SDK 的图阶段接线、完整特征/依赖、Measurement/2、封包及独立语义校验已由 P04 实施，见 [capture instructions](CAPTURE.md)。这里不调用旧 Python 封包工具，也不要求历史 results。
 
-未运行 SIFT1M 全规模、正式 A/B/A/采集、CPU 拟合或精度验收；合成 pilot 记录见 [P04](../../docs/capture-graph-v0.4.5.md)。本工程身份变化后必须重采／重拟合，旧表不能直接继承。正式数据准备和预算说明参见 [SIFT1M](../../docs/sift1m.md)；原始锁定 NSG/prepared 尚缺的状态见 [P00](../../docs/baseline-v0.4.5.md)。大规模运行前须重新检查输入和资源。
+正式 SIFT1M 新图、输入准备、采集和驻留 CPU 精度见 [P18](../../docs/resident-accuracy-v0.4.5.md)。本工程身份变化后须按契约重采及重拟合。大规模运行前重新检查输入和资源。
 
 本工程与 SDK 使用 MIT License，见各自 LICENSE；不分发第三方模拟器或数据集。
 
 P04 update: new `graph_*` native modes, IR/2 sealing, Measurement/2 and independent
 semantic validation are implemented. See [capture instructions](CAPTURE.md). The
 legacy raw-mode descriptions above remain migration references; use the new entry
-point for new packages. Formal SIFT1M collection and complete AC remain pending.
+point for new packages.

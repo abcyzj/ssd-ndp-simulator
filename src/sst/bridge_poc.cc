@@ -1,3 +1,4 @@
+#include "device_fixture.h"
 #include <sst/core/sst_config.h>
 #include <sst/core/component.h>
 #include <sst/core/link.h>
@@ -62,7 +63,7 @@ public:
             require(getNumRanks().rank == 1 && getNumRanks().thread == 1,
                     "PoC needs one rank/thread");
             require(params.getKeys().empty(), "PoC has no configurable parameters");
-            backend_ = std::make_unique<LifecycleBackend>();
+            backend_ = std::make_unique<LifecycleBackend>(test::device_fixture());
             fixture_.execute = [this](int type) {
                 const auto now = getCurrentSimTimeNano();
                 require(Simulator->Time() == now, "backend executed beyond SST now");

@@ -4,7 +4,7 @@
 #include "backend/external_flow.h"
 #include "backend/preload_window.h"
 #include "host/PCIe_Switch.h"
-#include "profile.h"
+#include "backend/device_config.h"
 #include "utils/Logical_Address_Partitioning_Unit.h"
 #include <memory>
 namespace ndpsim {
@@ -19,11 +19,6 @@ public:
     std::unique_ptr<ExternalFlow> flow;
     std::unique_ptr<PreloadWindow> window;
     uint64_t namespace_sectors = 0;
-    explicit OrdinaryDevice(uint64_t sectors,
-                            const std::string& name = "native-small",
-                            uint64_t resource_budget = uint64_t(4) * 1024 * 1024 * 1024)
-        : OrdinaryDevice(sectors, checked_profile(name, resource_budget)) {
-    }
     OrdinaryDevice(uint64_t sectors,
                    const DeviceConfig& configuration,
                    const layout::Layout& layout)
@@ -110,12 +105,6 @@ private:
     checked_layout(const DeviceConfig& config, const layout::Layout& layout, uint64_t sectors) {
         config.validate_layout(layout, sectors);
         return config;
-    }
-    static const DeviceConfig& checked_profile(const std::string& name, uint64_t budget) {
-        const auto& p = device_profile(name);
-        if (p.metadata_estimate > budget)
-            throw std::invalid_argument("profile metadata estimate exceeds resource budget");
-        return *p.config;
     }
     std::vector<Host_Components::IO_Flow_Base*> flows;
     std::vector<flash_channel_ID_type> channels{0, 1};

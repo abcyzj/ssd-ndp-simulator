@@ -1,6 +1,6 @@
 # V0.1 阶段配置归档
 
-保留 M3.1 主机 smoke 和 M3.4 两放置 smoke 配置的原始参数（包含旧的 event_log=true）。它们用于[归档阶段脚本](../../../tools/archive/v0.1/README.md)复现；低层回归入口 run_graph.py / run_pair.py 的无 --config 默认值仍引用相应 host smoke，以保留原 CLI 行为。当前日常运行器 run.py / run_experiment.py 不默认使用这些配置。日常实验使用 [configs/experiments](../../experiments/host.json)，持续回归夹具见[配置索引](../../README.md)。
+保留 M3.1 主机 smoke 和 M3.4 两放置 smoke 配置的原始参数（包含旧的 event_log=true）。它们用于[归档阶段脚本](../../../tools/archive/v0.1/README.md)复现；低层回归入口 run_graph.py / run_pair.py 的无 --config 默认值仍引用相应 host smoke，以保留原 CLI 行为。当前日常运行器 run.py / run_experiment.py 不默认使用这些配置。日常实验使用 [configs/experiments](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/configs/experiments/host.json)，持续回归夹具见[配置索引](../../README.md)。
 
 - [M3.1 host](m3.1/host.json)
 - [M3.4 host](m3.4/host.json)

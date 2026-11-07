@@ -1,4 +1,5 @@
 #pragma once
+#include "device_fixture.h"
 #include "timing/controller.h"
 #include "backend/ordinary_device.h"
 #include <cstdio>
@@ -38,7 +39,7 @@ static Message message(MessageKind k, uint64_t task = 1) {
     return m;
 }
 struct Scenario {
-    OrdinaryDevice device{512};
+    OrdinaryDevice device{512, device_fixture()};
     EventBridge& bridge;
     EventBridge::Clock now;
     MessageRules rules;

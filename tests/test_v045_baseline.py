@@ -30,6 +30,18 @@ class BaselineGates(unittest.TestCase):
                 with self.assertRaises(ValueError): self.check_plan()
                 self.files,self.tests=saved
 
+    def test_retired_paths_and_replacement_tests(self):
+        if not self.tests.get('removed'):
+            self.skipTest('pre-cleanup inventory')
+        row = self.tests['removed'][0]
+        row['current_assertions'] = ['unregistered-replacement']
+        with self.assertRaisesRegex(ValueError, 'replacement assertions'):
+            self.check_plan()
+        row['current_assertions'] = [self.registered[0]['name']]
+        self.files['removed'][0]['path'] = self.names[0]
+        with self.assertRaisesRegex(ValueError, 'retired file'):
+            self.check_plan()
+
     def test_reduced_matrix_repeats_or_changed_queries(self):
         for key in ('point','repeat','query','strict','ssd-admission','ssd-offered'):
             with self.subTest(key=key):

@@ -18,7 +18,7 @@ ndpsim::OrdinaryDevice device(preload_sectors, config, layout);
 
 [OrdinaryDevice](../src/backend/ordinary_device.h)与[LifecycleBackend](../src/backend/lifecycle.cc)均接受同一 `DeviceConfig`。前者按有效几何生成全部 channel/chip/die/plane IDs，创建单个HIGH/TURNED_OFF partition；NVMe软件队列深度和设备队列深度同步，PCIe bandwidth/lanes显式取自 XML，保留 MQSim 原有报文取整和时序所有权。后者同样使用外部几何/partition，无Host流量、无预装载，初始化时间仍为0。
 
-[外部XML样例](../configs/devices/)提供 native-small、ann-2g-v1、ann-16g-v1。迁移期 `device_profile(name)`只在运行时读取这些文件并缓存，不包含 XML 数组。根 CMake 生成的 `profile.h`仅为 include/默认样例目录的 shim，不生成参数或 XML；修改 XML 不触发重编译。`tools/device_profiles.py`现读取外部样例，保留旧运行器的 preflight 字段供迁移；旧 descriptor 和 `configs/native/`基线只作旧工具来源记录，不能覆盖新 `DeviceConfig` 显式输入。旧引擎/公开入口的删除仍由 P20 执行。
+[外部XML样例](../configs/devices/)提供 native-small、ann-2g-v1、ann-16g-v1。P10 迁移期的命名 profile 和构建期 include shim 已在 P20 移除。生产配置显式引用 XML，修改文件无需重编译。设备夹具独立于生产目标。
 
 ## 支持子集、单位及失败关闭
 

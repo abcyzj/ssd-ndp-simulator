@@ -240,8 +240,8 @@ V0.2 应能回答：
 ## 10. 技术核查与参考入口
 
 - 现行实现：[搜索与数据](../../search.md)、[扩展指南](../../extensions.md)、[契约](../../contracts.md)、[输出](../../output.md)、[模型限制](../../model-limitations.md)、[测试](../../testing.md)。
-- 数据准备：[ann_data.py](../../../tools/ann_data.py)；实验校验与布局：[run_graph.py](../../../tools/run_graph.py)。
-- 搜索与装载：[graph.cc](../../../src/search/graph.cc)、[graph_host.cc](../../../src/sst/graph_host.cc)、[content.h](../../../src/content/content.h)。
+- 数据准备：[ann_data.py](../../../tools/ann_data.py)；实验校验与布局：[run_graph.py](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/tools/run_graph.py)。
+- 搜索与装载：[graph.cc](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/search/graph.cc)、[graph_host.cc](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/sst/graph_host.cc)、[content.h](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/src/content/content.h)。
 - 设备与观测：[ordinary_device.h](../../../src/backend/ordinary_device.h)、[observation.h](../../../src/backend/observation.h)、[SSD XML](../../../configs/native/ssdconfig.xml)。
 - SIFT 格式及评测参考：[Faiss 官方示例](https://github.com/facebookresearch/faiss/blob/main/demos/demo_sift1M.cpp)。
 - 候选建图实现参考：[DiskANN](https://github.com/microsoft/DiskANN)、[NSG](https://github.com/ZJULearning/nsg)。仅供规划核查，不表示已经选用、锁定版本或完成兼容性验证。
