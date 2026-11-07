@@ -24,6 +24,28 @@ def reseal(directory):
     save(directory/'status.json',status)
 
 class Validation(unittest.TestCase):
+ def test_metadata_context_actual_sst_and_tamper(self):
+    from ndpsim.cost_models import schema_hash
+    c=self.ssd.Ssd().config('host')
+    c={k:v for k,v in c.items() if k not in ('placement','layout','device','resources')}
+    c.update(format='ndpsim-memory-run/1',context='resident_random/2')
+    registry=load(Path(c['registry']));rules=[]
+    for op in registry['operators']:
+      for st in op['stages']:
+        r=dict(operator=op['id'],operator_version=op['version'],stage_kind=st['kind'],context=c['context'],location='host',target_id=c['target']['id'],feature_ranges=[dict(name=n,unit=u,minimum=0,maximum=100000) for n,u in st['feature_units'].items()],work_units=st['work_units'],source='prediction',formula='constant/1',parameter_schema_sha256=schema_hash('constant/1'),parameters=dict(ns=0 if st['kind'] in ('state','join') else 2),measurement_sha256=['1'*64],training_query_ids=[7],fit_report_sha256='2'*64)
+        if st['kind']=='finish':
+          r['metadata_features']=[dict(name='init_bytes',unit='B',rule='query-prefix-sum/1',operator='graph.INIT',operator_version='2',stage_kind='init',feature='copied_bytes')]
+          r['feature_ranges'].append(dict(name='init_bytes',unit='B',minimum=8,maximum=8))
+          r.update(formula='nonnegative-linear/1',parameter_schema_sha256=schema_hash('nonnegative-linear/1'),parameters=dict(intercept_ns=2,coefficients=[0,1]))
+        rules.append(r)
+    root=self.output();root.mkdir();p=root/'context-profile.json';save(p,dict(format='ndpsim-cost-profile/1',fixture=True,target=c['target'],rules=rules));c.update(profile=str(p),profile_sha256=file_hash(p))
+    cp=root/'run.json';save(cp,c);ep=root/'experiment.json';save(ep,dict(format='ndpsim-experiment/1',run=cp.name,budget=BUDGET));out=self.output();self.h.invoke(['simulate','--config',ep,'--build',BUILD,'--output',out])
+    self.validate('simulate',dict(run=ref(out/'status.json')))
+    damaged=self.clone(out)
+    def change(rows):
+      r=next(r for r in rows if r['type']=='demand' and r['stage_kind']=='finish');r['metadata_features']['init_bytes']['value']+=1
+    self.mutate_trace(damaged,change);self.validate('simulate',dict(run=ref(damaged/'status.json')),False)
+
  @classmethod
  def setUpClass(cls):
     evidence=os.environ.get('NDPSIM_VALIDATION_EVIDENCE')

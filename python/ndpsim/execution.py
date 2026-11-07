@@ -9,6 +9,24 @@ import sys
 import time
 from .static_ir import canonical, decode, file_hash, require
 
+TRACE_RECORD_BYTES = 16 * 1024**2
+TRACE_CONFIGURATION_BYTES = 64 * 1024**2
+
+
+def trace_records(path):
+    """Allow the leading configuration to embed the effective input snapshots."""
+    with path.open('rb') as stream:
+        first = stream.readline(TRACE_CONFIGURATION_BYTES + 1)
+        if not first:
+            return
+        require(len(first) <= TRACE_CONFIGURATION_BYTES, 'trace record budget')
+        configuration = decode(first)
+        require(configuration['type'] == 'configuration', 'trace must start with configuration')
+        yield configuration
+        for line in iter(lambda: stream.readline(TRACE_RECORD_BYTES + 1), b''):
+            require(len(line) <= TRACE_RECORD_BYTES, 'trace record budget')
+            yield decode(line)
+
 
 def save(path, value):
     Path(path).write_bytes(canonical(value))

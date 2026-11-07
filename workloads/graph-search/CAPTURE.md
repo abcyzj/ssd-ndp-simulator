@@ -80,7 +80,7 @@ benchmark or a sum of predicted service demands. P06 must freeze fitting/aggrega
 rules; P18 must run the formal repeated schedule.
 
 The independent Python checker opens original payloads only on the native side. It
-uses mmap, fixed-order binary64 L2, sets/sorting and rank/inversion formulas to
+uses bounded positional payload reads, fixed-order binary64 L2, sets/sorting and rank/inversion formulas to
 reconstruct top-k, Recall, counters, every stage Work/feature, digest, logical access,
 state version and dependency. It never calls the C++ search or historical replay.
 Operations are joined by stable keys in a disk-backed SQLite index, so legal physical
@@ -90,7 +90,8 @@ Budgets are explicit: native RSS, Python postprocessing RSS, total output bytes,
 per-query native output bytes, timeout and minimum free disk. Before execution the
 launcher checks actual host RAM/pressure (independent of declared target), native
 budget <=60% of physical RAM, input size and disk reserve including temporary index
-allowance. Native RSS is measured by wait4, Python RSS by getrusage, then checked.
+allowance. Native RSS is measured by wait4, Python RSS by getrusage, then checked. The resource receipt is
+retained when the Python RSS gate rejects a run.
 RSS budgets are failure gates, not hard OS memory limits; postprocessing timeout is
 checked at checkpoints, not a preemptive sandbox. Do not claim arbitrary-size bounded
 execution. SDK per-record/index/stage limits also apply. Frequency and affinity are

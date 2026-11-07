@@ -750,6 +750,24 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：config"
     },
     {
+      "path": "extensions/graph/fit-recipe-v2.json",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P18/P20/P21",
+      "replacement_assertions": "按原始查询分组候选探索、元数据前缀特征、低信号替代情景、原始证据保留与失败关闭",
+      "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
+      "reason": "用户授权 P18 配方二版"
+    },
+    {
+      "path": "extensions/graph/fit-recipe-v3.json",
+      "policy": "model",
+      "decision": "保留",
+      "tasks": "P18/P20/P21",
+      "replacement_assertions": "按原始查询分组候选探索、元数据前缀特征、低信号替代情景、原始证据保留与失败关闭",
+      "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
+      "reason": "P18 用户授权四阶段逐调用表"
+    },
+    {
       "path": "extensions/graph/fit-recipe.json",
       "policy": "model",
       "decision": "保留",
@@ -880,7 +898,7 @@
       "policy": "model",
       "decision": "保留",
       "tasks": "P06/P15/P18/P20/P21",
-      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
+      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖；P18失败诊断保留阶段/四折覆盖/误差，失败不发布有效Profile",
       "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
       "reason": "PRD FR08；P06独立拟合／制表"
     },
@@ -2653,7 +2671,7 @@
       "policy": "model",
       "decision": "保留",
       "tasks": "P06/P15/P18/P20/P21",
-      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖",
+      "replacement_assertions": "独立Measurement质量/四折原始query分组/确定性拟合、逐调用中位表及C++消费；隔离Python安装，无旧阶段证据依赖；P18失败诊断保留阶段/四折覆盖/误差，失败不发布有效Profile",
       "deletion_gate": "保留模型/表分列、缺项/Work/身份/质量拒绝与训练评价隔离断言",
       "reason": "PRD FR08；P06独立拟合／制表"
     },
@@ -3562,7 +3580,7 @@
       "policy": "capture-extension",
       "decision": "保留",
       "tasks": "P04/P15/P18/P20/P21",
-      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝；P18按需定长读取与截断/越界拒绝，完整规模后处理RSS门控和失败资源记录",
       "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
       "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
     },
@@ -3580,7 +3598,7 @@
       "policy": "capture-extension",
       "decision": "保留",
       "tasks": "P04/P15/P18/P20/P21",
-      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝；P18按需定长读取与截断/越界拒绝，完整规模后处理RSS门控和失败资源记录",
       "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
       "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
     },
@@ -3706,7 +3724,7 @@
       "policy": "capture-extension",
       "decision": "保留",
       "tasks": "P04/P15/P18/P20/P21",
-      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝",
+      "replacement_assertions": "完整图IR阶段/Work/依赖、独立数值/搜索核对、采样身份/质量、资源与篡改拒绝；P18按需定长读取与截断/越界拒绝，完整规模后处理RSS门控和失败资源记录",
       "deletion_gate": "保留独立语义oracle；新链路替代通过后才删除旧采集适配",
       "reason": "P04图业务采集与语义扩展，通用SDK不内置图循环"
     },

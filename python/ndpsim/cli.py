@@ -39,7 +39,7 @@ def parser():
     c.add_argument('--reference', type=Path, help='independent native reference, required with semantic-config')
     f = sub.add_parser('fit', help='independent fit/table/evaluate/measurement-quality tools')
     f.add_argument('--manifest', required=True, type=Path)
-    f.add_argument('--action', choices=['fit','table','evaluate','check'], default='fit')
+    f.add_argument('--action', choices=['fit','table','table-check','evaluate','check'], default='fit')
     f.add_argument('--allow-fixture', action='store_true')
     f.add_argument('--output', required=True, type=Path)
     f.add_argument('--budget', required=True, type=Path, help='execution budget JSON (RAM, disk and timeout); recipe budget still applies')

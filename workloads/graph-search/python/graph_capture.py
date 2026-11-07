@@ -104,7 +104,7 @@ def semantic_check(package,config,operators,reference):
                 for k,q in op['semantic_work'].items():semantic_total[k]+=q['value']
             row=reference['queries'][qi]
             require(all(row[k]==val for k,val in result.items()),'reference top-k/Work/count mismatch')
-            truth=struct.unpack_from('<'+'I'*config['shape']['truth_k'],payload.maps['truth'],qi*4*config['shape']['truth_k'])[:config['search']['k']]
+            truth=struct.unpack('<'+'I'*config['shape']['truth_k'],payload.read('truth',qi*4*config['shape']['truth_k'],4*config['shape']['truth_k']))[:config['search']['k']]
             require(all(i<config['shape']['count'] for i in truth),'truth ID out of range')
             found={r['id'] for r in row['top_k']}
             require(row['recall_at_k']==len(found.intersection(truth))/config['search']['k'] and row['one_recall_at_r']==int(truth[0] in found) and row['insufficient_results']==(len(found)<config['search']['k']),'independent reference recall')
@@ -245,8 +245,8 @@ def run(config_path,binary,operators,output,mode,package=None,stride=1):
                     _,expected=expected_query(payload,qi);require(all(row[k]==val for k,val in expected.items()),'benchmark independent oracle')
             finally:payload.close()
         post_rss=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform=='darwin' else 1024)
-        require(post_rss<=b['postprocess_rss_bytes'],'postprocess RSS budget')
         save(output/'resources.json',dict(native_peak_rss_bytes=rss,postprocess_peak_rss_bytes=post_rss,disk_free_bytes=shutil.disk_usage(output).free,budget=b))
+        require(post_rss<=b['postprocess_rss_bytes'],'postprocess RSS budget')
         require(time.monotonic()-start<=b['timeout_seconds'],'postprocess timeout budget')
         require(sum(p.stat().st_size for p in output.rglob('*') if p.is_file())<=b['output_bytes'],'total output budget')
         for k in FILES:require(file_hash(v['files'][k]['path'])==v['files'][k]['sha256'],'input changed during capture')

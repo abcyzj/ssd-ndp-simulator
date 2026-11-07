@@ -13,8 +13,13 @@ python -m ndpsim.fit_cli evaluate --manifest evaluation.json --output new-evalua
 ```
 
 Synthetic inputs need `--allow-fixture`. Every output must be new. Failures return
-2, retain diagnostic status and remove the active `profile.json` name. Successful
-status always says `full_acceptance_passed=false`. Python callers use
+2, retain diagnostic status and remove the active `profile.json` name.
+When collection or fitting fails after the session opens, `failure-report.json`
+retains the hash-bound inputs, completed quality checks and, where available,
+the rejected stage, fold coverage and holdout errors. It has `passed=false`; it
+never substitutes for a frozen fit report or authorizes a Profile.
+
+Successful status always says `full_acceptance_passed=false`. Python callers use
 `ndpsim.fitting.execute(action, manifest_path, output, allow_fixture=False)`.
 
 ## Explicit inputs
@@ -143,3 +148,33 @@ This is the P06 tool/interface exit, not formal training or CPU calibration.
 The original SIFT/NSG data gap, new formal repeated sampling, independent
 benchmarks and all AC remain P18/P15/P21 work. Platform scheduling and unique
 runtime charging must still be validated after P07/P08/P11 connect the models.
+
+## Recipe/2
+
+Recipe/2 can declare a finite ordered `candidates` list for a prediction
+rule. Each candidate supplies `formula`, `options` and `features`. Fit
+reports all four grouped folds and selects among passing candidates by P90,
+then P50, then recipe order. These scores guide selection on tuning data.
+A failed stage prevents Profile publication.
+
+A prediction rule may declare `metadata_features`. Each descriptor supplies
+`name`, `unit`, `rule` (`query-prefix-sum/1`), `operator`,
+`operator_version`, `stage_kind` and `feature`. The value sums the
+registered source feature in the same query at strictly earlier topological
+ranks. Profile estimates consume the derived counters separately from raw
+Work and features. The resident mapping and independent validator each
+derive the counters from IR metadata.
+
+A measured rule may declare `low_signal_policy` with
+`kind: "censored-zero/1"` and a positive training-side `reference_ns`.
+The manifest's `table_scenario` is `zero` by default or `reference`.
+Only flagged low-signal replicas receive the scenario value before the
+lower median. Coverage, binding, raw interval checks, and the recipe's
+low-signal fraction gate apply to every run. Approximation metadata and
+affected keys are recorded in the report. Recipe/1 retains strict rejection
+of low-signal table replicas.
+
+`ndpsim fit --action table-check` applies the same call validation and
+aggregation without a frozen prediction Profile. It writes candidate table
+rows for inspection. The `table` action still requires a frozen Profile
+to publish a complete executable Profile.

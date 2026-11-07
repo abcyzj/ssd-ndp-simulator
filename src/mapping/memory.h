@@ -21,5 +21,7 @@ private:
     cost::Target target_;
     nlohmann::json binding_, rules_;
     std::string context_;
+    // Source descriptor -> query -> (topological rank, inclusive prefix sum).
+    std::map<std::string, std::map<uint64_t, std::vector<std::pair<uint64_t, uint64_t>>>> metadata_prefix_;
 };
 } // namespace ndpsim::memory

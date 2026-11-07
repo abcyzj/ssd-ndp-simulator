@@ -181,6 +181,114 @@ class Fitting(unittest.TestCase):
         m = copy.deepcopy(self.manifest); m['recipe'] = save(self.root/'bad-id-recipe.json', recipe)
         self.bad('fit', m)
 
+    def test_rejected_holdout_retains_metrics_without_profile(self):
+        m = copy.deepcopy(self.manifest)
+        recipe = copy.deepcopy(self.recipe)
+        recipe['training']['max_relative_p50'] = 0
+        recipe['training']['max_relative_p90'] = 0
+        m['recipe'] = save(self.root/'strict-recipe.json', recipe)
+        # Query-dependent cost cannot be explained by the items feature. Keep
+        # all interval arithmetic/Work/coverage valid so the accuracy gate fires.
+        def noise(record):
+            clock = 100
+            for row in record['samples']:
+                ns = 10 + row['key']['query'] * 100 if row['stage_kind'] == 'compute' else 40
+                row.update(start_cpu_ns=clock, end_cpu_ns=clock+ns+2,
+                           raw_ns=ns+2, corrected_ns=ns, low_signal=False)
+                clock += ns+12
+        for index in range(3): self.rewrite_run(m['datasets'][0], index, 'measurement', noise)
+        path = self.root/'rejected-training.json'; save(path, m)
+        out = self.root/'rejected-fit'
+        with self.assertRaisesRegex(ValueError, 'prediction holdout accuracy gate'):
+            execute('fit', path, out, allow_fixture=True)
+        failure = decode((out/'failure-report.json').read_bytes())
+        self.assertFalse(failure['passed'])
+        self.assertFalse(failure['full_acceptance_passed'])
+        self.assertEqual(failure['manifest_sha256'], file_hash(path))
+        self.assertEqual(failure['rejection']['stage'][:3], ['example.work', '1', 'compute'])
+        self.assertGreater(failure['rejection']['holdout']['relative_p90'], 0)
+        self.assertEqual(len(failure['rejection']['folds']), 4)
+        self.assertFalse((out/'profile.json').exists())
+        self.assertFalse((out/'fit-report.json').exists())
+        self.assertFalse(decode((out/'status.json').read_bytes())['passed'])
+
+    def test_v2_censored_tables_keep_raw_values_and_positive_replicas(self):
+        recipe = copy.deepcopy(self.recipe); recipe['format'] = 'ndpsim-fit-recipe/2'
+        recipe['id'] = 'fixture-censored/2'
+        recipe['rules'][1]['low_signal_policy'] = dict(kind='censored-zero/1', reference_ns=200)
+        m = copy.deepcopy(self.manifest); m['recipe'] = save(self.root/'recipe2.json', recipe)
+        _, _ = self.run_action('fit', m)
+        frozen = self.root/f'out-{self.count}'
+        table = copy.deepcopy(m); table.update(datasets=[self.datasets['evaluation']], frozen_profile=save(self.root/'frozen-copy.json', decode((frozen/'profile.json').read_bytes())), frozen_report=dict(path=str(frozen/'fit-report.json'), sha256=file_hash(frozen/'fit-report.json')))
+        def low(record):
+            row = record['samples'][1]
+            row.update(end_cpu_ns=row['start_cpu_ns'], raw_ns=0, corrected_ns=-2, low_signal=True)
+        # Two low replicas yield zero median; one positive replica stays intact.
+        for i in range(2): self.rewrite_run(table['datasets'][0], i, 'measurement', low)
+        raw_before = Path(table['datasets'][0]['runs'][0]['measurement']['path']).read_bytes()
+        zero, report = self.run_action('table', table)
+        profile = decode((zero/'profile.json').read_bytes()); rule = next(r for r in profile['rules'] if r['source']=='measured-table')
+        self.assertEqual(rule['rows'][0]['duration_ns'], 0)
+        self.assertEqual(rule['approximation']['censored_samples'], 2)
+        self.assertEqual(rule['approximation']['zero_calls'], 1)
+        self.assertEqual(Path(table['datasets'][0]['runs'][0]['measurement']['path']).read_bytes(), raw_before)
+        self.assertTrue(any(r.get('censored') for r in report['rules']))
+        if PROBE:
+            first = rule['rows'][0]
+            request = dict(key=first['key'], operator='example.work', operator_version='1', stage_kind='append', context='resident/1', location='host', work=first['work'], features=first['features'], binding=rule['binding'])
+            self.assertEqual(self.consume(profile,[request])['ns'],[0])
+        table['table_scenario'] = 'reference'
+        reference, _ = self.run_action('table', table)
+        ref_rule = next(r for r in decode((reference/'profile.json').read_bytes())['rules'] if r['source']=='measured-table')
+        self.assertEqual(ref_rule['rows'][0]['duration_ns'], 200)
+        check = copy.deepcopy(table); check.pop('frozen_profile'); check.pop('frozen_report')
+        out, receipt = self.run_action('table-check', check)
+        self.assertTrue(receipt['passed']); self.assertFalse(receipt['profile_published'])
+        self.assertFalse((out/'profile.json').exists())
+        bad = copy.deepcopy(check); self.rewrite_run(bad['datasets'][0], 2, 'measurement', lambda v:v['samples'].pop())
+        self.bad('table-check', bad)
+
+    def test_v2_metadata_prefix_features_python_and_cpp(self):
+        m = copy.deepcopy(self.manifest); recipe = copy.deepcopy(self.recipe)
+        recipe.update(format='ndpsim-fit-recipe/2', id='fixture-metadata/2')
+        descriptor = dict(name='prior_items', unit='count', rule='query-prefix-sum/1', operator='example.work', operator_version='1', stage_kind='compute', feature='items')
+        recipe['rules'][0].update(features=['items','prior_items'], metadata_features=[descriptor], candidates=[dict(formula='nonnegative-linear/1', options={}, features=['items','prior_items'])])
+        m['recipe'] = save(self.root/'metadata-recipe.json', recipe)
+        def duration(record):
+            clock=100
+            for row in record['samples']:
+                i=row['features']['items']['value']; ns=70+4*i+6*i*(i-1)//2 if row['stage_kind']=='compute' else row['corrected_ns']
+                row.update(start_cpu_ns=clock,end_cpu_ns=clock+ns+2,raw_ns=ns+2,corrected_ns=ns,low_signal=False);clock+=ns+12
+        for i in range(3):self.rewrite_run(m['datasets'][0],i,'measurement',duration)
+        out, report = self.run_action('fit',m)
+        self.assertTrue(report['passed']); profile=decode((out/'profile.json').read_bytes())
+        r=profile['rules'][0]; self.assertEqual(r['metadata_features'],[descriptor])
+        row=dict(key=dict(query=0,op='a',stage='s0'),operator='example.work',operator_version='1',stage_kind='compute',context='resident/1',location='host',work=dict(flops=dict(value=12,unit='flop')),features=dict(items=dict(value=4,unit='count')))
+        row['metadata_features']=dict(prior_items=dict(value=6,unit='count'))
+        if PROBE:
+            self.assertEqual(self.consume(profile,[row])['ns'],[estimate(r['formula'],r['parameters'],[4,6])])
+            del row['metadata_features']
+            self.assertIn('error',self.consume(profile,[row]))
+        bad = copy.deepcopy(m); recipe['rules'][0]['metadata_features'][0]['unit']='B'
+        bad['recipe']=save(self.root/'wrong-metadata-unit.json',recipe);self.bad('fit',bad)
+
+    def test_v2_failed_grid_reports_all_stages_without_profile(self):
+        m=copy.deepcopy(self.manifest);recipe=copy.deepcopy(self.recipe)
+        recipe.update(format='ndpsim-fit-recipe/2',id='fixture-failed-grid/2')
+        recipe['training'].update(max_relative_p50=0,max_relative_p90=0)
+        recipe['rules'][0]['candidates']=[dict(formula=f,options={},features=['items']) for f in ['constant/1','nonnegative-linear/1']]
+        m['recipe']=save(self.root/'failed-grid-recipe.json',recipe)
+        path=self.root/'failed-grid-manifest.json';save(path,m);out=self.root/'failed-grid'
+        with self.assertRaisesRegex(ValueError,'prediction holdout accuracy gate'):
+            execute('fit',path,out,allow_fixture=True)
+        report=decode((out/'fit-report.json').read_bytes())
+        self.assertFalse(report['passed']);self.assertEqual(len(report['rules']),3)
+        self.assertEqual(len(report['rules'][0]['candidates']),2)
+        self.assertFalse((out/'profile.json').exists())
+        for candidate in report['rules'][0]['candidates']:
+            for fold in candidate['folds']:
+                self.assertFalse(set(fold['training_query_ids'])&set(fold['held_out_query_ids']))
+
     def test_hash_target_build_and_quality_report(self):
         for mutate in (lambda m:m['target'].update(hardware='other'), lambda m:m['recipe'].update(sha256='0'*64), lambda m:m['datasets'][0]['package'].update(sha256='0'*64), lambda m:m['datasets'][0]['structural_report'].update(sha256='0'*64)):
             m = copy.deepcopy(self.manifest); mutate(m); self.bad('fit', m)

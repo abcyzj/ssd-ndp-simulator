@@ -39,6 +39,8 @@ def unique_ids(ids):
 def feature_values(stage, names):
     counters = dict(stage['work']); require(not set(counters)&set(stage['features']), 'ambiguous Work/feature')
     counters.update(stage['features'])
+    require(not set(counters)&set(stage.get('metadata_features', {})), 'ambiguous metadata feature')
+    counters.update(stage.get('metadata_features', {}))
     require(all(n in counters for n in names), 'missing model feature')
     return [counters[n]['value'] for n in names]
 
@@ -60,7 +62,7 @@ class Session:
         self.byte_limit = 512*1024**2; self.sample_limit = 1000000; self.stage_limit = 1000000
         self.manifest = self.load(self.path)
         m = self.manifest
-        fields(m, ('format', 'fixture', 'recipe', 'target', 'partitions', 'datasets', 'budget'), ('frozen_profile', 'frozen_report'))
+        fields(m, ('format', 'fixture', 'recipe', 'target', 'partitions', 'datasets', 'budget'), ('frozen_profile', 'frozen_report', 'table_scenario'))
         require(m['format'] == 'ndpsim-fit-manifest/1' and type(m['fixture']) is bool, 'fit manifest version/fixture')
         require(not m['fixture'] or allow_fixture, 'fixture requires explicit permission')
         self.fixture = m['fixture']
@@ -74,6 +76,7 @@ class Session:
         require(not set(m['partitions']['tuning'])&set(m['partitions']['evaluation']), 'training/evaluation ID overlap')
         self.recipe = self.ref(m['recipe']); self.recipe_hash = m['recipe']['sha256']
         self.specs, self.rules = self.check_recipe(self.recipe)
+        require('table_scenario' not in m or (self.recipe['format'] == 'ndpsim-fit-recipe/2' and m['table_scenario'] in ('zero', 'reference')), 'table scenario requires recipe/2')
         require(type(m['datasets']) is list and m['datasets'], 'no datasets')
         self.db = sqlite3.connect(str(output/'stages.sqlite'))
         self.db.execute('PRAGMA cache_size=-2048')
@@ -81,6 +84,7 @@ class Session:
         self.run_ids = set(); self.measurement_hashes = set(); self.total_samples = 0
         self.quality = []; self.sources = []; self.metadata = defaultdict(list); self.samples = defaultdict(list)
         self.common_build = None; self.total_stages = 0
+        self.rejection = None
 
     def tick(self):
         require(time.monotonic() <= self.deadline, 'fit timeout budget')
@@ -105,7 +109,7 @@ class Session:
 
     def check_recipe(self, recipe):
         fields(recipe, ('format', 'id', 'operators', 'rules', 'training', 'sampling_audits', 'training_points', 'formal_partitions', 'provenance_splits'))
-        require(recipe['format'] == 'ndpsim-fit-recipe/1' and type(recipe['id']) is str and recipe['id'], 'recipe version/id')
+        require(recipe['format'] in ('ndpsim-fit-recipe/1', 'ndpsim-fit-recipe/2') and type(recipe['id']) is str and recipe['id'], 'recipe version/id')
         specs = {}; rules = {}
         require(type(recipe['operators']) is list and recipe['operators'], 'operator specs')
         for op in recipe['operators']:
@@ -115,18 +119,39 @@ class Session:
                 require(k not in specs and not set(s['work_units'])&set(s['feature_units']), 'duplicate/ambiguous stage spec')
                 specs[k] = (op, s)
         for r in recipe['rules']:
-            fields(r, ('operator', 'operator_version', 'stage_kind', 'context', 'location', 'source', 'features', 'formula', 'options'))
+            fields(r, ('operator', 'operator_version', 'stage_kind', 'context', 'location', 'source', 'features', 'formula', 'options'), ('candidates', 'low_signal_policy', 'metadata_features') if recipe['format'] == 'ndpsim-fit-recipe/2' else ())
             k = rule_key(r); require(k not in rules and k[:3] in specs, 'duplicate/unknown recipe stage')
             op, s = specs[k[:3]]
             require(r['context'] in s['contexts'] and r['location'] in op['locations'], 'recipe capability')
             require(r['source'] in ('prediction', 'measured-table', 'declared-zero'), 'recipe source')
             all_units = dict(s['work_units'], **s['feature_units'])
-            require(type(r['features']) is list and len(set(r['features'])) == len(r['features']) and set(s['feature_units']) <= set(r['features']) <= set(all_units), 'recipe feature coverage')
+            extra = set(s['feature_units'])
+            if 'metadata_features' in r:
+                require(r['source'] == 'prediction' and type(r['metadata_features']) is list and r['metadata_features'], 'prediction metadata features')
+                for d in r['metadata_features']:
+                    fields(d, ('name', 'unit', 'rule', 'operator', 'operator_version', 'stage_kind', 'feature'))
+                    require(d['rule'] == 'query-prefix-sum/1' and type(d['name']) is str and d['name'] and d['name'] not in all_units, 'metadata feature rule/name')
+                    source = specs.get((d['operator'], d['operator_version'], d['stage_kind']))
+                    require(source is not None and source[1]['feature_units'].get(d['feature']) == d['unit'], 'metadata source unit')
+                    all_units[d['name']] = d['unit']; extra.add(d['name'])
+            require(type(r['features']) is list and len(set(r['features'])) == len(r['features']) and extra <= set(r['features']) <= set(all_units), 'recipe feature coverage')
             require(type(r['options']) is dict, 'formula options')
             if r['source'] == 'prediction':
                 require(r['formula'] in ('constant/1', 'nonnegative-linear/1', 'upper-bound-table/1', 'log-gbdt/1'), 'unsupported fitter')
                 require(r['formula'] == 'log-gbdt/1' or not r['options'], 'unknown fit options')
             else: require(r['formula'] is None and not r['options'], 'table/zero formula options')
+            if 'candidates' in r:
+                require(r['source'] == 'prediction' and type(r['candidates']) is list and r['candidates'], 'prediction candidate list')
+                for c in r['candidates']:
+                    fields(c, ('formula', 'options', 'features'))
+                    require(c['formula'] in ('constant/1', 'nonnegative-linear/1', 'upper-bound-table/1', 'log-gbdt/1'), 'candidate formula')
+                    require(type(c['options']) is dict and (c['formula'] == 'log-gbdt/1' or not c['options']), 'candidate options')
+                    require(type(c['features']) is list and len(set(c['features'])) == len(c['features']) and extra <= set(c['features']) <= set(all_units), 'candidate feature coverage')
+                    require(c['formula'] != 'upper-bound-table/1' or len(c['features']) == 1, 'candidate table feature')
+            if 'low_signal_policy' in r:
+                p = r['low_signal_policy']; fields(p, ('kind', 'reference_ns'))
+                require(r['source'] == 'measured-table' and p['kind'] == 'censored-zero/1', 'table low-signal policy')
+                uint(p['reference_ns'], 1)
             rules[k] = r
         require(rules, 'empty recipe')
         t = recipe['training']
@@ -213,6 +238,20 @@ class Session:
                 except sqlite3.IntegrityError as e: raise ValueError('duplicate stable stage key') from e
                 if r['source'] == 'declared-zero': self.metadata[rule_key(r)].append(row)
         require(count == manifest['counts']['stages'] and operations == manifest['counts']['operations'], 'package stage/operation counts')
+        descriptors = {canonical(d): d for r in self.rules.values() for d in r.get('metadata_features', [])}
+        if descriptors:
+            for q in ids:
+                prefix = Counter()
+                for op_id, stage_id, body in self.db.execute('SELECT op,st,body FROM stages WHERE q=? ORDER BY rank', (str(q),)):
+                    row = decode(body); rule = self.rules[tuple(row['rule'])]
+                    ds = rule.get('metadata_features', [])
+                    if ds:
+                        row['metadata_features'] = {d['name']: dict(value=prefix[canonical(d)], unit=d['unit']) for d in ds}
+                        self.db.execute('UPDATE stages SET body=? WHERE q=? AND op=? AND st=?', (canonical(row), str(q), op_id, stage_id))
+                    for identifier, d in descriptors.items():
+                        if row['rule'][:3] == [d['operator'], d['operator_version'], d['stage_kind']]:
+                            prefix[identifier] += row['features'][d['feature']]['value']
+                            uint(prefix[identifier])
         return pkg, provenance
 
     def measurement(self, run, package, provenance, action):
@@ -274,9 +313,14 @@ class Session:
             require(windows[k[0]][0] <= s['start_cpu_ns'] <= s['end_cpu_ns'] <= windows[k[0]][1], 'sample outside native query CPU window')
             intervals[k[0]].append((s['start_cpu_ns'], s['end_cpu_ns']))
             rk = tuple(row['rule']); totals[rk] += 1; low[rk] += s['low_signal']
-            if action == 'table' and self.rules[rk]['source'] == 'measured-table': require(not s['low_signal'], 'low-signal measured call')
+            if action == 'table' and self.rules[rk]['source'] == 'measured-table' and 'low_signal_policy' not in self.rules[rk]: require(not s['low_signal'], 'low-signal measured call')
             sample = dict(row, ns=corrected, low_signal=s['low_signal'], measurement_sha256=h, run_id=run['run_id'], binding=binding)
-            self.samples[rk].append(sample)
+            if action == 'table' and self.rules[rk]['source'] != 'measured-table':
+                # Still validate every call/window/audit below. A table does not
+                # fit prediction samples, so retain just stage coverage here.
+                if not self.metadata[rk]: self.metadata[rk].append(row)
+            else:
+                self.samples[rk].append(sample)
             chunks[(k[0], k[1], s['chunk'])][s['stage_kind']] = s
         values = sorted(v for group in intervals.values() for v in group)
         require(all(a[1] <= b[0] for a, b in zip(values, values[1:])), 'overlapping exclusive CPU buckets')
@@ -287,9 +331,14 @@ class Session:
                 require(all(kind in group for kind in kinds), 'audit stage coverage')
                 require(all(group[a]['end_cpu_ns'] == group[b]['start_cpu_ns'] for a, b in zip(kinds, kinds[1:])), 'audit interval gap/overlap')
         for rk in totals:
+            self.rejection = dict(gate='low-signal fraction quality', stage=list(rk), run_id=run['run_id'],
+                                  samples=totals[rk], low_signal=low[rk],
+                                  maximum_fraction=self.recipe['training']['max_low_signal_fraction'])
             require(low[rk]/totals[rk] <= self.recipe['training']['max_low_signal_fraction'], 'low-signal fraction quality')
+        self.rejection = None
         self.sources.append(dict(run_id=run['run_id'], measurement_sha256=h, binding=binding))
-        self.quality.append(dict(run_id=run['run_id'], samples=len(seen), eligible=eligible, low_signal=sum(low.values()), coverage_passed=True, exclusive_buckets_passed=True, audit_groups_passed=True, by_stage=[dict(key=list(rk), samples=totals[rk], low_signal=low[rk]) for rk in sorted(totals)], low_signal_policy={'prediction': 'exclude-with-fraction-gate', 'table': 'reject-every-low-call', 'aggregation': 'none'}, scope='fixture' if self.fixture else 'measurement-quality-only'))
+        table_policy = 'explicit-per-rule-censoring' if any('low_signal_policy' in r for r in self.rules.values()) else 'reject-every-low-call'
+        self.quality.append(dict(run_id=run['run_id'], samples=len(seen), eligible=eligible, low_signal=sum(low.values()), coverage_passed=True, exclusive_buckets_passed=True, audit_groups_passed=True, by_stage=[dict(key=list(rk), samples=totals[rk], low_signal=low[rk]) for rk in sorted(totals)], low_signal_policy={'prediction': 'exclude-with-fraction-gate', 'table': table_policy, 'aggregation': 'none'}, scope='fixture' if self.fixture else 'measurement-quality-only'))
 
     def collect(self, action):
         m = self.manifest; seen_points = set(); bindings = []; self.action = action
@@ -329,9 +378,15 @@ class Session:
                     count += len(test)
                     held.extend((s['ns'], estimate(formula, p, feature_values(s, r['features']))) for s in usable)
                     fold_reports.append(dict(fold=fold, training_query_ids=[q for q in tuning if folds[q] != fold], held_out_query_ids=[q for q in tuning if folds[q] == fold], training_samples=len(train), feature_ranges=d, test_samples=len(test), in_range=len(usable), out_of_range=len(test)-len(usable)))
+                self.rejection = dict(stage=list(rk), folds=fold_reports, held_out_samples=count,
+                                      in_domain_samples=len(held), minimum_fraction=self.recipe['training']['min_holdout_fraction'],
+                                      maximum_relative_p50=self.recipe['training']['max_relative_p50'],
+                                      maximum_relative_p90=self.recipe['training']['max_relative_p90'])
                 require(len(held)/count >= self.recipe['training']['min_holdout_fraction'], 'insufficient in-domain grouped holdout')
                 score = metrics(held)
+                self.rejection['holdout'] = score
                 require(score['relative_p50'] <= self.recipe['training']['max_relative_p50'] and score['relative_p90'] <= self.recipe['training']['max_relative_p90'], 'prediction holdout accuracy gate')
+                self.rejection = None
                 params = fit(formula, [(feature_values(s, r['features']), s['ns']) for s in rows], r['options'], self.tick)
                 report = dict(key=list(rk), source='prediction', folds=fold_reports, holdout=score, training=metrics([(s['ns'], estimate(formula, params, feature_values(s, r['features']))) for s in rows]), low_signal_excluded=len(all_rows)-len(rows), prediction_quality_passed=True)
             validate_model(formula, params, domain)
@@ -343,6 +398,72 @@ class Session:
         h = digest_bytes(canonical(report))
         for r in output: r['fit_report_sha256'] = h
         require(output, 'recipe has no predicted/declared-zero models')
+        return dict(format='ndpsim-cost-profile/1', fixture=self.fixture, target=self.manifest['target'], rules=output), report
+
+    def fit_profile_v2(self):
+        """Explore a predeclared grid on grouped tuning folds, never on evaluation.
+
+        Every stage is reported even when another stage fails. A failed grid
+        produces no Profile; candidate selection is not unbiased nested CV.
+        """
+        tuning = self.manifest['partitions']['tuning']
+        require(len(tuning) >= 4, 'at least four training query groups')
+        folds = {q: i % 4 for i, q in enumerate(tuning)}
+        output, reports = [], []
+        for rk, r in self.rules.items():
+            if r['source'] == 'measured-table':
+                reports.append(dict(key=list(rk), source=r['source'], prediction_error='not-applicable'))
+                continue
+            spec = self.specs[rk[:3]][1]; units = dict(spec['work_units'], **spec['feature_units'])
+            units.update({d['name']: d['unit'] for d in r.get('metadata_features', [])})
+            if r['source'] == 'declared-zero':
+                domain = ranges(self.metadata[rk], r['features'], units)
+                formula, params = 'constant/1', dict(ns=0)
+                report = dict(key=list(rk), source='declared-zero', prediction_error='not-applicable')
+            else:
+                rows = [s for s in self.samples[rk] if not s['low_signal']]
+                require(rows and all(s['ns'] > 0 for s in rows), 'no usable training signal')
+                candidates = r.get('candidates', [dict(formula=r['formula'], options=r['options'], features=r['features'])])
+                scores = []
+                for c in candidates:
+                    self.tick(); held, detail = [], []; total = 0
+                    for fold in range(4):
+                        train = [s for s in rows if folds[s['key']['query']] != fold]
+                        test = [s for s in rows if folds[s['key']['query']] == fold]
+                        require(train and test, 'empty training/holdout query fold')
+                        d = ranges(train, c['features'], units)
+                        p = fit(c['formula'], [(feature_values(s, c['features']), s['ns']) for s in train], c['options'], self.tick)
+                        validate_model(c['formula'], p, d)
+                        usable = [s for s in test if in_range(feature_values(s, c['features']), d)]
+                        held.extend((s['ns'], estimate(c['formula'], p, feature_values(s, c['features']))) for s in usable)
+                        total += len(test)
+                        detail.append(dict(fold=fold, training_query_ids=[q for q in tuning if folds[q] != fold], held_out_query_ids=[q for q in tuning if folds[q] == fold], test_samples=len(test), in_range=len(usable), feature_ranges=d))
+                    score = metrics(held) if held else None
+                    passed = score is not None and len(held)/total >= self.recipe['training']['min_holdout_fraction'] and score['relative_p50'] <= self.recipe['training']['max_relative_p50'] and score['relative_p90'] <= self.recipe['training']['max_relative_p90']
+                    scores.append(dict(candidate=c, folds=detail, coverage=len(held)/total, metrics=score, passed=passed))
+                passing = [(v['metrics']['relative_p90'], v['metrics']['relative_p50'], i) for i, v in enumerate(scores) if v['passed']]
+                report = dict(key=list(rk), source='prediction', candidates=scores, prediction_quality_passed=bool(passing), low_signal_excluded=len(self.samples[rk])-len(rows), selection='grouped tuning CV; not nested CV or an evaluation claim')
+                if not passing:
+                    reports.append(report)
+                    continue
+                selected = min(passing)[2]; c = candidates[selected]
+                domain = ranges(rows, c['features'], units); formula = c['formula']
+                params = fit(formula, [(feature_values(s, c['features']), s['ns']) for s in rows], c['options'], self.tick)
+                report.update(selected_candidate=selected, holdout=scores[selected]['metrics'])
+            validate_model(formula, params, domain)
+            rule = {k: r[k] for k in ('operator', 'operator_version', 'stage_kind', 'context', 'location')}
+            rule.update(target_id=self.manifest['target']['id'], work_units=spec['work_units'], feature_ranges=domain, source='prediction', formula=formula, parameters=params, parameter_schema_sha256=schema_hash(formula), measurement_sha256=sorted(self.measurement_hashes), training_query_ids=tuning)
+            report['model'] = decode(canonical(rule)); output.append(rule); reports.append(report)
+            if 'metadata_features' in r:
+                rule['metadata_features'] = r['metadata_features']
+                report['model'] = decode(canonical(rule))
+        report = self.report('fit', reports)
+        report['passed'] = all(r.get('prediction_quality_passed', True) for r in reports)
+        if not report['passed']:
+            self.rejection = [r for r in reports if r.get('prediction_quality_passed') is False]
+            return None, report
+        h = digest_bytes(canonical(report))
+        for r in output: r['fit_report_sha256'] = h
         return dict(format='ndpsim-cost-profile/1', fixture=self.fixture, target=self.manifest['target'], rules=output), report
 
     def report(self, action, rules):
@@ -364,12 +485,13 @@ class Session:
         require(len(reported) == len(p['rules']), 'frozen report model coverage')
         for r in p['rules']:
             require({k: v for k, v in r.items() if k != 'fit_report_sha256'} == reported.get(rule_key(r)), 'frozen Profile model/report mismatch')
+            require(r.get('metadata_features', []) == self.rules[rule_key(r)].get('metadata_features', []), 'frozen metadata feature declaration')
             require(r['parameter_schema_sha256'] == schema_hash(r['formula']), 'frozen formula schema identity')
             validate_model(r['formula'], r['parameters'], r['feature_ranges'])
         return p
 
-    def table_profile(self):
-        frozen = self.frozen(); output = []; reports = []
+    def table_profile(self, candidate_only=False):
+        frozen = None if candidate_only else self.frozen(); output = []; reports = []
         for rk, r in self.rules.items():
             if r['source'] != 'measured-table': continue
             rows = self.samples[rk]; require(rows, 'no measured table rows')
@@ -379,15 +501,25 @@ class Session:
             results = []
             for k, calls in sorted(grouped.items()):
                 require(len({s['run_id'] for s in calls}) == len(self.run_ids) >= 3 and len(calls) == len(self.run_ids), 'table missing independent call')
-                require(all(s['work'] == calls[0]['work'] and s['features'] == calls[0]['features'] and not s['low_signal'] for s in calls), 'table Work/features/quality mismatch')
-                results.append(dict(key=calls[0]['key'], work=calls[0]['work'], features=calls[0]['features'], duration_ns=median_low(s['ns'] for s in calls)))
+                require(all(s['work'] == calls[0]['work'] and s['features'] == calls[0]['features'] and (not s['low_signal'] or 'low_signal_policy' in r) for s in calls), 'table Work/features/quality mismatch')
+                replacement = (0 if self.manifest.get('table_scenario', 'zero') == 'zero' else r['low_signal_policy']['reference_ns']) if 'low_signal_policy' in r else 0
+                results.append(dict(key=calls[0]['key'], work=calls[0]['work'], features=calls[0]['features'], duration_ns=median_low(replacement if s['low_signal'] else s['ns'] for s in calls)))
             spec = self.specs[rk[:3]][1]; units = dict(spec['work_units'], **spec['feature_units'])
             rule = {k: r[k] for k in ('operator', 'operator_version', 'stage_kind', 'context', 'location')}
             rule.update(target_id=self.manifest['target']['id'], work_units=spec['work_units'], feature_ranges=ranges(rows, r['features'], units), source='measured-table', binding=binding, measurement_sha256=sorted(self.measurement_hashes), rows=results)
-            output.append(rule); reports.append(dict(key=list(rk), source='measured-table', calls=len(results), independent_runs=len(self.run_ids), quality_passed=True, prediction_error='not-applicable'))
+            detail = dict(key=list(rk), source='measured-table', calls=len(results), independent_runs=len(self.run_ids), quality_passed=True, prediction_error='not-applicable')
+            if 'low_signal_policy' in r:
+                annotation = dict(policy='censored-zero/1', scenario=self.manifest.get('table_scenario', 'zero'), reference_ns=r['low_signal_policy']['reference_ns'], censored_samples=sum(s['low_signal'] for s in rows), affected_calls=sum(any(s['low_signal'] for s in calls) for calls in grouped.values()), zero_calls=sum(s['duration_ns'] == 0 for s in results))
+                rule['approximation'] = annotation
+                detail.update(approximation=annotation, censored=[dict(key=s['key'], run_id=s['run_id'], corrected_ns=s['ns'], measurement_sha256=s['measurement_sha256']) for s in rows if s['low_signal']], interpretation='explicit censored estimate; not a measurement of zero true cost or a certified upper bound')
+            output.append(rule); reports.append(detail)
         require(output, 'recipe has no measured stage')
-        report = self.report('table', reports); h = digest_bytes(canonical(report))
+        report = self.report('table-check' if candidate_only else 'table', reports); h = digest_bytes(canonical(report))
         for r in output: r['quality_report_sha256'] = h
+        if candidate_only:
+            report['table_candidates'] = output
+            report['profile_published'] = False
+            return None, report
         frozen['rules'].extend(output)
         return frozen, report
 
@@ -416,16 +548,17 @@ class Session:
 
 
 def execute(action, manifest_path, output, *, allow_fixture=False):
-    require(action in ('fit', 'table', 'evaluate', 'check'), 'unknown fit action')
+    require(action in ('fit', 'table', 'table-check', 'evaluate', 'check'), 'unknown fit action')
     output = Path(output); require(not output.exists(), 'output directory must be new'); output.mkdir(parents=True)
     session = None
     try:
         session = Session(manifest_path, output, allow_fixture)
         if action in ('table', 'evaluate'): session.frozen()
-        session.collect(action)
+        session.collect('table' if action == 'table-check' else action)
         profile = None
-        if action == 'fit': profile, report = session.fit_profile()
+        if action == 'fit': profile, report = session.fit_profile_v2() if session.recipe['format'] == 'ndpsim-fit-recipe/2' else session.fit_profile()
         elif action == 'table': profile, report = session.table_profile()
+        elif action == 'table-check': profile, report = session.table_profile(candidate_only=True)
         elif action == 'evaluate': report = session.evaluate()
         else: report = session.report('check', [])
         if profile is not None: profile_schema(profile)
@@ -441,14 +574,23 @@ def execute(action, manifest_path, output, *, allow_fixture=False):
         if profile is not None:
             raw = canonical(profile); require(len(raw) <= session.output_limit, 'Profile output budget')
             (output/'profile.json').write_bytes(raw)
-        require(report['passed'], 'prediction evaluation accuracy gate')
-        require(sum(p.stat().st_size for p in output.iterdir() if p.is_file() and p.suffix != '.sqlite') <= session.manifest['budget']['output_bytes'], 'total output budget')
+        require(report['passed'], 'prediction holdout accuracy gate' if action == 'fit' else 'prediction evaluation accuracy gate')
+        require(sum(p.stat().st_size for p in output.iterdir() if p.is_file() and '.sqlite' not in p.name) <= session.manifest['budget']['output_bytes'], 'total output budget')
         session.tick()
-        status = dict(passed=True, action=action, full_acceptance_passed=False, artifacts_sha256={p.name: file_hash(p) for p in output.iterdir() if p.is_file() and p.suffix != '.sqlite'})
+        status = dict(passed=True, action=action, full_acceptance_passed=False, artifacts_sha256={p.name: file_hash(p) for p in output.iterdir() if p.is_file() and '.sqlite' not in p.name})
         (output/'status.json').write_bytes(canonical(status)); return report
     except BaseException as exc:
         profile = output/'profile.json'
         if profile.exists(): profile.rename(output/'profile.failed.json')
+        if session is not None:
+            failure = dict(format='ndpsim-fit-failure/1', passed=False, action=action, error=str(exc),
+                           full_acceptance_passed=False, fixture=session.fixture,
+                           manifest_sha256=session.loaded[str(session.path)], recipe_sha256=session.recipe_hash,
+                           inputs_sha256=session.loaded, completed_quality=session.quality,
+                           rejection=session.rejection)
+            raw = canonical(failure)
+            if len(raw) <= session.output_limit:
+                (output/'failure-report.json').write_bytes(raw)
         (output/'status.json').write_bytes(canonical(dict(passed=False, action=action, error=str(exc), full_acceptance_passed=False)))
         raise
     finally:

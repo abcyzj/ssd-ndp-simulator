@@ -4,8 +4,8 @@ import math
 import sqlite3
 import time
 from collections import Counter
-from .execution import save, enforce
-from .static_ir import decode, require, _lines
+from .execution import save, enforce, load, trace_records
+from .static_ir import require, _lines
 
 
 def reduce_trace(output, config, b, deadline):
@@ -13,7 +13,7 @@ def reduce_trace(output, config, b, deadline):
     db.execute('pragma cache_size=-2048')
     db.execute('create table requests(query text primary key, latency integer, admission integer, offered_latency integer, admitted_ns integer, visible_ns integer)')
     counts = Counter(); sources = Counter(); flow = Counter(); peaks = Counter()
-    total_services = Counter(); summary = None; snapshot = None
+    total_services = Counter(); source_services = Counter(); stage_services = Counter(); summary = None; snapshot = None
     try:
         from pathlib import Path
         for i, (_, _, op) in enumerate(_lines(Path(config['package'])/'operations.jsonl',16*1024**2,b['output_bytes'])):
@@ -26,38 +26,38 @@ def reduce_trace(output, config, b, deadline):
             stages = csv.writer(sf); services = csv.writer(cf)
             stages.writerow(['query','op','stage','submitted_ns','completed_ns','dependency_and_resource_elapsed_ns'])
             services.writerow(['resource','key','submitted_ns','start_ns','end_ns','queue_wait_ns','service_ns'])
-            with (output/'trace.jsonl').open('rb') as f:
-                for line in iter(lambda: f.readline(16*1024**2+1), b''):
-                    require(len(line) <= 16*1024**2, 'trace record budget')
-                    r = decode(line); k = r['type']; counts[k] += 1
-                    require(summary is None, 'records after terminal summary')
-                    if k == 'configuration': snapshot = r
-                    elif k == 'summary': summary = r
-                    elif k == 'request':
-                        require(r['success'], 'failed request')
-                        offered = r.get('offered', 0)  # SSD contract freezes offered=0.
-                        db.execute('insert into requests values(?,?,?,?,?,?)', (str(r['query']), r['visible']-r['admitted'], r['admitted']-offered, r['visible']-offered, r['admitted'], r['visible']))
-                    elif k == 'stage':
-                        require(r['success'], 'failed stage')
-                        stages.writerow([r[x] for x in ('query','op','stage','submitted','completed')]+[r['completed']-r['submitted']])
-                    elif k in ('service', 'cpu', 'controller_compute') and all(x in r for x in ('submitted','start','end')):
-                        services.writerow([k,r.get('key',r.get('id')),r['submitted'],r['start'],r['end'],r['start']-r['submitted'],r['end']-r['start']])
-                    elif k == 'demand':
-                        d = r.get('detail', r)
-                        sources[d.get('source','unspecified')] += 1
-                        total_services[d.get('location','host')] += d['duration_ns']
-                    elif k == 'pcie' and r['event'] == 'arrive':
-                        direction = 'D2H' if r['destination'] == 0 else 'H2D'
-                        for name in ('payload','wire'): flow['pcie_'+direction+'_'+r['layer']+'_'+name+'_bytes'] += r[name]
-                    elif k == 'protocol':
-                        for name in ('logical','payload','wire'): flow['protocol_kind'+str(r['kind'])+'_'+name+'_bytes'] += r[name]
-                    elif k == 'ordinary_plan': flow['ordinary_sector_bytes'] += r['sector_bytes']
-                    elif k == 'local_plan': flow['local_sector_bytes'] += r['sector_bytes']
-                    elif k == 'nand_transaction': flow['local_nand_transaction_bytes'] += r['bytes']
-                    elif k == 'credit': peaks['buffer_bytes'] = max(peaks['buffer_bytes'],r['used'])
-                    if sum(counts.values()) % 512 == 0:
-                        enforce(output, b)
-                        require(time.monotonic() <= deadline, 'report timeout budget')
+            for r in trace_records(output/'trace.jsonl'):
+                k = r['type']; counts[k] += 1
+                require(summary is None, 'records after terminal summary')
+                if k == 'configuration': snapshot = r
+                elif k == 'summary': summary = r
+                elif k == 'request':
+                    require(r['success'], 'failed request')
+                    offered = r.get('offered', 0)  # SSD contract freezes offered=0.
+                    db.execute('insert into requests values(?,?,?,?,?,?)', (str(r['query']), r['visible']-r['admitted'], r['admitted']-offered, r['visible']-offered, r['admitted'], r['visible']))
+                elif k == 'stage':
+                    require(r['success'], 'failed stage')
+                    stages.writerow([r[x] for x in ('query','op','stage','submitted','completed')]+[r['completed']-r['submitted']])
+                elif k in ('service', 'cpu', 'controller_compute') and all(x in r for x in ('submitted','start','end')):
+                    services.writerow([k,r.get('key',r.get('id')),r['submitted'],r['start'],r['end'],r['start']-r['submitted'],r['end']-r['start']])
+                elif k == 'demand':
+                    d = r.get('detail', r)
+                    sources[d.get('source','unspecified')] += 1
+                    total_services[d.get('location','host')] += d['duration_ns']
+                    source_services[d.get('source','unspecified')] += d['duration_ns']
+                    stage_services[d.get('operator','unknown')+':'+d.get('stage_kind','unknown')] += d['duration_ns']
+                elif k == 'pcie' and r['event'] == 'arrive':
+                    direction = 'D2H' if r['destination'] == 0 else 'H2D'
+                    for name in ('payload','wire'): flow['pcie_'+direction+'_'+r['layer']+'_'+name+'_bytes'] += r[name]
+                elif k == 'protocol':
+                    for name in ('logical','payload','wire'): flow['protocol_kind'+str(r['kind'])+'_'+name+'_bytes'] += r[name]
+                elif k == 'ordinary_plan': flow['ordinary_sector_bytes'] += r['sector_bytes']
+                elif k == 'local_plan': flow['local_sector_bytes'] += r['sector_bytes']
+                elif k == 'nand_transaction': flow['local_nand_transaction_bytes'] += r['bytes']
+                elif k == 'credit': peaks['buffer_bytes'] = max(peaks['buffer_bytes'],r['used'])
+                if sum(counts.values()) % 512 == 0:
+                    enforce(output, b)
+                    require(time.monotonic() <= deadline, 'report timeout budget')
         require(summary is not None and summary.get('success') is True and snapshot is not None, 'missing successful terminal summary/configuration')
         for key in ('runtime_tasks','pins','buffer_used','sessions','active_stages','outstanding','resource_pending'):
             require(summary.get(key,0) == 0, 'undrained '+key)
@@ -70,6 +70,7 @@ def reduce_trace(output, config, b, deadline):
             mode=config['format'], placement=config.get('placement','host'), package_sha256=config['package_sha256'],
             profile_sha256=config['profile_sha256'], target_hardware=config['target'], context=config['context'],
             service_sources=dict(sources), service_demand_ns_by_location=dict(total_services),
+            service_demand_ns_by_source=dict(source_services), service_demand_ns_by_stage=dict(stage_services),
             interpretation='prediction and measured-table demands are distinct sources; neither proves target hardware accuracy',
             reference_results=dict(status='Unsupported', reason='timing-only does not recompute top-k; capture evidence remains external'),
             semantic_validation='trusted-independent-receipt' if 'semantic_report' in config else 'structure-only',
@@ -82,6 +83,8 @@ def reduce_trace(output, config, b, deadline):
             hardware_validation='configured_unvalidated', drain=summary, record_counts=dict(counts),
             details=dict(stages='stages.csv', services='services.csv', all_resources='trace.jsonl', effective_backend=snapshot))
         result['wait_definitions'] = dict(resource_queue='start-submitted in services.csv',stage_elapsed='completed-submitted includes input, resource service and return; not pure CPU time',dependency_ready_wait='Unsupported: no separate ready timestamp in current trace')
+        profile = load(config['profile'])
+        result['cost_source_policy'] = [dict(operator=r['operator'], stage_kind=r['stage_kind'], source=r['source'], approximation=r.get('approximation')) for r in profile['rules']]
         save(output/'report.json',result)
         return result
     finally:

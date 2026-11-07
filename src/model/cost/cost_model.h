@@ -27,6 +27,8 @@ struct Input {
     Target target;
     // Canonical ndpsim-contract/2 binding JSON, required only by measured tables.
     std::string binding_json;
+    // Explicitly declared pure metadata context; never business results/payload.
+    Counters metadata_features{};
 };
 using Estimate = std::function<Ns(const std::vector<std::uint64_t>&)>;
 // compile validates parameters and the entire declared domain, not just this call.

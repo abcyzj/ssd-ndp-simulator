@@ -15,8 +15,24 @@ sys.path[:0]=[str(ROOT/'python'),str(ROOT/'tests')]
 # Reuse fixture generation only; all execution goes through the unified installed CLI.
 sys.argv.insert(1,str(BUILD))
 import test_v045_memory as memory
-from ndpsim.static_ir import canonical,file_hash
-from ndpsim.execution import launch
+from ndpsim.static_ir import ValidationError,canonical,file_hash
+from ndpsim.execution import TRACE_RECORD_BYTES,launch,trace_records
+
+class TraceRecords(unittest.TestCase):
+ def test_only_leading_configuration_can_exceed_event_record_budget(self):
+    with tempfile.TemporaryDirectory() as tmp:
+      path=Path(tmp)/'trace.jsonl'
+      configuration=dict(type='configuration',snapshot='x'*TRACE_RECORD_BYTES)
+      summary=dict(type='summary',success=True)
+      path.write_bytes(canonical(configuration)+canonical(summary))
+      self.assertEqual(list(trace_records(path)),[configuration,summary])
+      event=canonical(dict(type='stage',detail=configuration['snapshot']))
+      path.write_bytes(canonical(configuration)+event)
+      with self.assertRaisesRegex(ValidationError,'trace record budget'):
+        list(trace_records(path))
+      path.write_bytes(event)
+      with self.assertRaisesRegex(ValidationError,'trace must start with configuration'):
+        list(trace_records(path))
 
 class Cli(unittest.TestCase):
  @classmethod

@@ -100,6 +100,58 @@
               "fit_report_sha256": {
                 "type": "string",
                 "pattern": "^[0-9a-f]{64}$"
+              },
+              "metadata_features": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "unit": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "rule": {
+                      "const": "query-prefix-sum/1"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "operator_version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "stage_kind": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "feature": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "unit",
+                    "rule",
+                    "operator",
+                    "operator_version",
+                    "stage_kind",
+                    "feature"
+                  ],
+                  "additionalProperties": false
+                }
               }
             },
             "required": [
@@ -194,6 +246,49 @@
               "quality_report_sha256": {
                 "type": "string",
                 "pattern": "^[0-9a-f]{64}$"
+              },
+              "approximation": {
+                "type": "object",
+                "properties": {
+                  "policy": {
+                    "const": "censored-zero/1"
+                  },
+                  "scenario": {
+                    "enum": [
+                      "zero",
+                      "reference"
+                    ]
+                  },
+                  "reference_ns": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 18446744073709551615
+                  },
+                  "censored_samples": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 18446744073709551615
+                  },
+                  "affected_calls": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 18446744073709551615
+                  },
+                  "zero_calls": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 18446744073709551615
+                  }
+                },
+                "required": [
+                  "policy",
+                  "scenario",
+                  "reference_ns",
+                  "censored_samples",
+                  "affected_calls",
+                  "zero_calls"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [

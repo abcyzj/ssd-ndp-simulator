@@ -106,6 +106,32 @@ class Memory(unittest.TestCase):
         rows=self.run_config(c);expected=sum(0 if s['kind'] in ('state','join') else 2 for o in ops for s in o['stages'])
         self.assertEqual(rows[-1]['cpu_demand_ns'],expected);self.assertEqual(rows[-1]['drained'],expected)
         self.assertEqual(len([r for r in rows if r['type']=='demand']),385)
+        # Pure metadata context must work after payload deletion, without
+        # modifying stage Work/features or inserting target service.
+        finish=next(r for r in rules if r['stage_kind']=='finish')
+        finish['metadata_features']=[dict(name='init_bytes',unit='B',rule='query-prefix-sum/1',operator='graph.INIT',operator_version='2',stage_kind='init',feature='copied_bytes')]
+        finish['feature_ranges'].append(dict(name='init_bytes',unit='B',minimum=8,maximum=8))
+        finish.update(formula='nonnegative-linear/1',parameter_schema_sha256=schema_hash('nonnegative-linear/1'),parameters=dict(intercept_ns=2,coefficients=[0,1]))
+        pp.write_bytes(canonical(dict(format='ndpsim-cost-profile/1',fixture=True,target=TARGET,rules=rules)))
+        c2=dict(c,profile_sha256=file_hash(pp),output='context-events.jsonl',scratch='context-scratch.sqlite')
+        type(self).count+=1;context=self.run_config(c2)
+        self.assertEqual(context[-1]['cpu_demand_ns'],expected+8*11)
+        for r in context:
+            if r['type']=='demand' and r['stage_kind']=='finish':
+                self.assertEqual(r['metadata_features'],dict(init_bytes=dict(value=8,unit='B')))
+                self.assertEqual(r['duration_ns'],10)
+        from graph_contract import registry as graph_registry
+        reg=graph_registry(ROOT/'extensions/graph/operators.json');manifest=decode((capture/'package/manifest.json').read_bytes())
+        reordered=self.root/'context-reordered'
+        with PackageWriter(reordered,manifest['provenance'],reg,allow_fixture=True) as w:
+            for obj in manifest['objects']:w.declare_object(obj)
+            for op in reversed(ops):w.record(op)
+            w.seal(manifest['terminals'])
+        rp=self.root/'context-reordered-report.json';save(rp,validate_package(reordered,reg,allow_fixture=True))
+        c3=dict(c2,package=str(reordered),package_sha256=decode(rp.read_bytes())['package_sha256'],report=str(rp),report_sha256=file_hash(rp),output='context-reordered-events.jsonl',scratch='context-reordered.sqlite')
+        for name in ('semantic_report','semantic_sha256'):c3.pop(name,None)
+        type(self).count+=1;other=self.run_config(c3)
+        self.assertEqual(other[-1]['cpu_demand_ns'],context[-1]['cpu_demand_ns'])
     def test_measured_table_exact_binding(self):
         for bad in ('none','quota','missing','work'):
             c=self.config();pp=self.root/c['profile'];pr=decode(pp.read_bytes());rule=pr['rules'][0]

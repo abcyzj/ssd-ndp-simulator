@@ -241,6 +241,7 @@ void Registry::add_operator(capture::OperatorSpec op) {
 struct Profile::Data {
     struct Rule {
         capture::StageSpec spec;
+        std::map<std::string, std::string> metadata_units;
         std::vector<Range> ranges;
         Estimate estimate;
         Json binding;
@@ -306,6 +307,17 @@ Profile Profile::parse(const std::string& raw,
              "target/Work spec mismatch");
         Data::Rule r;
         r.spec = *spec;
+        if (row.contains("metadata_features"))
+            for (const auto& d : row.at("metadata_features")) {
+                const auto source = registry.data_->operators.find({d.at("operator"), d.at("operator_version")});
+                need(source != registry.data_->operators.end(), "unknown metadata source operator");
+                const auto st = std::find_if(source->second.stages.begin(), source->second.stages.end(), [&](const auto& s) { return s.kind == d.at("stage_kind"); });
+                need(st != source->second.stages.end(), "unknown metadata source stage");
+                const std::string n = d.at("name"), f = d.at("feature"), u = d.at("unit");
+                need(st->feature_units.count(f) && st->feature_units.at(f) == u &&
+                         !spec->feature_units.count(n) && !spec->work_units.count(n) &&
+                         r.metadata_units.emplace(n, u).second, "metadata feature name/unit mismatch");
+            }
         std::set<std::string> names;
         for (const auto& f : row["feature_ranges"]) {
             Range range{f["name"], f["unit"], f["minimum"], f["maximum"]};
@@ -313,6 +325,7 @@ Profile Profile::parse(const std::string& raw,
                  "duplicate/inverted feature range");
             auto all = spec->work_units;
             all.insert(spec->feature_units.begin(), spec->feature_units.end());
+            all.insert(r.metadata_units.begin(), r.metadata_units.end());
             need(all.count(range.name) && all.at(range.name) == range.unit,
                  "unregistered feature/unit");
             r.ranges.push_back(std::move(range));
@@ -321,6 +334,8 @@ Profile Profile::parse(const std::string& raw,
         // its coefficient is zero. Work-only counters may be unmodelled.
         for (const auto& [n, u] : spec->feature_units)
             need(names.count(n), "missing extra feature range");
+        for (const auto& [n, u] : r.metadata_units)
+            need(names.count(n), "missing metadata feature range");
         const auto& measurements = row["measurement_sha256"];
         need(std::set<Json>(measurements.begin(), measurements.end()).size() == measurements.size(),
              "duplicate measurement artifact");
@@ -372,7 +387,11 @@ Ns Profile::demand(const Input& input) const {
     const auto work = counters_json(input.work), features = counters_json(input.features);
     check_counters(work, units(r.spec.work_units));
     check_counters(features, units(r.spec.feature_units));
-    const auto v = values(work, features, r.ranges);
+    const auto metadata = counters_json(input.metadata_features);
+    check_counters(metadata, units(r.metadata_units));
+    auto model_features = features;
+    for (auto i = metadata.begin(); i != metadata.end(); ++i) model_features[i.key()] = i.value();
+    const auto v = values(work, model_features, r.ranges);
     if (r.estimate)
         return r.estimate(v);
     need(cost::parse(input.binding_json) == r.binding, "measured table binding mismatch");

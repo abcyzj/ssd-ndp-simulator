@@ -156,3 +156,9 @@ matrix, all twelve ACs, or hardware calibration. Failed runs, duplicate paths,
 missing repeats, changed samples/tables, or quick evidence cannot generate total
 acceptance. Hashes are reproducibility evidence from trusted producers, not a
 proof that a renamed copy was an independent physical execution.
+
+For Profile rules with `metadata_features`, the simulate layer independently
+computes rank-based prefixes from the package and checks the traced context
+before estimating service. Accuracy validation rebuilds Recipe/2 tables
+using the scenario declared in the stage evaluation manifest. Use distinct
+scenario evidence for sensitivity comparisons.

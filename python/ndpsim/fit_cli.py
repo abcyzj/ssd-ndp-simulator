@@ -8,7 +8,7 @@ from .fitting import execute
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('fit', 'table', 'evaluate', 'check'))
+    parser.add_argument('action', choices=('fit', 'table', 'table-check', 'evaluate', 'check'))
     parser.add_argument('--manifest', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--allow-fixture', action='store_true')

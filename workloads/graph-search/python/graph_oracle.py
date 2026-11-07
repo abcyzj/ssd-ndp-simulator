@@ -1,11 +1,11 @@
 """Independent search/Work/DAG reconstruction. No native calls or capture parsing.
 
-Uses mmap, Python sets/sorting, rank and inversion formulas. Only metadata schema
+Uses bounded positional reads, Python sets/sorting, rank and inversion formulas. Only metadata schema
 and contract declarations are shared with the producer.
 """
 import bisect
 import hashlib
-import mmap
+import os
 import struct
 from pathlib import Path
 from ndpsim.static_ir import require
@@ -19,24 +19,30 @@ def work(**kw):return quantities(kw)
 
 class Payload:
     def __init__(self,config):
-        self.config=config;self.files=[];self.maps={}
+        self.config=config;self.files={};self.sizes={}
         try:
             for k in ('vectors','queries','graph','truth','query_ids'):
-                f=Path(config['files'][k]['path']).open('rb');self.files.append(f);self.maps[k]=mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ)
+                f=Path(config['files'][k]['path']).open('rb',buffering=0);self.files[k]=f;self.sizes[k]=os.fstat(f.fileno()).st_size
         except BaseException:self.close();raise
     def close(self):
-        for m in self.maps.values():m.close()
-        for f in self.files:f.close()
+        for f in self.files.values():f.close()
+    def read(self,k,offset,size):
+        # Random mmap accesses retain an ever-growing resident payload working
+        # set across queries. Read just the requested vector/row instead.
+        require(0<=offset<=self.sizes[k] and 0<=size<=self.sizes[k]-offset,'oracle read range')
+        data=os.pread(self.files[k].fileno(),size,offset)
+        require(len(data)==size,'oracle truncated payload')
+        return data
     def vector(self,k,i):
-        d=self.config['shape']['dimensions'];return struct.unpack_from('<'+'f'*d,self.maps[k],i*d*4)
+        d=self.config['shape']['dimensions'];return struct.unpack('<'+'f'*d,self.read(k,i*d*4,d*4))
     def row(self,i):
-        r=self.config['shape']['degree'];off=i*(r+1)*4;n,=struct.unpack_from('<I',self.maps['graph'],off)
-        require(n<=r,'oracle adjacency degree');v=list(struct.unpack_from('<'+'I'*n,self.maps['graph'],off+4));require(all(x<self.config['shape']['count'] for x in v),'oracle adjacency range');return v
+        r=self.config['shape']['degree'];off=i*(r+1)*4;n,=struct.unpack('<I',self.read('graph',off,4))
+        require(n<=r,'oracle adjacency degree');v=list(struct.unpack('<'+'I'*n,self.read('graph',off+4,n*4)));require(all(x<self.config['shape']['count'] for x in v),'oracle adjacency range');return v
 
 def expected_query(payload,qi):
     c=payload.config;s=c['search'];shape=c['shape'];d=shape['dimensions'];n=shape['count'];stride=4*d
-    qid,=struct.unpack_from('<I',payload.maps['query_ids'],qi*4)
-    query=payload.vector('queries',qi);query_bytes=payload.maps['queries'][qi*stride:(qi+1)*stride]
+    qid,=struct.unpack('<I',payload.read('query_ids',qi*4,4))
+    query=payload.vector('queries',qi);query_bytes=payload.read('queries',qi*stride,stride)
     operations=[];rank=0;previous=None;state=None;version=0;init=None;candidate=None
     def op(name):
         o=dict(query=qid,id='op'+str(len(operations)),operator='graph.'+name,operator_version='2',semantic_work=work(),stages=[]);operations.append(o);return o
@@ -62,7 +68,7 @@ def expected_query(payload,qi):
             o=op('SCORE_L2');batch=[];score_total={k:0 for k in WORK_UNITS}
             for ci,start in enumerate(range(0,len(fresh),s['chunk'])):
                 group=fresh[start:start+s['chunk']];b=len(group);old=len(batch)
-                actual=b''.join(payload.maps['vectors'][i*stride:(i+1)*stride] for i in group)
+                actual=b''.join(payload.read('vectors',i*stride,stride) for i in group)
                 for i in group:
                     v=payload.vector('vectors',i);value=0.0
                     for a,z in zip(query,v):delta=a-z;square=delta*delta;value=value+square

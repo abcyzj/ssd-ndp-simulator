@@ -11,6 +11,7 @@ BINARY=Path(sys.argv.pop(1)).resolve();SDK_PYTHON=Path(sys.argv.pop(1)).resolve(
 sys.path.insert(0,str(SDK_PYTHON));sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'python'))
 from graph_capture import run,configuration,semantic_check,measurement,load,save,signature
 from graph_contract import registry
+from graph_oracle import Payload
 from ndpsim.static_ir import PackageWriter,validate_package,Limits
 from test_native_search import fixture
 
@@ -42,6 +43,24 @@ class CaptureV2(unittest.TestCase):
         self.assertEqual(signature(self.ref),signature(self.sample_ref))
         report=load(self.root/'capture/semantic.json');self.assertTrue(report['independent_semantic_passed']);self.assertFalse(report['full_acceptance_passed'])
         self.assertEqual((report['counts']['operations'],report['counts']['stages']),(253,385))
+    def test_positional_payload_reads_and_truncation(self):
+        payload=Payload(self.config)
+        try:
+            for kind,item in self.config['files'].items():
+                expected=Path(item['path']).read_bytes()
+                # Cross row boundaries and repeat reads in arbitrary order.
+                for offset,length in [(4,8),(0,4),(len(expected),0),(1,3)]:
+                    self.assertEqual(payload.read(kind,offset,length),expected[offset:offset+length])
+                for offset,length in [(-1,1),(len(expected),1),(0,len(expected)+1)]:
+                    with self.assertRaisesRegex(ValueError,'oracle read range'):payload.read(kind,offset,length)
+        finally:payload.close()
+        config=copy.deepcopy(self.config);path=self.out('truncated-vector')
+        shutil.copyfile(config['files']['vectors']['path'],path);config['files']['vectors']['path']=str(path)
+        payload=Payload(config)
+        try:
+            path.write_bytes(b'')
+            with self.assertRaisesRegex(ValueError,'oracle truncated payload'):payload.vector('vectors',0)
+        finally:payload.close()
     def test_raw_stream_and_graph_spec(self):
         for q in self.manifest['provenance']['query_ids']:
             m=load(self.root/'capture/raw'/str(q)/'capture.json');self.assertEqual(m['operators'],self.reg.descriptor['operators']);self.assertTrue(m['complete'])
@@ -117,6 +136,7 @@ class CaptureV2(unittest.TestCase):
             save(cfg,v)
             with self.assertRaises(ValueError):run(cfg,BINARY,OPERATORS,out,'capture',stride=2 if mode=='sample-capture' else 1)
             self.assertFalse(load(out/'status.json')['passed']);self.assertFalse((out/'package').exists())
+            if mode=='post-rss':self.assertGreater(load(out/'resources.json')['postprocess_peak_rss_bytes'],1)
         with self.assertRaises(ValueError):run(self.path,BINARY,OPERATORS,self.root/'capture','capture')
     def test_payload_free_package_and_formal_split_gate(self):
         text=(self.package/'manifest.json').read_text()

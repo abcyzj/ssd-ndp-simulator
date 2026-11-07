@@ -1,6 +1,8 @@
 #include "mapping/memory.h"
 #include <fstream>
 #include <set>
+#include <algorithm>
+#include <limits>
 namespace ndpsim::memory {
 namespace {
 using Json = nlohmann::json;
@@ -127,6 +129,39 @@ Plan::Plan(const std::filesystem::path& path, bool ssd) {
     profile_ = std::make_unique<cost::Profile>(cost::Profile::parse(
         pr, c.at("profile_sha256"), registry_, target_, inputs.receipt.allow_fixture));
     rules_ = parse(pr).at("rules");
+    std::map<std::string, Json> descriptors;
+    for (const auto& rule : rules_)
+        if (rule.contains("metadata_features"))
+            for (const auto& d : rule.at("metadata_features")) descriptors.emplace(d.dump(), d);
+    if (!descriptors.empty()) {
+        std::ifstream stream(inputs.package / "operations.jsonl");
+        need(bool(stream), "cannot read metadata context");
+        std::string line;
+        while (std::getline(stream, line)) {
+            need(line.size() <= 16 * 1024 * 1024, "metadata context record budget");
+            auto op = parse(line);
+            for (const auto& d : descriptors) {
+                if (op.at("operator") != d.second.at("operator") || op.at("operator_version") != d.second.at("operator_version")) continue;
+                for (const auto& st : op.at("stages"))
+                    if (st.at("kind") == d.second.at("stage_kind")) {
+                        const auto& value = st.at("features").at(d.second.at("feature").get<std::string>());
+                        need(value.at("unit") == d.second.at("unit") && value.at("value").is_number_unsigned(), "metadata context source unit/type");
+                        metadata_prefix_[d.first][op.at("query").get<uint64_t>()].emplace_back(st.at("topological_rank").get<uint64_t>(), value.at("value").get<uint64_t>());
+                    }
+            }
+        }
+        need(stream.eof(), "metadata context read failure");
+        for (auto& d : metadata_prefix_)
+            for (auto& q : d.second) {
+                std::sort(q.second.begin(), q.second.end());
+                uint64_t sum = 0, previous = 0; bool first = true;
+                for (auto& p : q.second) {
+                    need(first || previous < p.first, "duplicate metadata context rank");
+                    need(p.second <= std::numeric_limits<uint64_t>::max() - sum, "metadata context overflow");
+                    sum += p.second; previous = p.first; first = false; p.second = sum;
+                }
+            }
+    }
     auto manifest = parse(read(inputs.package / "manifest.json"));
     binding_ = {{"package_sha256", inputs.receipt.package_sha256},
                 {"provenance", manifest.at("provenance")},
@@ -163,6 +198,20 @@ Plan::lower(const dag::Stage& s, timing::HostCpu& cpu, const std::string& locati
     in.features = s.metadata.features;
     in.target = target_;
     in.binding_json = binding_.dump();
+    for (const auto& rule : rules_)
+        if (rule.at("operator") == in.operator_id && rule.at("operator_version") == in.operator_version && rule.at("stage_kind") == in.stage_kind && rule.at("context") == context_ && rule.at("location") == location && rule.contains("metadata_features"))
+            for (const auto& d : rule.at("metadata_features")) {
+                uint64_t sum = 0;
+                const auto source = metadata_prefix_.find(d.dump());
+                if (source != metadata_prefix_.end()) {
+                    const auto q = source->second.find(s.key.query);
+                    if (q != source->second.end()) {
+                        const auto p = std::lower_bound(q->second.begin(), q->second.end(), std::make_pair(s.metadata.topological_rank, uint64_t{0}));
+                        if (p != q->second.begin()) sum = std::prev(p)->second;
+                    }
+                }
+                in.metadata_features[d.at("name").get<std::string>()] = {sum, d.at("unit").get<std::string>()};
+            }
     auto ns = profile_->demand(in);
     timing::Operation op;
     op.key = s.key;
@@ -194,6 +243,11 @@ Plan::lower(const dag::Stage& s, timing::HostCpu& cpu, const std::string& locati
             for (const auto& p : in.features)
                 last_demand["features"][p.first] = {{"value", p.second.first},
                                                     {"unit", p.second.second}};
+            if (!in.metadata_features.empty()) {
+                last_demand["metadata_features"] = Json::object();
+                for (const auto& p : in.metadata_features)
+                    last_demand["metadata_features"][p.first] = {{"value", p.second.first}, {"unit", p.second.second}};
+            }
             return op;
         }
     throw std::runtime_error("memory: missing provenance rule");

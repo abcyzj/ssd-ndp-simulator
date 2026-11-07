@@ -7,7 +7,7 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from statistics import median
-from .execution import load, save, resolve
+from .execution import load, save, resolve, trace_records
 from .static_ir import canonical, decode, digest_bytes, file_hash, require, check_schema
 from .cost_models import estimate, profile_schema, schema_hash, validate_model
 
@@ -147,6 +147,39 @@ def capture(spec, inputs, output):
                 trust='hash-bound independent capture oracle receipt; not authentication or a new payload recomputation')
 
 
+def model_metadata(profile, stages, registry):
+    """Independent sorted-source prefix oracle; no execution or payload reads."""
+    import bisect
+    specs = {(o['id'], o['version'], s['kind']): s for o in registry['operators'] for s in o['stages']}
+    indices, result = {}, {}
+    for rule in profile['rules']:
+        names = [d['name'] for d in rule.get('metadata_features', [])]
+        require(len(names) == len(set(names)), 'duplicate metadata feature')
+        for d in rule.get('metadata_features', []):
+            source = specs.get((d['operator'], d['operator_version'], d['stage_kind']))
+            require(source is not None and source['feature_units'].get(d['feature']) == d['unit'], 'metadata source spec/unit')
+            identifier = canonical(d)
+            if identifier not in indices:
+                groups = defaultdict(list)
+                for k, info in stages.items():
+                    if (info['operator'], info['operator_version'], info['stage']['kind']) == (d['operator'], d['operator_version'], d['stage_kind']):
+                        q = info['stage']['features'][d['feature']]
+                        require(q['unit'] == d['unit'], 'metadata source unit')
+                        groups[k[0]].append((info['stage']['topological_rank'], uint(q['value'])))
+                indices[identifier] = {}
+                for query, rows in groups.items():
+                    rows.sort(); total = 0; ranks, sums = [], []
+                    for rank, value in rows:
+                        total = uint(total+value); ranks.append(rank); sums.append(total)
+                    indices[identifier][query] = ranks, sums
+            for k, info in stages.items():
+                if (info['operator'], info['operator_version'], info['stage']['kind']) == (rule['operator'], rule['operator_version'], rule['stage_kind']):
+                    ranks, sums = indices[identifier].get(k[0], ([], []))
+                    position = bisect.bisect_left(ranks, info['stage']['topological_rank'])
+                    result.setdefault(k, {})[d['name']] = dict(value=sums[position-1] if position else 0, unit=d['unit'])
+    return result
+
+
 def demand_ns(profile, c, m, info, k, work, features, location, cache):
     rules = [r for r in profile['rules'] if (r['operator'], r['operator_version'], r['stage_kind'], r['context'], r['location'], r['target_id']) ==
              (info['operator'], info['operator_version'], info['stage']['kind'], c['context'], location, c['target']['id'])]
@@ -154,8 +187,11 @@ def demand_ns(profile, c, m, info, k, work, features, location, cache):
     r = rules[0]
     require({n:v['unit'] for n,v in work.items()} == r['work_units'], 'cost Work units')
     ranges = r['feature_ranges']
-    require(set(features) <= {x['name'] for x in ranges} <= set(features)|set(work), 'cost feature coverage')
-    all_features = dict(work, **features)
+    context = cache.get(('metadata', k), {})
+    require(set(context) == {d['name'] for d in r.get('metadata_features', [])}, 'cost metadata context coverage')
+    require(not (set(context)&(set(features)|set(work))), 'ambiguous metadata context')
+    require(set(features)|set(context) <= {x['name'] for x in ranges} <= set(features)|set(work)|set(context), 'cost feature coverage')
+    all_features = dict(work, **features, **context)
     values = []
     for f in ranges:
         v = all_features[f['name']]
@@ -191,7 +227,10 @@ def simulate(spec, inputs, output):
     require(file_hash(profile_path) == c['profile_sha256'] and file_hash(reg_path) == c['registry_sha256'], 'run input identity')
     profile = load(profile_path); profile_schema(profile)
     require(profile['target'] == c['target'], 'profile target')
-    rows = list(inputs.lines(directory/'trace.jsonl'))
+    rows = []
+    for n, row in enumerate(trace_records(inputs.track(directory/'trace.jsonl')), 1):
+        require(n <= inputs.records, 'record budget')
+        rows.append(row)
     require(rows and rows[0]['type'] == 'configuration' and rows[-1]['type'] == 'summary', 'trace boundaries')
     require(sum(r['type'] == 'configuration' for r in rows) == sum(r['type'] == 'summary' for r in rows) == 1, 'trace configuration/summary multiplicity')
     snapshot = rows[0]['snapshot']
@@ -230,7 +269,7 @@ def simulate(spec, inputs, output):
         calls = [(k, demands[k], services[k], None) for k in expected]
         ledger = dict(ssd_requests=0)
     totals = Counter(); source_counts = Counter(); per_stage = []
-    intervals = defaultdict(list); cost_cache = {}
+    intervals = defaultdict(list); cost_cache = {('metadata', k): v for k, v in model_metadata(profile, expected, load(reg_path)).items()}
     for k, d, service, physical in calls:
         info = expected[k]; st = info['stage']
         work, features = st['work'], st['features']
@@ -238,6 +277,7 @@ def simulate(spec, inputs, output):
             from .graph_validation import effective
             work, features = effective(info, c, physical)
         require(canonical(d['work']) == canonical(work) and canonical(d['features']) == canonical(features) and d['operator'] == info['operator'] and d['stage_kind'] == st['kind'], 'demand Work/features/identity mismatch')
+        require(d.get('metadata_features', {}) == cost_cache.get(('metadata', k), {}), 'demand metadata context mismatch')
         location = 'controller' if physical is not None else 'host'
         ns, source = demand_ns(profile, c, m, info, k, work, features, location, cost_cache)
         uint(d['duration_ns']); uint(service['duration_ns'])

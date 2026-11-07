@@ -57,6 +57,8 @@ int main() {
                 input.context = row["context"];
                 input.work = counters(row["work"]);
                 input.features = counters(row["features"]);
+                if (row.contains("metadata_features"))
+                    input.metadata_features = counters(row["metadata_features"]);
                 input.target = target(doc["target"]);
                 if (row.contains("binding"))
                     input.binding_json = row["binding"].dump();
