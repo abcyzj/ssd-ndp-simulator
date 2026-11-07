@@ -343,7 +343,7 @@ std::vector<SsdRun::Block> SsdRun::blocks(const dag::Stage& s,
             for (const auto& r : costs_.snapshot.at("profile").at("rules"))
                 if (r.at("operator") == s.operator_id && r.at("stage_kind") == s.metadata.kind &&
                     r.at("location") == "controller" && r.at("context") == context_)
-                    need(r.at("source") == "prediction",
+                    need(r.at("source") != "measured-table",
                          "Unsupported splitting per-call measured table");
         }
         result.push_back({std::move(plan), std::move(child), count});

@@ -336,13 +336,15 @@ Profile Profile::parse(const std::string& raw,
             need(names.count(n), "missing extra feature range");
         for (const auto& [n, u] : r.metadata_units)
             need(names.count(n), "missing metadata feature range");
-        const auto& measurements = row["measurement_sha256"];
+        const auto measurements = row.value("measurement_sha256", Json::array());
         need(std::set<Json>(measurements.begin(), measurements.end()).size() == measurements.size(),
              "duplicate measurement artifact");
         if (row["source"] == "prediction") {
             need(std::set<Json>(row["training_query_ids"].begin(), row["training_query_ids"].end())
                          .size() == row["training_query_ids"].size(),
                  "duplicate training query ID");
+        }
+        if (row["source"] != "measured-table") {
             auto f = registry.data_->formulas.find(row["formula"]);
             need(f != registry.data_->formulas.end(), "unknown formula/version");
             need(row["parameter_schema_sha256"] == f->second.hash,

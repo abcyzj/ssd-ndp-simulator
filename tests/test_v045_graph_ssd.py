@@ -19,13 +19,13 @@ BUILD=Path(sys.argv.pop(1)).resolve()
 TARGET=dict(id='ssd-test-target',hardware='hypothetical',os='none',frequency='fixed',affinity='one',memory_bytes=8192)
 class Ssd(unittest.TestCase):
  @classmethod
- def setUpClass(cls):
+ def setUpClass(cls, semantic_chunk=3):
     evidence=os.environ.get('NDPSIM_SSD_EVIDENCE')
     cls.tmp=None if evidence else tempfile.TemporaryDirectory(prefix='p13 SSD 空格 ')
     cls.root=Path(evidence if evidence else cls.tmp.name).resolve()
     if evidence:cls.root.mkdir(parents=True,exist_ok=False)
     data=cls.root/'native-input';data.mkdir();files,*_=fixture(data)
-    c=dict(format='ndpsim-graph-capture-config/2',shape=dict(count=6,dimensions=2,queries=11,degree=4,truth_k=4),search=dict(entry=0,k=4,width=4,batch=2,budget=3,chunk=3),files={k:dict(path=p,sha256=h) for k,p,h in zip(('vectors','queries','graph','truth','query_ids'),files[::2],files[1::2])},split='fixture',target=TARGET,budget=dict(native_rss_bytes=512*1024**2,postprocess_rss_bytes=512*1024**2,output_bytes=64*1024**2,query_bytes=4*1024**2,timeout_seconds=120,min_disk_free_bytes=1024**3))
+    c=dict(format='ndpsim-graph-capture-config/2',shape=dict(count=6,dimensions=2,queries=11,degree=4,truth_k=4),search=dict(entry=0,k=4,width=4,batch=2,budget=3,chunk=semantic_chunk),files={k:dict(path=p,sha256=h) for k,p,h in zip(('vectors','queries','graph','truth','query_ids'),files[::2],files[1::2])},split='fixture',target=TARGET,budget=dict(native_rss_bytes=512*1024**2,postprocess_rss_bytes=512*1024**2,output_bytes=64*1024**2,query_bytes=4*1024**2,timeout_seconds=120,min_disk_free_bytes=1024**3))
     save(data/'capture.json',c);cls.capture=cls.root/'capture'
     run(data/'capture.json',BUILD/'ndpsim_native',ROOT/'extensions/graph/operators.json',cls.capture,'capture')
     shutil.rmtree(data)

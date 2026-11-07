@@ -62,9 +62,18 @@ class Validation(unittest.TestCase):
     import test_v045_graph_ssd as ssd
     cls.ssd=ssd
     if evidence:os.environ['NDPSIM_SSD_EVIDENCE']=str(Path(evidence)/'graph-fixture')
-    ssd.Ssd.setUpClass();cls.graph=[]
+    ssd.Ssd.setUpClass(semantic_chunk=1);cls.graph=[]
     for placement in ('host','controller'):
         c=ssd.Ssd().config(placement,block=592)
+        if placement == 'controller':
+            profile_path = ssd.Ssd.root/c['profile']
+            profile = load(profile_path)
+            for rule in profile['rules']:
+                for field in ('measurement_sha256', 'training_query_ids', 'fit_report_sha256'):
+                    rule.pop(field)
+                rule.update(source='configured', parameter_source='fixture scenario')
+            save(profile_path, profile)
+            c['profile_sha256'] = file_hash(profile_path)
         cp=ssd.Ssd.root/(placement+'.json');save(cp,c)
         ep=ssd.Ssd.root/(placement+'-experiment.json');save(ep,dict(format='ndpsim-experiment/1',run=cp.name,budget=BUDGET))
         out=cls.root/('ssd-'+placement);cls.h.invoke(['simulate','--config',ep,'--build',BUILD,'--output',out]);cls.graph.append(out)
@@ -86,10 +95,45 @@ class Validation(unittest.TestCase):
  def mutate_trace(self,directory,fn):
     p=directory/'trace.jsonl';rows=[cli.json.loads(s) for s in p.read_text().splitlines()];fn(rows);p.write_bytes(b''.join(canonical(r) for r in rows));reseal(directory)
  def test_real_resident_and_ssd_reports(self):
+    self.assertTrue(any(sum(stage['kind'] == 'score_prepare' for stage in op['stages']) > 1
+                        for op in self.ssd.Ssd.ops))
     for directory in self.runs+self.graph:
         out=self.validate('simulate',dict(run=ref(directory/'status.json')))
         r=load(out/'report.json');self.assertGreater(len(r['queries']),0)
-        if directory.name=='ssd-controller':self.assertEqual(r['ledger']['vector_d2h'],0);self.assertGreater(r['ledger']['physical_chunks'],33)
+        if directory.name == 'ssd-controller':
+            self.assertEqual(r['ledger']['ordinary_requests'], load(directory/'report.json')['drain']['ordinary_requests'])
+            self.assertEqual(r['ledger']['vector_d2h'], 0)
+            self.assertGreater(r['ledger']['physical_chunks'], 33)
+            self.assertEqual(set(r['service_sources']), {'configured'})
+
+ def test_configured_profile_provenance_is_required_and_exclusive(self):
+    directory = self.graph[1]
+    for change in ('missing', 'mixed'):
+        config = load(directory/'run-input.json')
+        profile_path = Path(config['profile'])
+        profile = load(profile_path if profile_path.is_absolute() else self.ssd.Ssd.root/profile_path)
+        if change == 'missing':
+            profile['rules'][0].pop('parameter_source')
+        else:
+            profile['rules'][0]['measurement_sha256'] = ['1'*64]
+        path = self.output().with_suffix('.json')
+        from ndpsim.cost_models import profile_schema
+        with self.assertRaisesRegex(ValueError, 'Profile schema'):
+            profile_schema(profile)
+        save(path, profile)
+        original = load(directory/'effective-config.json')
+        for key in ('output', 'scratch'):
+            original.pop(key)
+        original.update(profile=str(path), profile_sha256=file_hash(path))
+        cp = self.output().with_suffix('.json')
+        save(cp, original)
+        ep = self.output().with_suffix('.json')
+        save(ep, dict(format='ndpsim-experiment/1', run=str(cp), budget=BUDGET))
+        out = self.output()
+        self.h.invoke(['simulate', '--config', ep, '--build', BUILD, '--output', out], False)
+        self.assertIn('schema alternative', (out/'stderr.log').read_text())
+
+ def test_resident_fifo_window(self):
     # Hand calculated resident FIFO: 4 queries, each has four 3ns services.
     r=load(self.runs[0]/'report.json');self.assertEqual(r['latency_ns'],dict(p50=12,p95=12,p99=12));self.assertEqual(r['offered_latency_ns']['p50'],24)
  def test_capture_receipt_reference_and_full_coverage(self):
@@ -123,6 +167,14 @@ class Validation(unittest.TestCase):
         self.mutate_trace(d,change);self.validate('simulate',dict(run=ref(d/'status.json')),False)
     d=self.clone(self.graph[1]);self.mutate_trace(d,lambda rows:rows.pop(next(i for i,r in enumerate(rows) if r['type']=='buffer_access')));self.validate('simulate',dict(run=ref(d/'status.json')),False)
     d=self.clone(self.graph[1]);self.mutate_trace(d,lambda rows:next(r for r in rows if r['type']=='protocol' and r['kind']==3).update(arrived=2**40));self.validate('simulate',dict(run=ref(d/'status.json')),False)
+    d = self.clone(self.graph[1])
+    def reverse_data_packet(rows):
+        packet = next(r['id'] for r in rows if r['type'] == 'pcie' and r['layer'] == 'data')
+        for row in rows:
+            if row['type'] == 'pcie' and row['id'] == packet:
+                row['destination'] = 1
+    self.mutate_trace(d, reverse_data_packet)
+    self.validate('simulate', dict(run=ref(d/'status.json')), False)
  def test_hash_quick_budget_and_failed_runs(self):
     d=self.clone(self.runs[0]);p=d/'trace.jsonl';p.write_bytes(p.read_bytes()+b'{}\n');self.validate('simulate',dict(run=ref(d/'status.json')),False)
     d=self.clone(self.runs[0]);s=load(d/'status.json');s['passed']=False;save(d/'status.json',s);self.validate('simulate',dict(run=ref(d/'status.json')),False)

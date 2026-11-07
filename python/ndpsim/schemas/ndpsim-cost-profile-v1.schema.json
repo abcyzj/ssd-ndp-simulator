@@ -66,7 +66,10 @@
                 }
               },
               "source": {
-                "const": "prediction"
+                "enum": [
+                  "prediction",
+                  "configured"
+                ]
               },
               "formula": {
                 "type": "string",
@@ -152,6 +155,11 @@
                   ],
                   "additionalProperties": false
                 }
+              },
+              "parameter_source": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
               }
             },
             "required": [
@@ -166,12 +174,47 @@
               "source",
               "formula",
               "parameter_schema_sha256",
-              "parameters",
-              "measurement_sha256",
-              "training_query_ids",
-              "fit_report_sha256"
+              "parameters"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "const": "prediction"
+                  },
+                  "parameter_source": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "measurement_sha256",
+                  "training_query_ids",
+                  "fit_report_sha256"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "const": "configured"
+                  },
+                  "measurement_sha256": {
+                    "type": "object"
+                  },
+                  "training_query_ids": {
+                    "type": "object"
+                  },
+                  "fit_report_sha256": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "parameter_source"
+                ]
+              }
+            ]
           },
           {
             "type": "object",

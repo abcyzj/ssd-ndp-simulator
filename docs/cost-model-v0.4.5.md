@@ -14,6 +14,8 @@ P01 的头文件草案在本任务细化为 `Registry`、`Profile`、`Input` 和
 
 目标使用完整 `id/hardware/os/memory_bytes/frequency/affinity` 身份匹配，不查询执行宿主、不要求模拟宿主等于测量机。预测规则保留 Measurement、原始训练 query ID 和 fit 报告身份；实测表保留独立 source 和完整 binding。来源证据的真实性、训练隔离及质量报告内容由 P06/P15 负责，hash 本身不是质量证明。
 
+P19 增加 `source=configured`，沿用相同的公式、参数、Work 和特征域校验，另要求 `parameter_source` 说明参数出处。此来源与 Measurement、训练 query ID 和 fit 报告字段互斥。模拟报告分列配置参数、拟合预测和实测表；配置参数可以核对服务账本，不能用于驻留 CPU 精度验收。
+
 ## 公式与参数
 
 特征向量顺序取 Profile 的 `feature_ranges` 顺序；参数 schema hash 为排序键、ASCII 转义、紧凑 JSON 加 LF 的 SHA256，可由 `Registry::parameter_schema_sha256(id)` 取得。公式与参数严格分开，未知公式不回退。

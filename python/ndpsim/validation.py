@@ -2,6 +2,7 @@
 
 Reports prove their named layer only. Release aggregation belongs to P21.
 """
+import hashlib
 import math
 import sys
 from collections import Counter, defaultdict
@@ -197,7 +198,7 @@ def demand_ns(profile, c, m, info, k, work, features, location, cache):
         v = all_features[f['name']]
         require(v['unit'] == f['unit'] and f['minimum'] <= uint(v['value']) <= f['maximum'], 'cost feature domain/unit')
         values.append(v['value'])
-    if r['source'] == 'prediction':
+    if r['source'] in ('prediction', 'configured'):
         if id(r) not in cache:
             require(r['parameter_schema_sha256'] == schema_hash(r['formula']), 'formula schema identity')
             validate_model(r['formula'], r['parameters'], ranges)
@@ -227,10 +228,25 @@ def simulate(spec, inputs, output):
     require(file_hash(profile_path) == c['profile_sha256'] and file_hash(reg_path) == c['registry_sha256'], 'run input identity')
     profile = load(profile_path); profile_schema(profile)
     require(profile['target'] == c['target'], 'profile target')
+    from .graph_validation import PcieLedger
+    ssd = c['format'] == 'ndpsim-graph-ssd-run/1'
+    pcie = PcieLedger() if ssd else None
     rows = []
+    last_row = None
+    trace_digest = hashlib.sha256(b'[')
     for n, row in enumerate(trace_records(inputs.track(directory/'trace.jsonl')), 1):
         require(n <= inputs.records, 'record budget')
-        rows.append(row)
+        if n > 2:
+            trace_digest.update(b',')
+        if n > 1:
+            trace_digest.update(canonical(row).rstrip(b'\n'))
+        require(last_row is None or last_row['type'] != 'summary', 'records after terminal summary')
+        last_row = row
+        if ssd and row['type'] == 'pcie':
+            pcie.add(row)
+        else:
+            rows.append(row)
+    trace_digest.update(b']\n')
     require(rows and rows[0]['type'] == 'configuration' and rows[-1]['type'] == 'summary', 'trace boundaries')
     require(sum(r['type'] == 'configuration' for r in rows) == sum(r['type'] == 'summary' for r in rows) == 1, 'trace configuration/summary multiplicity')
     snapshot = rows[0]['snapshot']
@@ -256,10 +272,9 @@ def simulate(spec, inputs, output):
     for q in requests.values():
         uint(q['query'])
         require(q['success'] is True and uint(q['admitted']) <= uint(q['visible']) <= uint(q['drained']) <= uint(summary['drained']), 'request failed/time')
-    ssd = c['format'] == 'ndpsim-graph-ssd-run/1'
     if ssd:
         from .graph_validation import check as graph_check
-        calls, ledger = graph_check(rows, expected, c, directory, stages)
+        calls, ledger = graph_check(rows, expected, c, directory, stages, pcie)
     else:
         require(c['format'] == 'ndpsim-memory-run/1', 'unknown simulation format')
         require(summary['ssd_requests'] == summary['device_instances'] == 0, 'resident SSD service')
@@ -309,7 +324,7 @@ def simulate(spec, inputs, output):
     return dict(package_sha256=c['package_sha256'], profile_sha256=c['profile_sha256'], provenance=m['provenance'], target=c['target'], context=c['context'],
                 objects=m['objects'], configuration={n:c[n] for n in ('format','workers','slots','admission')}, ledger=ledger, service_sources=dict(source_counts), service_demand_ns_by_location=dict(totals),
                 queries=query_rows, measurement_window_ns=window,
-                deterministic_sha256=digest_bytes(canonical(rows[1:])), reference_results='external capture evidence only')
+                deterministic_sha256=trace_digest.hexdigest(), reference_results='external capture evidence only')
 
 
 def error(predicted, actual):
@@ -389,6 +404,7 @@ def accuracy(spec, inputs, output):
     frozen = load(resolve(evaluation.parent, manifest['frozen_profile']['path']))
     run_dir = resolve(inputs.base, spec['simulated'][0]['path']).parent
     simulated_profile = load(run_dir/'inputs/profile.json')
+    require(all(r['source'] != 'configured' for r in simulated_profile['rules']), 'configured costs cannot establish CPU accuracy')
     require([r for r in simulated_profile['rules'] if r['source']=='prediction'] == frozen['rules'], 'evaluated model differs from simulated model')
     if any(r['source']=='measured-table' for r in simulated_profile['rules']):
         execute('table', evaluation, output/'table-quality', allow_fixture=provenance['kind']=='synthetic-fixture')

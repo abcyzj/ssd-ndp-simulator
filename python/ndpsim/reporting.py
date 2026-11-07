@@ -71,7 +71,7 @@ def reduce_trace(output, config, b, deadline):
             profile_sha256=config['profile_sha256'], target_hardware=config['target'], context=config['context'],
             service_sources=dict(sources), service_demand_ns_by_location=dict(total_services),
             service_demand_ns_by_source=dict(source_services), service_demand_ns_by_stage=dict(stage_services),
-            interpretation='prediction and measured-table demands are distinct sources; neither proves target hardware accuracy',
+            interpretation='configured, prediction and measured-table demands are reported separately; hardware validation requires independent evidence',
             reference_results=dict(status='Unsupported', reason='timing-only does not recompute top-k; capture evidence remains external'),
             semantic_validation='trusted-independent-receipt' if 'semantic_report' in config else 'structure-only',
             requests=n, latency_ns=quantiles('latency'), offered_latency_ns=quantiles('offered_latency'), latency_definition='visible-admitted; offered latency reported separately', admission_wait_ns=quantiles('admission'), quantile_method='nearest_rank',
@@ -84,7 +84,7 @@ def reduce_trace(output, config, b, deadline):
             details=dict(stages='stages.csv', services='services.csv', all_resources='trace.jsonl', effective_backend=snapshot))
         result['wait_definitions'] = dict(resource_queue='start-submitted in services.csv',stage_elapsed='completed-submitted includes input, resource service and return; not pure CPU time',dependency_ready_wait='Unsupported: no separate ready timestamp in current trace')
         profile = load(config['profile'])
-        result['cost_source_policy'] = [dict(operator=r['operator'], stage_kind=r['stage_kind'], source=r['source'], approximation=r.get('approximation')) for r in profile['rules']]
+        result['cost_source_policy'] = [dict(operator=r['operator'], stage_kind=r['stage_kind'], source=r['source'], parameter_source=r.get('parameter_source'), approximation=r.get('approximation')) for r in profile['rules']]
         save(output/'report.json',result)
         return result
     finally:

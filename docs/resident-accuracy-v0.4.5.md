@@ -114,4 +114,4 @@ evaluation128 两点各独立执行一次完整 IR 采集、三轮 CPU 采样和
 
 两点各五个预测阶段均通过 P50 ≤10%、P90 ≤20%。两点的原生对照、完整 IR 语义与 Work、确定性、CPU 来源分列及唯一计费、按原始测量独立重建实测表均通过。完整报告、执行与回归命令、恢复前后 trace 绑定和产物身份见本机 run3/summary.json 和 run3/manifest.json。
 
-精度仅覆盖记录中的 macOS arm64、重建图及单 worker Host 内存驻留两点。逐调用表依赖对应轨迹的独立采样和匹配的身份及 Work，新轨迹需重新制表。未校准真实 SSD、PCIe 或 Controller。P19～P21 尚未开始。
+精度仅覆盖记录中的 macOS arm64、重建图及单 worker Host 内存驻留两点。逐调用表依赖对应轨迹的独立采样和匹配的身份及 Work，新轨迹需重新制表。未校准真实 SSD、PCIe 或 Controller。正式 SSD 账本和条件预测另见 [P19](ssd-accounting-v0.4.5.md)。

@@ -61,7 +61,44 @@ def input_gates(expected_intervals, actual_points):
         require(i==len(intervals) and not ready, 'missing input completion')
 
 
-def check(rows, expected, c, directory, stages):
+class PcieLedger:
+    """Validate each packet lifecycle as the trace arrives, retaining only totals."""
+    def __init__(self):
+        self.pending = {}
+        self.completed = set()
+        self.payload_by_layer = Counter()
+        self.platform_sizes = Counter()
+
+    def add(self, row):
+        packet = row['id']
+        event = row['event']
+        if event == 'enqueue':
+            require(packet not in self.pending and packet not in self.completed, 'duplicate PCIe event')
+            self.pending[packet] = (row, None)
+            return
+        require(packet in self.pending, 'PCIe event without enqueue')
+        enqueue, start = self.pending[packet]
+        for name in ('payload', 'wire', 'destination', 'layer', 'service'):
+            require(enqueue[name] == row[name], 'PCIe packet identity')
+        if event == 'start':
+            require(start is None, 'duplicate PCIe event')
+            require(enqueue['time'] <= row['time'], 'PCIe timing gate')
+            self.pending[packet] = (enqueue, row['time'])
+            return
+        require(event == 'arrive' and start is not None, 'incomplete PCIe packet')
+        require(row['time'] - start == row['service'], 'PCIe timing gate')
+        layer, payload, wire = row['layer'], row['payload'], row['wire']
+        expected = 32 if layer == 'sq_fetch' else payload + 28 * math_ceil(payload, 128)
+        require(wire == expected, 'PCIe wire bytes')
+        destination = row['destination']
+        self.payload_by_layer[layer, destination] += payload
+        if layer == 'platform':
+            self.platform_sizes[destination, payload, wire] += 1
+        del self.pending[packet]
+        self.completed.add(packet)
+
+
+def check(rows, expected, c, directory, stages, pcie):
     from .validation import key, unique
     offload = c['placement'] == 'controller'
     require(c['placement'] in ('host','controller'), 'unsupported graph placement')
@@ -72,14 +109,11 @@ def check(rows, expected, c, directory, stages):
     require(set(logical) == set(expected), 'logical stage coverage')
     ordinary_plans = Counter(); ordinary_reads = Counter(); local_reads = Counter(); vector_bytes = 0
     max_item = 0
-    prepares = {}
     anchors = {}
     for k, info in expected.items():
         s = info['stage']; require(logical[k]['work'] == s['work'] and logical[k]['features'] == s['features'], 'logical Work/features')
         if s['kind'] in ('init','finish'): anchors[k[0],s['kind']]=k
         if s['kind'] == 'score_prepare':
-            require(k[:2] not in prepares, 'duplicate L2 prepare')
-            prepares[k[:2]]=s
             for a in s['accesses']: max_item = max(max_item, plan([a],layout)[2])
     bound = c['resources']['block_bound']; per_block = (bound-64)//(max_item+16)
     require(per_block > 0 and rows[0]['items_per_block'] == per_block, 'capacity block decomposition')
@@ -101,7 +135,15 @@ def check(rows, expected, c, directory, stages):
             ordinary_gates.extend((k,s['kind'],l,n) for l,n in reads)
             if s['kind']=='score_prepare': vector_bytes += sector_bytes
         if offload and s['kind']=='score_l2':
-            require(k[:2] in prepares, 'L2 prepare binding'); accesses = prepares[k[:2]]['accesses']
+            vector_inputs = [d for d in s['dependencies'] if d['input'] == 'vectors']
+            require(len(vector_inputs) == 1, 'L2 prepare binding')
+            dep = vector_inputs[0]
+            prepare_key = key(dep['source']['key'])
+            require(dep['kind'] == 'DATA' and dep['source']['port'] == 'vectors' and
+                    prepare_key[:2] == k[:2] and prepare_key in expected, 'L2 prepare dependency')
+            prepare = expected[prepare_key]['stage']
+            require(prepare['kind'] == 'score_prepare' and prepare['chunk'] == s['chunk'], 'L2 prepare chunk')
+            accesses = prepare['accesses']
             n = s['features']['vectors']['value']; d = s['features']['dimensions']['value']
             require(len(accesses) == n and s['decomposition_rule']=='graph-l2-items/1', 'L2 indivisible item decomposition')
             require(all(a['object']=='vectors' and a['length_bytes']==4*d for a in accesses), 'complete vector accesses')
@@ -145,30 +187,21 @@ def check(rows, expected, c, directory, stages):
     input_gates(gates,points)
     summary = rows[-1]
     require(summary['ordinary_requests'] == sum(ordinary_reads.values()) and summary['local_requests'] == sum(local_reads.values()) and summary['vector_d2h'] == (0 if offload else vector_bytes), 'device totals/vector D2H ledger')
-    # Each PCIe packet has one enqueue/start/arrival, with independently checked wire rounding.
-    packets = defaultdict(dict)
-    for r in rows:
-        if r['type'] != 'pcie': continue
-        require(r['event'] not in packets[r['id']], 'duplicate PCIe event'); packets[r['id']][r['event']] = r
-    arrivals = []
-    for events in packets.values():
-        require(set(events)=={'enqueue','start','arrive'}, 'incomplete PCIe packet')
-        a,b,d = (events[n] for n in ('enqueue','start','arrive'))
-        for name in ('payload','wire','destination','layer','service'):
-            require(a[name] == b[name] == d[name], 'PCIe packet identity')
-        require(a['time'] <= b['time'] and d['time']-b['time'] == d['service'], 'PCIe timing gate')
-        wire = 32 if d['layer']=='sq_fetch' else d['payload']+28*math_ceil(d['payload'],128)
-        require(d['wire']==wire, 'PCIe wire bytes'); arrivals.append(d)
-    n = sum(ordinary_reads.values())
-    for layer, payload in [('sq_entry',72*n),('cq_entry',16*n),('doorbell',4*n),('sq_fetch',4*n),('data',sum(z*512*v for (_,_,z),v in ordinary_reads.items()))]:
-        require(sum(r['payload'] for r in arrivals if r['layer']==layer) == payload, 'PCIe '+layer+' ledger')
+    require(not pcie.pending, 'incomplete PCIe packet')
+    ordinary_count = sum(ordinary_reads.values())
+    ordinary_payload = {('sq_entry', 1):72*ordinary_count, ('cq_entry', 0):16*ordinary_count,
+                        ('doorbell', 1):4*ordinary_count, ('sq_fetch', 0):4*ordinary_count,
+                        ('data', 0):sum(z*512*v for (_,_,z),v in ordinary_reads.items())}
+    actual_payload = {k:v for k,v in pcie.payload_by_layer.items() if k[0] != 'platform'}
+    require(Counter(actual_payload) == Counter(ordinary_payload), 'ordinary PCIe directional byte ledger')
     protocol = [r for r in rows if r['type']=='protocol']
-    require(Counter((r['payload'],r['wire']) for r in protocol)==Counter((r['payload'],r['wire']) for r in arrivals if r['layer']=='platform'), 'protocol/PCIe ownership ledger')
+    require(Counter((1-r['direction'],r['payload'],r['wire']) for r in protocol) == pcie.platform_sizes, 'protocol/PCIe ownership ledger')
     results = unique((r for r in protocol if r['kind']==3), 'result', lambda r:r['chunk'])
     commands = unique((r for r in protocol if r['kind']==2), 'execute', lambda r:r['chunk'])
     require(set(results)==set(commands)==set(chunks), 'command/result chunk coverage')
     for r in protocol:
         kind=r['kind']; require(kind in range(6), 'unknown protocol kind')
+        require(r['direction'] == (0 if kind in (0,2,4) else 1), 'protocol direction')
         logical = 4*r['dimension'] if kind==0 else 4*r['count'] if kind==2 else 12*r['count'] if kind==3 else 0
         payload = (64 if kind in (0,2) else 56 if kind==3 else 48)+logical
         require((r['logical'],r['payload'],r['wire']) == (logical,payload,payload+28*math_ceil(payload,128)), 'protocol size ledger')
@@ -215,7 +248,7 @@ def check(rows, expected, c, directory, stages):
             require(used == r['used'] and 0 <= used <= c['resources']['capacity_bytes'], 'buffer credit accounting');peak=max(peak,used)
         if r['type']=='buffer_access': require(r['duration_ns']==math_ceil(r['bytes'],c['resources']['staging_bytes_per_ns']), 'buffer service formula')
     require(used==0, 'buffer not drained')
-    return calls, dict(ordinary_requests=n,local_requests=sum(local_reads.values()),vector_d2h=summary['vector_d2h'],physical_chunks=len(chunks),buffer_peak_bytes=peak,protocol_messages=len(protocol),hardware_validation='configured_unvalidated')
+    return calls, dict(ordinary_requests=ordinary_count,local_requests=sum(local_reads.values()),vector_d2h=summary['vector_d2h'],physical_chunks=len(chunks),buffer_peak_bytes=peak,protocol_messages=len(protocol),hardware_validation='configured_unvalidated')
 
 
 def math_ceil(n,d):
