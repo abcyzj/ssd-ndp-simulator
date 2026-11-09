@@ -2,7 +2,7 @@
 
 日期：2026-11-05（Asia/Shanghai）。依据 [正式 PRD](prd-v0.4.5.md)和[源码核查](source-audit-v0.4.5.md)。
 
-状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13/P14/P15/P16/P17 已完成（2026-11-07）；P18 已完成配方三版及 A01/A02 正式驻留 CPU 精度验证（见 docs/resident-accuracy-v0.4.5.md），[P19 正式 SSD 账本与条件预测](ssd-accounting-v0.4.5.md)已完成，[P20 旧路径清理与回归](cleanup-v0.4.5.md)已完成，P21 未开始，全部 AC 的发布汇总尚未执行。** 当前可运行交付仍为 V0.4。[P00 基线与迁移记录](baseline-v0.4.5.md)保存本次构建、93项CTest、小夹具与清单证据；[P01 契约与风险设计](contract-v0.4.5.md)已冻结并完成设计检查；[P02通用SDK与校验](capture-sdk-v0.4.5.md)已完成；[P03独立图搜索构建](native-v0.4.5.md)及[P04新IR采集与语义校验](capture-graph-v0.4.5.md)已完成（合成pilot），P18 已执行 tuning32 正式训练及 evaluation128 两点的驻留精度核验。
+状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13/P14/P15/P16/P17 已完成（2026-11-07）；P18 已完成配方三版及 A01/A02 正式驻留 CPU 精度验证（见 docs/resident-accuracy-v0.4.5.md），[P19 正式 SSD 账本与条件预测](ssd-accounting-v0.4.5.md)已完成，[P20 旧路径清理与回归](cleanup-v0.4.5.md)已完成，[P21 干净发布与总验收](releases/v0.4.5.md)已完成，全部 12 项 AC 通过。**[P00 基线与迁移记录](baseline-v0.4.5.md)保存本次构建、93项CTest、小夹具与清单证据；[P01 契约与风险设计](contract-v0.4.5.md)已冻结并完成设计检查；[P02通用SDK与校验](capture-sdk-v0.4.5.md)已完成；[P03独立图搜索构建](native-v0.4.5.md)及[P04新IR采集与语义校验](capture-graph-v0.4.5.md)已完成（合成pilot），P18 已执行 tuning32 正式训练及 evaluation128 两点的驻留精度核验。
 
 ## 1. 实施原则与关键路线
 
@@ -61,7 +61,7 @@ P01 输出版本化 schema、头文件级接口设计和可执行最小夹具，
 
 ## 4. 任务清单
 
-状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13/P14/P15/P16/P17 完成；P18 已完成配方三版及 A01/A02 正式驻留 CPU 精度验证（见 docs/resident-accuracy-v0.4.5.md），[P19 正式 SSD 账本与条件预测](ssd-accounting-v0.4.5.md)已完成，[P20](cleanup-v0.4.5.md)已完成，P21 未开始**。每项共同保存：需求来源、输入与有效配置、源码／依赖／构建身份、命令／退出码、原始输出、独立断言、产物 hash、失败根因与适用限制。只有对应出口具备实际证据后才更新状态。
+状态：**P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13/P14/P15/P16/P17 完成；P18 已完成配方三版及 A01/A02 正式驻留 CPU 精度验证（见 docs/resident-accuracy-v0.4.5.md），[P19 正式 SSD 账本与条件预测](ssd-accounting-v0.4.5.md)已完成，[P20](cleanup-v0.4.5.md)已完成，[P21](releases/v0.4.5.md)已完成**。每项共同保存：需求来源、输入与有效配置、源码／依赖／构建身份、命令／退出码、原始输出、独立断言、产物 hash、失败根因与适用限制。只有对应出口具备实际证据后才更新状态。
 
 ### M1：冻结与通用接口
 
@@ -108,11 +108,11 @@ P01 输出版本化 schema、头文件级接口设计和可执行最小夹具，
 | **P18 正式采集／拟合与驻留精度（已完成）**；FR02/08/09；AC01/04/08 | P04/P06/P11/P14/P15；锁定全量输入、新原生构建、模型配方和预算。 | 执行 §6 采集与重复日程；全部128查询独立语义／Work核对、两点模型／表分列和严格 CPU 精度。先冻结训练模型再评价；未达保留失败，不调评价表当预测模型，不减少规模。**实际出口**：[P18执行记录](resident-accuracy-v0.4.5.md)。按用户授权重建并锁定完整 SIFT1M NSG，复用五点 tuning32、两点各三轮完整表采样和 A/B/A。三版将 INIT、merge_append、score_prepare、adjacency_prepare 列为逐调用表。五个预测阶段通过，evaluation128 两点各三次无探针 benchmark、两次确定性 SST 和参考情景独立账本及敏感性通过。AC01/04/08 保留至发布汇总。 |
 | **P19 SSD 正式账本与条件预测（已完成）**；FR05/07；AC06 | P13/P15/P16；同身份 evaluation128 两点包、合法 SSD 准备上下文模型、锁定 XML／Layout。 | §6 四个 SSD 配置全量执行；独立核对每操作映射与流量／缓冲／排空；只 SSD Host vs Controller 求收益。设备／链路／盘控标 configured_unvalidated，保存所有点，不以“下沉更快”为出口。**实际出口**：[P19执行记录](ssd-accounting-v0.4.5.md)。B01/C01/B02/C02 各完成完整 evaluation128 模拟及独立正式账本，两组同条件比较通过，Controller 完整向量 D2H 均为 0。根140项、最终定向2项、ASan2项通过。AC06 证据留至发布汇总。 |
 | **P20 删除旧路径并执行当前回归（已完成）**；FR11；AC10 | P16/P17/P18/P19 和 P00清单；按 §7 逐项迁移。 | 去除 direct/动态IR/旧Replay、旧默认和冗余公开脚本；移除生产功能链接，保留原生功能库及独立 oracle。检查 imports/CMake/文档引用无悬空；清理后的根构建、全部当前 CTest、定向 ASan及受影响正式出口复验，不能使用删除前身份直接宣称最终通过。**实际出口**：[P20记录](cleanup-v0.4.5.md)。旧执行路径、默认与公开脚本退役，250 个当前文件、82 项当前 CTest 与退役替代清单已核对；根 82/82、定向 ASan 29/29、独立原生 3/3、MQSim 四组双重复、A01/A02 驻留精度及参考账本、tuning32 四份账本、B01/C01/B02/C02 正式账本与两组比较通过。AC10 的当前证据齐备，留待 P21 汇总。 |
-| **P21 干净发布与总验收**；FR10/12；AC11/12 | P20 及全部前序出口；公开依赖／数据准备、可安装 Python、独立 native、配置／教程／许可证。 | 无维护者 results/cache 依赖的干净目录构建与最小全链路；执行最终身份对应的完整验收，12 AC 全覆盖，完整证据和限制；更新 README/架构/扩展/测试/发布记录。只经授权才进行 Git 提交、推送或发布。 |
+| **P21 干净发布与总验收（已完成）**；FR10/12；AC11/12 | P20 及全部前序出口；公开依赖／数据准备、可安装 Python、独立 native、配置／教程／许可证。 | 无维护者 results/cache 依赖的干净目录构建与最小全链路；执行最终身份对应的完整验收，12 AC 全覆盖，完整证据和限制；更新 README/架构/扩展/测试/发布记录。只经授权才进行 Git 提交、推送或发布。**实际出口**：[发布记录](releases/v0.4.5.md)。独立原生 4/4、干净根 CTest 82/82、独立拟合 17 通过（3 项 C++ 消费由根测试覆盖）、教学双映射和安装 CLI 通过。按最终执行身份复核六配置八次正式模拟与前序证据，全部 12 AC 通过，五个聚合负例拒绝。 |
 
 ## 5. 计划命令与运行职责
 
-以下为 P14 已实现入口，详见 [CLI 使用说明](../python/CLI.md)。`compare` 只做描述性比较；`verify` 已由P15接入三层Validator（[格式与用法](../python/VALIDATION.md)）；未知/总验收spec仍退出3，完整12项AC聚合留待P21，层级通过不计总验收。
+以下为 P14 已实现入口，详见 [CLI 使用说明](../python/CLI.md)。`compare` 只做描述性比较；`verify` 已由P15接入三层Validator（[格式与用法](../python/VALIDATION.md)）；未知/总验收spec仍退出3。完整12项 AC 由独立发布工具核对。 [发布验收入口](releases/v0.4.5.md#证据汇总)
 
 ```sh
 # 独立原生：显式 SDK 源路径；无 SST/MQSim 前置
@@ -130,7 +130,7 @@ ndpsim check --package <package> --registry <registry.json> --adapter workloads/
 ndpsim fit --manifest <training.json> --budget <execution-budget.json> --output <new-directory>
 ndpsim simulate --config <experiment.json> --build <build-directory> --output <new-directory>
 ndpsim compare --spec <comparison.json> --output <new-directory>
-ndpsim verify --spec <validation.json> --output <new-directory> # P15三层证据spec；完整AC聚合属P21
+ndpsim verify --spec <validation.json> --output <new-directory> # 三层 Validator 证据 spec
 ```
 
 `check` 区分结构和业务语义验证；后者由负载扩展在原生侧访问原数据。`simulate` 只读包、配置、Profile 和校验报告，不要求输入数据集。`verify` 负责构建检查／完整日程及聚合，不隐藏在 simulate 中。原生 benchmark、CPU sample、capture 分别运行；便捷 capture 不把采样墙钟写为调度时间。
@@ -220,4 +220,4 @@ P21 总交付以清理后最终执行源码为准。测试数量不是正确性�
 | 新XML几何／partition／初态不一致 | 拒绝相关配置；P10独立解析核对支持子集，不承诺任意MQSim选项。 |
 | 真实输入或资源预算不足 | 阻塞全规模采集／验收，不阻塞接口和小夹具；不得缩小规模后记正式通过。 |
 
-P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13/P14/P15/P16/P17已关闭；**P18** 已通过配方三版及两点正式驻留 CPU 精度核验；**P19** 已通过四点正式 SSD 账本和两组条件比较；**P20** 已完成清理和受影响出口复验；**P21** 未开始。正式实现前不需要再次决定目录命名等常规细节；如需改变PRD范围或精度门槛，应单独明确变更，不能在任务实现中隐式降低要求。
+P00/P01/P02/P03/P04/P05/P06/P07/P08/P09/P10/P11/P12/P13/P14/P15/P16/P17已关闭；**P18** 已通过配方三版及两点正式驻留 CPU 精度核验；**P19** 已通过四点正式 SSD 账本和两组条件比较；**P20** 已完成清理和受影响出口复验；**P21** 已完成干净构建、最小全链路与 12 项 AC 汇总。正式实现前不需要再次决定目录命名等常规细节；如需改变PRD范围或精度门槛，应单独明确变更，不能在任务实现中隐式降低要求。

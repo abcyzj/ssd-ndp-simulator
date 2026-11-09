@@ -110,7 +110,7 @@ P15 implements `ndpsim verify --spec validation.json --output new-directory`
 for separate capture, simulation scheduling/ledger and native-vs-sim accuracy
 reports. See [VALIDATION.md](VALIDATION.md) for the three input contracts,
 budgets, identities, repetitions and strict thresholds. Unknown/full-release
-specs return 3; full release aggregation belongs to P21. Every command keeps
+specs return 3. Use the separate [release verifier](../docs/releases/v0.4.5.md#证据汇总) for release evidence. Every command keeps
 `full_acceptance_passed=false`; no quick/fixture/layer check is total acceptance.
 
 Exit codes: 0 executed successfully within the stated scope; 2 usage/input,

@@ -1,6 +1,6 @@
 # SSD NDP Simulator
 
-V0.4.5 开发分支提供静态 IR 的 timing-only 模拟。原生图搜索程序采集访问、Work 和依赖，模拟器使用这些元数据调度服务。支持 Host 内存驻留，以及单 SSD 上的 Host 和 Controller 放置。当前正式交付记录为 [V0.4](docs/releases/v0.4.md)，V0.4.5 的任务和验收状态见[实施清单](docs/implementation-plan-v0.4.5.md)。
+V0.4.5 提供静态 IR 的 timing-only 模拟。原生图搜索程序采集访问、Work 和依赖，模拟器使用这些元数据调度服务。支持 Host 内存驻留，以及单 SSD 上的 Host 和 Controller 放置。干净目录复现、完整 12 项 AC 和适用范围见 [V0.4.5 发布验收](docs/releases/v0.4.5.md)。
 
 ## 构建和运行
 

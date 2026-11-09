@@ -1,6 +1,6 @@
 # 持续维护的测试与验收
 
-> 历史说明。以下命令和路径属于 V0.4 及其继承版本。当前 V0.4.5 开发入口见 [项目 README](../README.md)。
+> 历史说明。以下命令和路径属于 V0.4 及其继承版本。V0.4.5 使用根 CTest、独立原生／MQSim 对拍及六配置八次正式模拟。命令、证据和限制见 [V0.4.5 发布验收](releases/v0.4.5.md) 与 [现行测试清单](migration-v0.4.5/tests.json)。
 
 V0.4采用独立的 [12配置验收矩阵](validation-matrix-v0.4.md)（[`tools/verify_v04.py`](https://github.com/abcyzj/ssd-ndp-simulator/blob/64e2ca3c6427c34600ab3085c0d8101f1bc34b0d/tools/verify_v04.py)，[复现与证据](releases/v0.4.md)），配置数不含原生/模拟重复、训练、A/B/A、detail8及定向/继承测试。交付保留根构建/全CTest、完整V0.1 AC、T3/T4/T5及相关IR定向与独立核对；V0.3的52条及配套效率/Q梯度按矩阵触发条件执行。旧52条门槛和以下现行命令语义不改，少跑不能标作完整V0.3通过。
 

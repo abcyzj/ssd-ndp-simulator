@@ -6,7 +6,7 @@ checks existing evidence, runs the requested validator in a budgeted child, and
 records the command, exit code, logs, hashes and resource preflight. It may
 rebuild a measured table from already captured samples to verify table quality.
 A successful layer report always has `full_acceptance_passed=false`.
-Complete release aggregation and the twelve AC decisions belong to P21.
+The [release verifier](../docs/releases/v0.4.5.md#证据汇总) handles the twelve AC decisions.
 
 A spec has exactly these fields:
 

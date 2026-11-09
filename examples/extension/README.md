@@ -52,4 +52,4 @@ ctest --test-dir build/delivery --output-on-failure -R '^extension_v045$'
 
 现行公共 provenance 的 split 枚举仅有 tuning32/evaluation128/fixture，且 fixture 只允许 synthetic-fixture。为了真实标记 native-capture，本例使用 tuning32 标签和明确的 workload=block-sum、query_ids=[0]；此标签不意味着32查询或正式图搜索训练，绝不与图搜索数据混用。P17保留公共schema，没有扩大split格式。
 
-教学Profile、SSD/PCIe/Controller均 configured_unvalidated；没有CPU校准、吞吐精度或硬件收益结论。示例元数据规模极小，子进程有30/60秒超时，读取元数据限制16MiB；不承诺通用大规模输入或恶意文件沙箱。最终版本／12项AC验收仍由后续发布任务执行。
+教学Profile、SSD/PCIe/Controller均 configured_unvalidated；没有CPU校准、吞吐精度或硬件收益结论。示例元数据规模极小，子进程有30/60秒超时，读取元数据限制16MiB；不承诺通用大规模输入或恶意文件沙箱。完整发布验收见 [V0.4.5 发布记录](../../docs/releases/v0.4.5.md)。

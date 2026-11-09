@@ -1,11 +1,12 @@
 # 文档入口
 
-下一版正式需求为 [V0.4.5 PRD](prd-v0.4.5.md)：面向发布的 timing-only 平台与静态 IR、算子、映射和硬件成本扩展。V0.4.5 的[源码核查](source-audit-v0.4.5.md)与[22项实施计划](implementation-plan-v0.4.5.md)已完成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)、[P03独立图搜索构建](native-v0.4.5.md)、[P04新IR采集与语义校验](capture-graph-v0.4.5.md)、[P05通用模型与注册接口](cost-model-v0.4.5.md)、[P06独立拟合／制表](fit-v0.4.5.md)、[P07元数据Runtime与资源服务](runtime-v0.4.5.md)、[P08静态DAG执行器](dag-v0.4.5.md)、[P09无内容Layout](layout-v0.4.5.md)、[P10 MQSim运行时配置](device-config-v0.4.5.md)、[P11内存timing-only接线](memory-timing-v0.4.5.md)、[P12元数据传输与Controller资源](controller-timing-v0.4.5.md)、[P13图搜索SSD两放置](graph-ssd-v0.4.5.md)、[P14统一CLI/报告](cli-v0.4.5.md)、[P15三层Validator](validator-v0.4.5.md)和[P16独立MQSim对拍](mqsim-oracle-v0.4.5.md)及[P17教学扩展全链路](extension-v0.4.5.md)已完成，P18 已完成配方三版及 A01/A02 正式驻留 CPU 精度验证（见 docs/resident-accuracy-v0.4.5.md），[P19 正式 SSD 账本与条件预测](ssd-accounting-v0.4.5.md)已完成，[P20 旧路径清理与回归](cleanup-v0.4.5.md)已完成，P21 未开始，新 AC 发布汇总尚未执行；当前可运行版本仍为 V0.4。新版本与旧兼容、功能重算和回归要求的替代关系见新 PRD §2。
+当前发布需求为 [V0.4.5 PRD](prd-v0.4.5.md)：面向发布的 timing-only 平台与静态 IR、算子、映射和硬件成本扩展。V0.4.5 的[源码核查](source-audit-v0.4.5.md)与[22项实施计划](implementation-plan-v0.4.5.md)已完成，[P00 基线与迁移清单](baseline-v0.4.5.md)、[P01 契约与风险设计](contract-v0.4.5.md)、[P02通用SDK与校验](capture-sdk-v0.4.5.md)、[P03独立图搜索构建](native-v0.4.5.md)、[P04新IR采集与语义校验](capture-graph-v0.4.5.md)、[P05通用模型与注册接口](cost-model-v0.4.5.md)、[P06独立拟合／制表](fit-v0.4.5.md)、[P07元数据Runtime与资源服务](runtime-v0.4.5.md)、[P08静态DAG执行器](dag-v0.4.5.md)、[P09无内容Layout](layout-v0.4.5.md)、[P10 MQSim运行时配置](device-config-v0.4.5.md)、[P11内存timing-only接线](memory-timing-v0.4.5.md)、[P12元数据传输与Controller资源](controller-timing-v0.4.5.md)、[P13图搜索SSD两放置](graph-ssd-v0.4.5.md)、[P14统一CLI/报告](cli-v0.4.5.md)、[P15三层Validator](validator-v0.4.5.md)和[P16独立MQSim对拍](mqsim-oracle-v0.4.5.md)及[P17教学扩展全链路](extension-v0.4.5.md)已完成，P18 已完成配方三版及 A01/A02 正式驻留 CPU 精度验证（见 docs/resident-accuracy-v0.4.5.md），[P19 正式 SSD 账本与条件预测](ssd-accounting-v0.4.5.md)已完成，[P20 旧路径清理与回归](cleanup-v0.4.5.md)已完成，[P21 干净发布与总验收](releases/v0.4.5.md)已完成，12 项 AC 通过。新版本与旧兼容、功能重算和回归要求的替代关系见新 PRD §2。
 
 当前检出的开发入口见 [项目 README](../README.md)。V0.4 及更早的命令、配置和验证记录是历史说明。复现 V0.4 时使用交付源码 `8cf48fc`；链接到已删除源码的历史记录指向 P20 清理前的固定快照。
 
 | 目的 | 现行入口 |
 | --- | --- |
+| V0.4.5 发布验收与干净目录复现 | [发布记录](releases/v0.4.5.md) |
 | V0.4.5 P20 旧路径清理、回归与正式复验 | [执行记录与限制](cleanup-v0.4.5.md) |
 | V0.4.5 P17 教学算子、真实采集、双映射与独立核对 | [实现记录](extension-v0.4.5.md)、[复现教程](../examples/extension/README.md) |
 | V0.4.5 P18 新图身份、逐调用表与正式驻留精度 | [执行记录与限制](resident-accuracy-v0.4.5.md) |

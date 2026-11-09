@@ -2028,6 +2028,15 @@
       "reason": "P16独立对拍入口及输入驱动错误的独立核验，不调用旧总AC"
     },
     {
+      "path": "tools/verify_release.py",
+      "policy": "release",
+      "decision": "保留",
+      "tasks": "P21",
+      "replacement_assertions": "12项发布证据、执行身份与哈希；缺失、篡改、quick、失败和旧阶段拒绝",
+      "deletion_gate": "完整发布矩阵与失败关闭证据有替代入口",
+      "reason": "PRD FR12／AC-045-12"
+    },
+    {
       "path": "workloads/graph-search/CAPTURE.md",
       "policy": "capture-extension",
       "decision": "保留",
