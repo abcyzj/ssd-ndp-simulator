@@ -4,6 +4,8 @@ V0.4.5 提供静态 IR 的 timing-only 模拟。原生图搜索程序采集访�
 
 ## 构建和运行
 
+第一次使用建议从[中文快速上手](docs/quickstart-v0.4.5.md)开始，包含环境要求、独立构建和端到端教学示例。
+
 ```sh
 cmake -S . -B build/timing -DBUILD_TESTING=ON
 cmake --build build/timing -j2
