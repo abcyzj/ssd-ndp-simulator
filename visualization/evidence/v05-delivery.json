@@ -1,0 +1,110 @@
+{
+  "measurements": {
+    "capture-only": {
+      "argv": [
+        "--package",
+        "teaching",
+        "--query",
+        "0",
+        "--output",
+        "capture-only"
+      ],
+      "elapsed_seconds": 0.643,
+      "exit_code": 0,
+      "files": {
+        "dag.html": {
+          "bytes": 1923327,
+          "sha256": "7b9cbc2736772a222dd9f236f47a392f95dfc0eba9584a30657fe547f57b362e"
+        },
+        "manifest.json": {
+          "bytes": 1412,
+          "sha256": "c7d1488d913a5ae3caa709a6494458f31cdde2dad8cdc10f5e516c767aab221c"
+        },
+        "timeline.json": {
+          "bytes": 427,
+          "sha256": "9d8ad3ed8ff91b71105ff40628ead8cb48ac257fa0c2464ee57295ae60d3d20b"
+        }
+      },
+      "index_bytes": 28672,
+      "peak_rss_bytes": 41517056
+    },
+    "comparison": {
+      "argv": [
+        "--package",
+        "formal",
+        "--query",
+        "2579",
+        "--output",
+        "comparison",
+        "--report",
+        "C01/report.json",
+        "--report",
+        "B01/report.json"
+      ],
+      "elapsed_seconds": 25.102,
+      "exit_code": 0,
+      "files": {
+        "dag.html": {
+          "bytes": 2716881,
+          "sha256": "38146060cdcbd5acdb92bba597d4c21665e9ccd4ea0406fbb7a8bf8ae685ea78"
+        },
+        "manifest.json": {
+          "bytes": 5000,
+          "sha256": "42a512750fcd17ecd111be708747664b0c3756b33d09ef8eb22a894075d9a6a6"
+        },
+        "timeline.json": {
+          "bytes": 10045876,
+          "sha256": "d82d93357e42307869a0f80c560eedcc941a118967892afabebc6cf2d027eec2"
+        }
+      },
+      "index_bytes": 56250368,
+      "peak_rss_bytes": 67911680
+    },
+    "single-run": {
+      "argv": [
+        "--package",
+        "formal",
+        "--query",
+        "2579",
+        "--output",
+        "single-run",
+        "--report",
+        "B01/report.json"
+      ],
+      "elapsed_seconds": 19.777,
+      "exit_code": 0,
+      "files": {
+        "dag.html": {
+          "bytes": 2654967,
+          "sha256": "fbba927e9e0566fde3e3717ef3b6c96177ca7e46329458e89c99639631f75601"
+        },
+        "manifest.json": {
+          "bytes": 3107,
+          "sha256": "efbc5187188cdb0518e80354231623eadfb6a36bd9aa670e10ae7c0a4a1c20b1"
+        },
+        "timeline.json": {
+          "bytes": 7427348,
+          "sha256": "3a0983e964361904f8580c011a00b370219508fcee540d346c4c6b01ea083f7e"
+        }
+      },
+      "index_bytes": 49053696,
+      "peak_rss_bytes": 65617920
+    }
+  },
+  "perfetto_slices": [
+    {
+      "dur": "77018",
+      "id": "58",
+      "run": "controller",
+      "ts": "77321"
+    },
+    {
+      "dur": "99",
+      "id": "76",
+      "run": "host",
+      "ts": "154209"
+    }
+  ],
+  "stage_key": "{\"query\":\"2579\",\"op\":\"op2\",\"stage\":\"score_l2.1\"}",
+  "tool": "ndpsim-viz 0.4.5"
+}

@@ -1,0 +1,314 @@
+{
+  "command": "python3.13 visualization/evidence/audit_v01.py",
+  "exit_code": 0,
+  "formal": {
+    "edge_kinds": {
+      "ADDRESS": 38,
+      "CONTROL": 38,
+      "DATA": 868,
+      "ORDER": 606
+    },
+    "first_score_dependencies": {
+      "merge_append.2": [
+        {
+          "input": "in",
+          "kind": "ORDER",
+          "source": {
+            "key": {
+              "op": "op2",
+              "query": 2579,
+              "stage": "score_l2.1"
+            },
+            "port": "out"
+          }
+        },
+        {
+          "input": "scores",
+          "kind": "DATA",
+          "source": {
+            "key": {
+              "op": "op2",
+              "query": 2579,
+              "stage": "score_l2.1"
+            },
+            "port": "scores"
+          }
+        }
+      ],
+      "score_l2.1": [
+        {
+          "input": "in",
+          "kind": "ORDER",
+          "source": {
+            "key": {
+              "op": "op2",
+              "query": 2579,
+              "stage": "score_prepare.0"
+            },
+            "port": "out"
+          }
+        },
+        {
+          "input": "query",
+          "kind": "DATA",
+          "source": {
+            "key": {
+              "op": "op0",
+              "query": 2579,
+              "stage": "init.0"
+            },
+            "port": "query"
+          }
+        },
+        {
+          "input": "vectors",
+          "kind": "DATA",
+          "source": {
+            "key": {
+              "op": "op2",
+              "query": 2579,
+              "stage": "score_prepare.0"
+            },
+            "port": "vectors"
+          }
+        }
+      ],
+      "score_prepare.0": [
+        {
+          "input": "in",
+          "kind": "ORDER",
+          "source": {
+            "key": {
+              "op": "op1",
+              "query": 2579,
+              "stage": "state.0"
+            },
+            "port": "out"
+          }
+        },
+        {
+          "input": "query",
+          "kind": "DATA",
+          "source": {
+            "key": {
+              "op": "op0",
+              "query": 2579,
+              "stage": "init.0"
+            },
+            "port": "query"
+          }
+        },
+        {
+          "input": "state",
+          "kind": "DATA",
+          "source": {
+            "key": {
+              "op": "op1",
+              "query": 2579,
+              "stage": "state.0"
+            },
+            "port": "state"
+          }
+        }
+      ]
+    },
+    "package_sha256": "0b08ecda86e64c7f0438ac005f236b1cebd874cc6539fd60c2c7d94ae2ff96be",
+    "path": "results/v0.4.5/p19/run1/B01/inputs/package",
+    "query": 2579,
+    "runs": [
+      {
+        "config_sha256": "1d37a0b3b3b96ca7a93cb49a9c26d16035f2a1b576ffbefde4f81fc6274e9da5",
+        "first_pcie_packet_in_window": {
+          "arrive": 157747495793,
+          "enqueue": 157747495785,
+          "id": 1319452,
+          "start": 157747495785
+        },
+        "first_score_intervals": {
+          "merge_append.2": [
+            157747650093,
+            157747650096
+          ],
+          "score_l2.1": [
+            157747649994,
+            157747650093
+          ],
+          "score_prepare.0": [
+            157747572874,
+            157747649994
+          ]
+        },
+        "path": "results/v0.4.5/p19/run1/B01",
+        "placement": "host",
+        "profile_sha256": "ab43034ec8ea4ea1dcdc477564ada0d55761126df975621ff83fa9c687c49820",
+        "request": {
+          "admitted": 157747495785,
+          "drained": 157879158553,
+          "query": 2579,
+          "success": true,
+          "type": "request",
+          "visible": 157879158553
+        },
+        "resource_coverage": {
+          "cpu:stage": 607,
+          "logical:stage": 607,
+          "ordinary_read:window": 1492,
+          "pcie_complete:window": 8952,
+          "pcie_partial:window": 1
+        },
+        "sha256": {
+          "effective-config.json": "1d37a0b3b3b96ca7a93cb49a9c26d16035f2a1b576ffbefde4f81fc6274e9da5",
+          "inputs/device.xml": "dd9becc57b38b14a9cdd84406a68d9f7bfb18cbac4c6eb1c81e771403287a671",
+          "inputs/layout.json": "d916a4ecb20a604ff43a76f61040ddfe639f842edcf9d274e9250b35bc0ae101",
+          "inputs/profile.json": "ab43034ec8ea4ea1dcdc477564ada0d55761126df975621ff83fa9c687c49820",
+          "report.json": "1846d230acc4dcf607ec8f1256aaa24cb93883bdd7304a31c55cf1146a787fd3",
+          "services.csv": "37d0299c8b6c4d4bbc8f9097371bbff259d49b74230f785211ecec33d2c5bb1a",
+          "stages.csv": "6951651dd8fea533928bbde11c2a69f19407ef335f452596ee523180b3f65ffe",
+          "trace.jsonl": "cd9010004a8b21bae578443aa1029c53209242f6390a21619403ea18107d9903"
+        },
+        "trace_record_counts": {
+          "configuration": 1,
+          "cpu": 68225,
+          "demand": 68225,
+          "logical": 68225,
+          "measurement_start": 1,
+          "ordinary_plan": 16233,
+          "ordinary_read": 148358,
+          "ordinary_submit": 148358,
+          "pcie": 2670444,
+          "request": 128,
+          "stage": 68225,
+          "summary": 1
+        }
+      },
+      {
+        "config_sha256": "30c62fc510642d385d24a9a0fb6b6e3674229e096791251f8762fd2ecd838316",
+        "first_pcie_packet_in_window": {
+          "arrive": 157747495793,
+          "enqueue": 157747495785,
+          "id": 1319452,
+          "start": 157747495785
+        },
+        "first_score_intervals": {
+          "merge_append.2": [
+            157747650124,
+            157747650126
+          ],
+          "score_l2.1": [
+            157747573106,
+            157747650124
+          ],
+          "score_prepare.0": [
+            157747573104,
+            157747573106
+          ]
+        },
+        "path": "results/v0.4.5/p19/run1/C01",
+        "placement": "controller",
+        "profile_sha256": "ab43034ec8ea4ea1dcdc477564ada0d55761126df975621ff83fa9c687c49820",
+        "request": {
+          "admitted": 157747495785,
+          "drained": 157834592259,
+          "query": 2579,
+          "success": true,
+          "type": "request",
+          "visible": 157834592259
+        },
+        "resource_coverage": {
+          "buffer_access:query": 1,
+          "buffer_access:stage": 752,
+          "controller_compute:stage": 188,
+          "cpu:stage": 495,
+          "credit:window": 566,
+          "local_plan:stage": 188,
+          "local_read:stage": 1450,
+          "logical:stage": 607,
+          "nand_transaction:window": 1450,
+          "ordinary_read:window": 42,
+          "pcie_complete:window": 632,
+          "pcie_partial:window": 1,
+          "protocol:query": 380
+        },
+        "sha256": {
+          "effective-config.json": "30c62fc510642d385d24a9a0fb6b6e3674229e096791251f8762fd2ecd838316",
+          "inputs/device.xml": "dd9becc57b38b14a9cdd84406a68d9f7bfb18cbac4c6eb1c81e771403287a671",
+          "inputs/layout.json": "d916a4ecb20a604ff43a76f61040ddfe639f842edcf9d274e9250b35bc0ae101",
+          "inputs/profile.json": "ab43034ec8ea4ea1dcdc477564ada0d55761126df975621ff83fa9c687c49820",
+          "report.json": "82d399bddf65626915ac02d11fdc6902386b5aa15a15b505b57991b1ea1362a1",
+          "services.csv": "c37a37d5228de2c6a548e4e38ef9de71f91a46e47c744a37b354b44c174e7e61",
+          "stages.csv": "5e1bc26953b854911139bbd0f949678ca70dcbea3754e231d0cf9c1c57d173ed",
+          "trace.jsonl": "1ee2630c3b4bc198b72aee16006d431db8495d92fe5f02f8e21fda6073ea7a61"
+        },
+        "trace_record_counts": {
+          "buffer_access": 71964,
+          "configuration": 1,
+          "controller_compute": 17959,
+          "cpu": 56939,
+          "credit": 54133,
+          "demand": 74898,
+          "local_plan": 17959,
+          "local_read": 143258,
+          "logical": 68225,
+          "measurement_start": 1,
+          "nand_transaction": 143258,
+          "ordinary_plan": 4947,
+          "ordinary_read": 5101,
+          "ordinary_submit": 5101,
+          "pcie": 201108,
+          "protocol": 36430,
+          "request": 128,
+          "stage": 68225,
+          "summary": 1
+        }
+      }
+    ],
+    "sha256": {
+      "index.jsonl": "aecbdc87561a68d9433c4e01367dcf6ed245014c1ed0e9cc34b3056957a23701",
+      "manifest.json": "6043bfa5e2618826c1f205c8630167901b68c044ab3944df53e68469caa5768f",
+      "operations.jsonl": "8ef9dd9e073220b7ff410b898d8bf916d5af385a835bfff3e289c79327ef279b",
+      "tail.json": "75a75206ff046b4faddaa2569b97cd332b305740b0b4dd2364d4a8bd45f52de9"
+    },
+    "stages": 607
+  },
+  "teaching": {
+    "edge_kinds": {
+      "DATA": 2
+    },
+    "join_dependencies": [
+      {
+        "input": "left",
+        "kind": "DATA",
+        "source": {
+          "key": {
+            "op": "left",
+            "query": 0,
+            "stage": "sum"
+          },
+          "port": "out"
+        }
+      },
+      {
+        "input": "right",
+        "kind": "DATA",
+        "source": {
+          "key": {
+            "op": "right",
+            "query": 0,
+            "stage": "sum"
+          },
+          "port": "out"
+        }
+      }
+    ],
+    "package_sha256": "5d032ed46b69d8687746a78d6740f02046363cc7b33a4b87ce3df1bab72cce08",
+    "path": "results/v0.4.5/p17/run2/tutorial 空格/package",
+    "query": 0,
+    "sha256": {
+      "index.jsonl": "a162f02c2e42dc8e9a5cc9f5eacbd680e1e722121ff5defa67ae69e8bad1ac5c",
+      "manifest.json": "08fbb4f2ccad9322401fa9bb9d4816f42c21a875bdfb2461f6937b932a33c6b0",
+      "operations.jsonl": "c1e0df78011ea4ac5f0fc8cb29b42567352d8a4bd8f76105c8400dba29ce1186",
+      "tail.json": "0f9f31924d8cb5213e05fd041b5b5ba75d062389ea7e5fafa7621c2196288268"
+    },
+    "stages": 3
+  }
+}

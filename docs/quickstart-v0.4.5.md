@@ -113,3 +113,38 @@ echo "结果目录 $OUT"
 这次可以从 `operations.jsonl` 追踪每个查询的邻接读取、候选打分与选择，看各阶段的 Work 如何随查询变化。再在 `services.csv` 和 `report.json` 对照算力需求和分层字节，观察 Controller 路径如何在本地读取向量并返回结果。
 
 两课使用手工教学成本，硬件状态为 `configured_unvalidated`。比较报告描述本次配置的模拟行为。正式 SIFT1M 数据、采集与精度验证另见[图搜索采集指南](../workloads/graph-search/CAPTURE.md)及[V0.4.5 发布记录](releases/v0.4.5.md)。扩展算子与映射见[块求和实现说明](../workloads/block-sum/README.md)，参数与预算见[统一 CLI 使用说明](../python/CLI.md)。
+
+## 第三课 · 真实 SIFT1M 图搜索
+
+本课把图搜索从合成夹具切换到完整 SIFT1M 与 NSG 图，复用独立原生程序、IR 采集器、语义校验器和统一 CLI。数据集、查询切分、NSG 图及真值不随仓库分发；首次运行前按[正式数据准备说明](releases/v0.4.5.md#正式输入和执行日程)获取并校验数据，再按[导入指南](data-v2.md)和[离线图／真值指南](index-truth-v2.md)准备输入。不要用 `make_fixture.py` 生成的合成图替代。
+
+建议先用锁定的 `tuning32` 查询切分和 `L/E=32/64` 做一次完整采集。将准备产物、原始查询 ID 清单及其 SHA-256 写入符合[采集配置格式](../workloads/graph-search/CAPTURE.md)的 `CAPTURE_CONFIG`；正式配置应绑定 1,000,000×128 base、NSG 图、真值、原始查询顺序及各文件内容 hash。下面假设配置和数据已准备好，所有输出目录都必须是新目录：
+
+```sh
+GRAPH="$PWD/workloads/graph-search"
+ADAPTER="$GRAPH/python/graph_capture.py"
+CAPTURE_CONFIG="/absolute/path/to/sift1m-tuning32-L32-E64.json"
+
+# 独立构建真实图搜索原生程序；不依赖 SST/MQSim。
+cmake -S workloads/graph-search -B "$OUT/graph-native" -DNDPSIM_SDK_ROOT="$PWD/sdk"
+cmake --build "$OUT/graph-native" -j2
+NATIVE="$OUT/graph-native/ndpsim_native"
+
+# 采集全量 IR/2，并对完整查询逐操作独立核对语义与 Work。
+ndp capture --workload graph --adapter "$ADAPTER" --native "$NATIVE" \
+  --operators extensions/graph/operators.json --config "$CAPTURE_CONFIG" \
+  --output "$OUT/sift1m-capture"
+ndp check --adapter "$ADAPTER" --package "$OUT/sift1m-capture/capture/package" \
+  --registry "$OUT/sift1m-capture/capture/registry.json" \
+  --semantic-config "$CAPTURE_CONFIG" \
+  --reference "$OUT/sift1m-capture/capture/reference.json" \
+  --report "$OUT/sift1m-check.json"
+
+# 原生 benchmark 单独运行，不把采集时的运行时间当作模拟成本。
+"$PYTHON" "$ADAPTER" benchmark --binary "$NATIVE" --config "$CAPTURE_CONFIG" \
+  --operators extensions/graph/operators.json --output "$OUT/sift1m-benchmark"
+```
+
+采集完成后先确认 `sift1m-check.json` 显示完整语义校验通过，并检查 `capture/` 下的包身份、查询覆盖和原生参考。仿真不需要再读取 SIFT payload：用兼容该包、目标和执行上下文的已冻结 Profile 与 run 配置执行 `ndp simulate --config <run-config> --build "$BUILD" --output "$OUT/sift1m-sim"`。Profile 应由独立拟合流程生成；评价切分只能消费冻结 Profile，不能回流拟合。若要比较 SSD Host 与 Controller，必须给两次运行使用同一 IR 和各自适用的 SSD Profile、Layout 与设备配置；硬件参数仍按报告标明的验证状态解读，比较本身不证明实机精度或下沉收益。
+
+完整输入恢复、资源预算、拟合／评价隔离和正式验收日程见[发布记录](releases/v0.4.5.md#正式输入和执行日程)与[驻留精度执行记录](resident-accuracy-v0.4.5.md)。这是一项完整规模工作，耗时和磁盘占用明显高于前两课；重新采集或拟合时使用新输出目录，并重新核验输入身份和资源预算。

@@ -1,0 +1,76 @@
+{
+  "coverage": {
+    "display_offset_ns": "0",
+    "package_sha256": "0b08ecda86e64c7f0438ac005f236b1cebd874cc6539fd60c2c7d94ae2ff96be",
+    "query": "2579",
+    "runs": {
+      "B01": {
+        "admission_ns": "157747495785",
+        "config_sha256": "1d37a0b3b3b96ca7a93cb49a9c26d16035f2a1b576ffbefde4f81fc6274e9da5",
+        "context": "ssd_host_return/1",
+        "drained_ns": "157879158553",
+        "placement": "host",
+        "profile_sha256": "ab43034ec8ea4ea1dcdc477564ada0d55761126df975621ff83fa9c687c49820",
+        "resource_counts": {
+          "cpu": 607,
+          "ordinary_read": 1492,
+          "pcie_complete": 8953
+        },
+        "stage_statuses": {
+          "completed": 607
+        },
+        "visible_ns": "157879158553",
+        "window_ns": [
+          "157747495785",
+          "157879158553"
+        ]
+      },
+      "C01": {
+        "admission_ns": "157747495785",
+        "config_sha256": "30c62fc510642d385d24a9a0fb6b6e3674229e096791251f8762fd2ecd838316",
+        "context": "ssd_controller_command/1",
+        "drained_ns": "157834592259",
+        "placement": "controller",
+        "profile_sha256": "ab43034ec8ea4ea1dcdc477564ada0d55761126df975621ff83fa9c687c49820",
+        "resource_counts": {
+          "buffer_access": 753,
+          "controller_compute": 188,
+          "cpu": 495,
+          "credit": 566,
+          "local_read": 1450,
+          "nand_transaction": 1450,
+          "ordinary_read": 42,
+          "pcie_complete": 633,
+          "protocol": 380
+        },
+        "stage_statuses": {
+          "completed": 607
+        },
+        "visible_ns": "157834592259",
+        "window_ns": [
+          "157747495785",
+          "157834592259"
+        ]
+      }
+    },
+    "unsupported": [
+      "dependency_ready_wait",
+      "ssd_queue_and_service",
+      "controller_buffer_queue_and_service"
+    ],
+    "window_policy": "Retain full observed intervals intersecting the query window; retain query and stage attributed events outside that window."
+  },
+  "files": {
+    "fixture.json": {
+      "bytes": 5899,
+      "sha256": "20e04a398d55b6927814547f2c728c907e8b799ea063211a2a96e1945c469323"
+    },
+    "timeline.json": {
+      "bytes": 10045860,
+      "sha256": "325e586662d892068027cff72a13fdd6231a6fcaed63888a98a9961ae7f8675c"
+    }
+  },
+  "fixture_slices": 14,
+  "imported_slices": 29103,
+  "source_stages": 1214
+}

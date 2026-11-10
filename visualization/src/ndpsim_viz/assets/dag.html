@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:">
+<title>NDPSim 查询依赖图</title>
+<style>
+* { box-sizing: border-box }
+body { margin: 0; color: #172b44; background: #f4f7fb; font: 15px system-ui, sans-serif }
+header { padding: 14px 20px; background: white; border-bottom: 1px solid #d7e0ec }
+h1 { font-size: 22px; margin: 0 0 8px }
+nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px }
+input, select, button { font: inherit; background: white; color: inherit; border: 1px solid #8398b4; border-radius: 5px; padding: 6px 9px }
+button { cursor: pointer }
+button:disabled { cursor: default; opacity: .5 }
+main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(285px, 30%); height: calc(100dvh - 130px); min-height: 370px }
+#graph { min-width: 0; min-height: 0 }
+aside { background: white; overflow: auto; padding: 12px; border-left: 1px solid #d7e0ec }
+pre { font-size: 13px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; background: #f1f5fb }
+textarea { width: 100%; color: inherit; border: 1px solid #8398b4; resize: vertical }
+#status { margin: 9px 0 0; min-height: 1.3em; color: #355170 }
+@media (max-width: 700px) {
+  main { grid-template-columns: 1fr; grid-template-rows: 54dvh auto; height: auto }
+  aside { border-left: none; border-top: 1px solid #d7e0ec }
+}
+</style>
+<header>
+  <h1 id="title">NDPSim 查询依赖图</h1>
+  <nav>
+    <label>搜索 <input id="search" type="search" placeholder="算子、阶段或完整键"></label>
+    <label>匹配 <select id="matches" aria-label="匹配的节点"></select></label>
+    <button id="fit" type="button">适应视图</button>
+    <button id="collapse-all" type="button">折叠全部</button>
+  </nav>
+  <p id="status" role="status"></p>
+</header>
+<main>
+  <section id="graph" aria-label="查询依赖图"></section>
+  <aside>
+    <h2 id="selection">选择节点或边</h2>
+    <button id="toggle" type="button" hidden>展开阶段</button>
+    <label id="key-label" hidden>稳定阶段键
+      <textarea id="key" rows="3" readonly></textarea>
+      <button id="copy" type="button">复制阶段键</button>
+    </label>
+    <label id="edge-label" hidden>关联可见边 <select id="edges"></select></label>
+    <pre id="details">点击节点查看 Work 和时序。点击边查看原始阶段依赖。</pre>
+  </aside>
+</main>
+<!-- VIZ_PAYLOAD -->

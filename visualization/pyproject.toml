@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ndpsim-viz"
+version = "0.4.5"
+description = "Offline DAG and Perfetto export for NDPSim V0.4.5"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.scripts]
+ndpsim-viz = "ndpsim_viz.cli:main"
+
+[tool.setuptools.package-data]
+ndpsim_viz = ["assets/*"]

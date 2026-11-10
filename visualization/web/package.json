@@ -1,0 +1,15 @@
+{
+  "name": "ndpsim-viz-dag",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "cytoscape": "3.33.1",
+    "elkjs": "0.10.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}
