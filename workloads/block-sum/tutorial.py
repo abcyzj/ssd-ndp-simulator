@@ -62,7 +62,7 @@ def prepare(native,device,output,values=None):
         rules.append(dict(operator='example.BLOCK_SUM',operator_version='1',stage_kind='sum',context='example-readonly/1',location=location,target_id=TARGET['id'],feature_ranges=[dict(name='elements',unit='count',minimum=2,maximum=4)],work_units=dict(elements='count'),source='prediction',formula='nonnegative-linear/1',parameter_schema_sha256=schema_hash('nonnegative-linear/1'),parameters=dict(intercept_ns=3,coefficients=[2]),measurement_sha256=['1'*64],training_query_ids=[1],fit_report_sha256='2'*64))
     save(output/'profile.json',dict(format='ndpsim-cost-profile/1',fixture=True,target=TARGET,rules=rules))
     for placement in ('host','controller'):
-        c=dict(format='ndpsim-block-sum-run/1',placement=placement,target=TARGET,profile='profile.json',profile_sha256=file_hash(output/'profile.json'),package='package',package_sha256=report['package_sha256'],registry_sha256=reg.sha256,report='structural.json',report_sha256=file_hash(output/'structural.json'),semantic_report='semantic.json',semantic_sha256=file_hash(output/'semantic.json'),scratch=placement+'.sqlite',output=placement+'.jsonl',device=str(Path(device).resolve()))
+        c=dict(format='ndpsim-block-sum-run/1',placement=placement,target=TARGET,profile='profile.json',profile_sha256=file_hash(output/'profile.json'),package='package',package_sha256=report['package_sha256'],registry_sha256=reg.sha256,report='structural.json',report_sha256=file_hash(output/'structural.json'),semantic_report='semantic.json',semantic_sha256=file_hash(output/'semantic.json'),layout='layout.json',scratch=placement+'.sqlite',output=placement+'.jsonl',device=str(Path(device).resolve()))
         save(output/(placement+'.json'),c)
     # Remove the actual input. Simulation has no path or API through which to open it.
     payload.unlink()
@@ -72,14 +72,19 @@ def simulate(build,output):
     build=Path(build).resolve();output=Path(output).resolve()
     sst=decode((build/'sst-paths.json').read_bytes())['sst']
     for placement in ('host','controller'):
-        command=[sst,'--add-lib-path='+str(build/'examples/extension'),str(HERE/'simulate.py'),'--',json.dumps(str(output/(placement+'.json')),ensure_ascii=False)]
-        if os.environ.get('NDPSIM_EXTENSION_NATIVE'):command=[str(build/'examples/extension/block_sum_probe'),str(output/(placement+'.json'))]
+        command=[sst,'--add-lib-path='+str(build/'workloads/block-sum'),str(HERE.parent.parent/'python/ndpsim/sst/block_sum.py'),'--',json.dumps(str(output/(placement+'.json')),ensure_ascii=False)]
+        if os.environ.get('NDPSIM_EXTENSION_NATIVE'):command=[str(build/'workloads/block-sum/block_sum_probe'),str(output/(placement+'.json'))]
         p=subprocess.run(command,cwd='/tmp',capture_output=True,text=True,timeout=60)
         save(output/(placement+'-command.json'),dict(command=command,cwd='/tmp',exit_code=p.returncode,stdout=p.stdout,stderr=p.stderr))
         require(p.returncode==0,p.stdout+p.stderr)
     return compare(output)
 def compare(output):
-    rows={k:[decode(x) for x in (output/(k+'.jsonl')).read_bytes().splitlines()] for k in ('host','controller')}
+    result = verify_traces({k: output/(k+'.jsonl') for k in ('host','controller')})
+    save(output/'comparison.json',result)
+    return result
+
+def verify_traces(paths):
+    rows={k:[decode(x) for x in p.read_bytes().splitlines()] for k,p in paths.items()}
     for placement,rs in rows.items():
         summary=rs[-1];require(summary['type']=='summary' and summary['success'],'simulation failed')
         require(not summary['full_acceptance_passed'],'teaching cannot claim total acceptance')
@@ -100,7 +105,7 @@ def compare(output):
         require(r['payload']==({2:48,3:40}.get(r['kind'],32)) and r['logical']==(8 if r['kind']==3 else 0),'independent protocol sizes')
         require(r['wire']==r['payload']+28,'independent PCIe packet size')
     result=dict(format='ndpsim-block-sum-comparison/1',teaching_passed=True,full_acceptance_passed=False,configured_unvalidated=True,host=rows['host'][-1],controller=rows['controller'][-1])
-    save(output/'comparison.json',result);return result
+    return result
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--native',required=True);p.add_argument('--device',required=True);p.add_argument('--build',required=True);p.add_argument('--output',required=True)
     a=p.parse_args();out=prepare(a.native,a.device,a.output);print(json.dumps(simulate(a.build,out),indent=2))

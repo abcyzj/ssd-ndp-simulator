@@ -131,14 +131,59 @@ class Cli(unittest.TestCase):
       m=copy.deepcopy(manifest);m.update(frozen,datasets=[datasets['evaluation']]);mp=root/(action+'.json');mp.write_bytes(canonical(m))
       target=self.output(action);self.invoke(['fit','--action',action,'--manifest',mp,'--budget',bp,'--allow-fixture','--output',target]);self.assertTrue(json.loads((target/'fit/status.json').read_text())['passed'])
     out=self.output('bad fit');self.invoke(['fit','--manifest',root/'manifest.json','--budget',bp,'--output',out],False);self.assertFalse(json.loads((out/'status.json').read_text())['passed']);self.assertFalse((out/'fit/profile.json').exists())
+ def compare_runs(self, runs):
+    spec=self.output('comparison spec.json')
+    reports=[p/'report.json' for p in runs]
+    spec.write_bytes(canonical(dict(format='ndpsim-report-comparison/1',
+                                    runs=[dict(path=str(p),sha256=file_hash(p)) for p in reports])))
+    out=self.output('comparison')
+    self.invoke(['compare','--spec',spec,'--output',out])
+    return json.loads((out/'report.json').read_text())
+
+ def test_block_sum_public_workflow(self):
+    workload=ROOT/'workloads/block-sum'
+    adapter=workload/'block_sum_capture.py'
+    config=workload/'capture.json'
+    out=self.output('block sum capture')
+    self.invoke(['capture','--workload','block-sum','--adapter',adapter,
+                 '--native',BUILD/'workloads/block-sum/block_sum_native',
+                 '--operators',workload/'operators.json','--config',config,'--output',out])
+    capture=out/'capture'
+    self.assertFalse((capture/'input.u32').exists())
+    check=self.output('block sum semantic.json')
+    command=['check','--adapter',adapter,'--package',capture/'package','--registry',capture/'registry.json',
+             '--semantic-config',config,'--reference',capture/'semantic.json','--report',check]
+    self.invoke(command)
+    self.assertEqual(json.loads(check.read_text())['expected'],dict(left=10,right=26,join=36))
+    invalid=self.output('block sum wrong values.json')
+    data=json.loads(config.read_text());data['values'][0]=0
+    invalid.write_bytes(canonical(data))
+    command[command.index('--semantic-config')+1]=invalid
+    command[-1]=self.output('block sum failed check.json')
+    self.invoke(command,False)
+    runs={}
+    for placement in ('host','controller'):
+      target=self.output('block sum '+placement)
+      self.invoke(['simulate','--config',capture/(placement+'-experiment.json'),'--build',BUILD,'--output',target])
+      r=json.loads((target/'report.json').read_text())
+      self.assertEqual(r['requests'],1)
+      self.assertEqual(r['service_sources'],{'prediction':3})
+      self.assertEqual(r['hardware_validation'],'configured_unvalidated')
+      runs[placement]=target
+    sys.path.insert(0,str(workload))
+    from tutorial import verify_traces
+    self.assertTrue(verify_traces({k: p/'trace.jsonl' for k,p in runs.items()})['teaching_passed'])
+    r=self.compare_runs(runs.values())
+    self.assertEqual([row['placement'] for row in r['runs']],['host','controller'])
+    self.assertFalse(r['full_acceptance_passed'])
+
  def test_unified_capture_and_ssd_placements_without_payload(self):
     sys.path[:0]=[str(ROOT/'workloads/graph-search/python'),str(ROOT/'workloads/graph-search/tests')]
     from test_native_search import fixture
-    from ndpsim.layout import packed_layout
-    sys.argv.insert(1,str(BUILD))
-    import test_v045_graph_ssd as ssd
+    from teaching_ssd import prepare
+    target=dict(id='ssd-test-target',hardware='hypothetical',os='none',frequency='fixed',affinity='one',memory_bytes=8192)
     data=self.output('payload inputs');data.mkdir();files,*_=fixture(data)
-    config=dict(format='ndpsim-graph-capture-config/2',shape=dict(count=6,dimensions=2,queries=11,degree=4,truth_k=4),search=dict(entry=0,k=4,width=4,batch=2,budget=3,chunk=3),files={k:dict(path=str(Path(p).relative_to(data)),sha256=h) for k,p,h in zip(('vectors','queries','graph','truth','query_ids'),files[::2],files[1::2])},split='fixture',target=ssd.TARGET,budget=dict(native_rss_bytes=512*1024**2,postprocess_rss_bytes=512*1024**2,output_bytes=64*1024**2,query_bytes=4*1024**2,timeout_seconds=120,min_disk_free_bytes=1024**2))
+    config=dict(format='ndpsim-graph-capture-config/2',shape=dict(count=6,dimensions=2,queries=11,degree=4,truth_k=4),search=dict(entry=0,k=4,width=4,batch=2,budget=3,chunk=3),files={k:dict(path=str(Path(p).relative_to(data)),sha256=h) for k,p,h in zip(('vectors','queries','graph','truth','query_ids'),files[::2],files[1::2])},split='fixture',target=target,budget=dict(native_rss_bytes=512*1024**2,postprocess_rss_bytes=512*1024**2,output_bytes=64*1024**2,query_bytes=4*1024**2,timeout_seconds=120,min_disk_free_bytes=1024**2))
     cp=data/'capture config.json';cp.write_bytes(canonical(config));out=self.output('capture')
     command=['capture','--workload','graph','--adapter',ROOT/'workloads/graph-search/python/graph_capture.py','--native',BUILD/'ndpsim_native','--operators',ROOT/'extensions/graph/operators.json','--config',cp,'--output',out]
     self.invoke(command)
@@ -153,15 +198,17 @@ class Cli(unittest.TestCase):
     check=self.output('graph structure.json')
     self.invoke(['check','--adapter',ROOT/'workloads/graph-search/python/graph_capture.py','--package',out/'capture/package','--registry',out/'capture/registry.json','--report',check,'--allow-fixture'])
     self.assertFalse(json.loads(check.read_text())['independent_semantic_passed'])
-    helper=ssd.Ssd();ssd.Ssd.root=out;ssd.Ssd.capture=out/'capture';ssd.Ssd.count=0
-    ssd.Ssd.registry=json.loads((out/'capture/registry.json').read_text());ssd.Ssd.report=json.loads((out/'capture/structural.json').read_text())
-    manifest=json.loads((out/'capture/package/manifest.json').read_text());(out/'layout.json').write_bytes(canonical(packed_layout(manifest['objects'],capacity_sectors=512)))
+    experiments=self.output('graph experiments')
+    prepare(out/'capture', ROOT/'configs/devices/native-small.xml', experiments)
+    runs=[]
     for placement in ('host','controller'):
-      c=helper.config(placement);run=out/(placement+' run.json');run.write_bytes(canonical(c))
-      spec=out/(placement+' experiment.json');spec.write_bytes(canonical(dict(format='ndpsim-experiment/1',run=run.name,budget=dict(output_bytes=64*1024**2,scratch_bytes=32*1024**2,rss_bytes=512*1024**2,timeout_seconds=60,min_disk_free_bytes=1024**2))))
+      spec=experiments/(placement+'-experiment.json')
       target=self.output('SSD '+placement);self.invoke(['simulate','--config',spec,'--build',BUILD,'--output',target])
+      runs.append(target)
       r=json.loads((target/'report.json').read_text());self.assertEqual(r['requests'],11);self.assertEqual(r['semantic_validation'],'trusted-independent-receipt');self.assertGreater(r['traffic']['ordinary_sector_bytes'],0)
       self.assertGreater(len((target/'services.csv').read_text().splitlines()),1)
       if placement=='controller':self.assertEqual(r['drain']['vector_d2h'],0);self.assertIn('controller',r['service_demand_ns_by_location'])
+
+    self.assertEqual(len(self.compare_runs(runs)['runs']),2)
 
 if __name__=='__main__':unittest.main(verbosity=2)

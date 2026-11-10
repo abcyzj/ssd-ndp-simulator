@@ -2154,7 +2154,7 @@
       "backtrace": 279,
       "command": [
         "/opt/homebrew/Caskroom/miniconda/base/bin/python3.13",
-        "${ROOT}/examples/extension/test_extension.py",
+        "${ROOT}/workloads/block-sum/test_extension.py",
         "${BUILD}"
       ],
       "name": "extension_v045",
@@ -2165,13 +2165,13 @@
         },
         {
           "name": "WORKING_DIRECTORY",
-          "value": "${BUILD}/examples/extension"
+          "value": "${BUILD}/workloads/block-sum"
         }
       ],
       "sources": [
-        "examples/extension/test_extension.py",
-        "examples/extension/probe.cc",
-        "examples/extension/sst.cc"
+        "workloads/block-sum/test_extension.py",
+        "workloads/block-sum/probe.cc",
+        "workloads/block-sum/sst.cc"
       ],
       "decision": "保留",
       "tasks": "P17/P20/P21",

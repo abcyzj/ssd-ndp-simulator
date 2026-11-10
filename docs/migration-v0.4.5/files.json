@@ -282,7 +282,7 @@
       "reason": "PRD FR11/12；实施计划§7职责迁移：build"
     },
     {
-      "path": "examples/extension/CMakeLists.txt",
+      "path": "workloads/block-sum/CMakeLists.txt",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -291,7 +291,7 @@
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
     },
     {
-      "path": "examples/extension/README.md",
+      "path": "workloads/block-sum/README.md",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -300,7 +300,7 @@
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
     },
     {
-      "path": "examples/extension/contract.h",
+      "path": "workloads/block-sum/contract.h",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -309,7 +309,7 @@
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
     },
     {
-      "path": "examples/extension/native.cc",
+      "path": "workloads/block-sum/native.cc",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -318,7 +318,7 @@
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
     },
     {
-      "path": "examples/extension/operators.json",
+      "path": "workloads/block-sum/operators.json",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -327,7 +327,7 @@
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
     },
     {
-      "path": "examples/extension/probe.cc",
+      "path": "workloads/block-sum/probe.cc",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -336,7 +336,7 @@
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
     },
     {
-      "path": "examples/extension/run.h",
+      "path": "workloads/block-sum/run.h",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -345,7 +345,7 @@
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
     },
     {
-      "path": "examples/extension/simulate.py",
+      "path": "python/ndpsim/sst/block_sum.py",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -354,7 +354,7 @@
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
     },
     {
-      "path": "examples/extension/sst.cc",
+      "path": "workloads/block-sum/sst.cc",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -363,7 +363,7 @@
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
     },
     {
-      "path": "examples/extension/test_extension.py",
+      "path": "workloads/block-sum/test_extension.py",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -372,7 +372,7 @@
       "reason": "FR04/05/07/12、AC09；仅扩展目录及编译期注册"
     },
     {
-      "path": "examples/extension/tutorial.py",
+      "path": "workloads/block-sum/tutorial.py",
       "policy": "extension-example",
       "decision": "保留",
       "tasks": "P17/P20/P21",
@@ -2260,6 +2260,33 @@
       "replacement_assertions": "隔离源码/安装SDK构建、链接检查、独立数值/搜索/Work、根回归与测量/采集边界",
       "deletion_gate": "功能与独立oracle必须保留；新采集替代通过后才删除旧适配",
       "reason": "P03独立工程与最小功能依赖；不携带模拟src或历史工具"
+    },
+    {
+      "path": "workloads/block-sum/block_sum_capture.py",
+      "policy": "extension-example",
+      "decision": "新增",
+      "tasks": "教学 CLI 接入",
+      "replacement_assertions": "安装版统一 CLI 与双负载教学链路、独立语义核验和双放置",
+      "deletion_gate": "统一 CLI 回归与两课快启",
+      "reason": "FR-045-12、AC-045-09"
+    },
+    {
+      "path": "workloads/block-sum/capture.json",
+      "policy": "extension-example",
+      "decision": "新增",
+      "tasks": "教学 CLI 接入",
+      "replacement_assertions": "安装版统一 CLI 与双负载教学链路、独立语义核验和双放置",
+      "deletion_gate": "统一 CLI 回归与两课快启",
+      "reason": "FR-045-12、AC-045-09"
+    },
+    {
+      "path": "workloads/graph-search/python/teaching_ssd.py",
+      "policy": "extension-example",
+      "decision": "新增",
+      "tasks": "教学 CLI 接入",
+      "replacement_assertions": "安装版统一 CLI 与双负载教学链路、独立语义核验和双放置",
+      "deletion_gate": "统一 CLI 回归与两课快启",
+      "reason": "FR-045-12、AC-045-09"
     }
   ],
   "removed": [

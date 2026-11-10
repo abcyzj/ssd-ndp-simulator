@@ -1,6 +1,6 @@
 # V0.4.5 快速上手
 
-这份指南面向第一次接触项目的用户，目标是先构建并运行一个小型端到端示例，再说明怎样继续使用图搜索负载和统一命令行。
+这份指南面向第一次接触项目的用户，先通过统一 CLI 跑通块求和，再用相同的命令观察图搜索的依赖、成本和流量。
 
 ## 项目做什么
 
@@ -21,65 +21,95 @@ cd SSD_NDP_Simulator
 
 根 CMake 会准备并构建锁定的 SST Core 和 MQSim。初次构建需要网络可访问锁定源码，并预留构建磁盘空间；`NDPSIM_SST_CACHE_DIR` 可用于指定 SST 缓存目录。
 
-## 构建并运行教学示例
+## 构建与安装
 
-以下命令从仓库根目录执行。它把 Python 包和示例输出放在一个新的临时目录中，避免写入系统 Python 或覆盖已有结果。`mktemp` 在 macOS 上返回的目录会在命令结束后仍保留，便于查看输出。
+在仓库根目录执行以下命令。两个课程使用同一个 Python 安装和模拟构建。将 `PYTHON` 改为与锁定依赖匹配的解释器路径。每次重跑课程时创建新的 `OUT`，命令要求输出目录尚不存在。
 
 ```sh
 set -e
 OUT="$(mktemp -d /tmp/ndpsim-quickstart-XXXXXX)"
 PYTHON=python3.13
-
-# 将公共 Python 命令行安装到独立目录
 cp -R ./python "$OUT/python-src"
 "$PYTHON" -m pip install --target "$OUT/python" "$OUT/python-src"
 export PYTHONPATH="$OUT/python"
-"$PYTHON" -m ndpsim --help
+ndp() { "$PYTHON" -m ndpsim "$@"; }
 
-# 独立构建真实块求和程序；这一步只依赖 Capture SDK
-cmake -S examples/extension -B build/block-sum-native \
-  -DNDPSIM_SDK_ROOT="$PWD/sdk"
-cmake --build build/block-sum-native -j2
-
-# 构建 SST/MQSim 模拟后端和扩展示例模块
-cmake -S . -B build/delivery -DBUILD_TESTING=ON
-cmake --build build/delivery -j2
-
-# 真实执行、采集、独立语义核对，并运行 Host/Controller 两种映射
-"$PYTHON" examples/extension/tutorial.py \
-  --native "$PWD/build/block-sum-native/block_sum_native" \
-  --device "$PWD/configs/devices/native-small.xml" \
-  --build "$PWD/build/delivery" --output "$OUT/tutorial"
-
-# 再用通用 CLI 检查 IR 包结构
-"$PYTHON" -m ndpsim check \
-  --package "$OUT/tutorial/package" \
-  --registry examples/extension/operators.json \
-  --report "$OUT/check.json"
-
-echo "结果目录：$OUT"
+BUILD="$PWD/build/delivery"
+cmake -S . -B "$BUILD" -DBUILD_TESTING=ON
+cmake --build "$BUILD" -j2
 ```
 
-若 `python3.13` 不在 PATH 中，请把 `PYTHON` 改为与锁定依赖匹配的 Python 可执行文件。第一次构建可能需要较长时间；后续可重复运行构建命令增量更新。每次重新运行教程时，`--output` 必须指向一个不存在的目录；重新执行时可重新运行 `mktemp` 那一行创建新的 `OUT`。
+两课的 `compare` 都使用下列函数生成输入清单，绑定两份成功模拟报告及其 SHA-256。
 
-成功时教程会输出 `teaching_passed: true`，并给出两种映射的模拟摘要。示例默认输入为 1 到 8 的八个 u32，两个分支分别得到 10 和 26，汇合结果为 36。可在 `$OUT/tutorial/` 查看：
+```sh
+compare_spec() {
+  "$PYTHON" - "$@" <<'PY_SPEC'
+import sys
+from pathlib import Path
+from ndpsim.execution import save
+from ndpsim.static_ir import file_hash
 
-- `semantic.json`：独立 Python oracle 对真实计算结果、访问、Work 和依赖的核对。
-- `structural.json`：静态 IR 包结构检查报告。
-- `host.jsonl`、`controller.jsonl`：模拟的逐事件轨迹；`comparison.json` 汇总两种放置。
-- `native-command.json`、`host-command.json`、`controller-command.json`：实际执行命令、退出码和输出。
-- `$OUT/check.json`：`ndpsim check` 生成的通用结构检查报告。
+spec, *reports = map(Path, sys.argv[1:])
+save(spec, dict(format='ndpsim-report-comparison/1',
+                runs=[dict(path=str(p.resolve()), sha256=file_hash(p)) for p in reports]))
+PY_SPEC
+}
+```
 
-这是教学 fixture：成本参数是手工设定的假设，SSD/PCIe/Controller 仍为 `configured_unvalidated`。`full_acceptance_passed` 会保持 `false`。模拟时间不能用来推断真实硬件速度或下沉收益；该示例也不替代正式 SIFT1M 精度验证。
+## 第一课 · 块求和
 
-## 接下来怎么用
+默认输入是八个 u32。原生程序真实读取前后各 16 B，得到 `10` 和 `26`，最后汇合为 `36`。两个分支在 IR 中可以同时就绪，汇合等待两条数据依赖。
 
-统一 CLI 的主要工作流是：
+```sh
+SUM="$PWD/workloads/block-sum"
+ndp capture --workload block-sum --adapter "$SUM/block_sum_capture.py" \
+  --native "$BUILD/workloads/block-sum/block_sum_native" \
+  --operators "$SUM/operators.json" --config "$SUM/capture.json" --output "$OUT/sum"
 
-1. `ndpsim capture`：调用独立负载适配器，采集完整静态 IR。
-2. `ndpsim check`：检查包结构；需要时使用显式适配器和参考结果做语义／Work 核对。
-3. `ndpsim fit`：从独立测量拟合 CPU 成本 Profile，或构建逐调用服务表。
-4. `ndpsim simulate`：使用显式配置和已构建后端运行 timing-only 模拟。
-5. `ndpsim compare` / `ndpsim verify`：分别做绑定报告的描述性比较和分层验证。
+SUM_CAPTURE="$OUT/sum/capture"
+ndp check --adapter "$SUM/block_sum_capture.py" --package "$SUM_CAPTURE/package" \
+  --registry "$SUM_CAPTURE/registry.json" --semantic-config "$SUM/capture.json" \
+  --reference "$SUM_CAPTURE/semantic.json" --report "$OUT/sum-check.json"
 
-命令细节、输入格式、预算和退出码见[统一 CLI 使用说明](../python/CLI.md)。如果要复现项目现有正式负载，请先看[图搜索采集指南](../workloads/graph-search/CAPTURE.md)；该流程需要准备锁定的 SIFT1M 数据和 NSG 图，数据不随仓库分发。要扩展算子和映射，从[教学扩展示例](../examples/extension/README.md)开始。完整干净目录构建和正式发布证据见[V0.4.5 发布验收](releases/v0.4.5.md)。
+for placement in host controller; do
+  ndp simulate --config "$SUM_CAPTURE/$placement-experiment.json" \
+    --build "$BUILD" --output "$OUT/sum-$placement"
+done
+compare_spec "$OUT/sum-compare.json" "$OUT/sum-host/report.json" "$OUT/sum-controller/report.json"
+ndp compare --spec "$OUT/sum-compare.json" --output "$OUT/sum-comparison"
+```
+
+先看 `sum-check.json` 的 `expected` 和 IR 包里的 `operations.jsonl`，再对照两份模拟的 `stages.csv` 和 `report.json`。在报告的 `drain` 中，Host 的两次 sector 读取共计 1024 B 输入 DMA，Controller 本地读的输入 D2H 为 0。Controller 返回及排空事件见 `trace.jsonl`。两次模拟使用同一份 IR，模拟只消费元数据。
+
+## 第二课 · 图搜索
+
+小型合成输入可以直接生成。沿用四条命令，替换原生程序、适配器和运行配置即可。
+
+```sh
+GRAPH="$PWD/workloads/graph-search"
+ADAPTER="$GRAPH/python/graph_capture.py"
+"$PYTHON" "$GRAPH/python/make_fixture.py" --output "$OUT/graph-input"
+GRAPH_CONFIG="$OUT/graph-input/config.json"
+
+ndp capture --workload graph --adapter "$ADAPTER" --native "$BUILD/ndpsim_native" \
+  --operators extensions/graph/operators.json --config "$GRAPH_CONFIG" --output "$OUT/graph"
+
+GRAPH_CAPTURE="$OUT/graph/capture"
+ndp check --adapter "$ADAPTER" --package "$GRAPH_CAPTURE/package" \
+  --registry "$GRAPH_CAPTURE/registry.json" --semantic-config "$GRAPH_CONFIG" \
+  --reference "$GRAPH_CAPTURE/reference.json" --allow-fixture --report "$OUT/graph-check.json"
+
+"$PYTHON" "$GRAPH/python/teaching_ssd.py" --capture "$GRAPH_CAPTURE" \
+  --device configs/devices/native-small.xml --output "$OUT/graph-experiments"
+for placement in host controller; do
+  ndp simulate --config "$OUT/graph-experiments/$placement-experiment.json" \
+    --build "$BUILD" --output "$OUT/graph-$placement"
+done
+compare_spec "$OUT/graph-compare.json" "$OUT/graph-host/report.json" "$OUT/graph-controller/report.json"
+ndp compare --spec "$OUT/graph-compare.json" --output "$OUT/graph-comparison"
+echo "结果目录 $OUT"
+```
+
+这次可以从 `operations.jsonl` 追踪每个查询的邻接读取、候选打分与选择，看各阶段的 Work 如何随查询变化。再在 `services.csv` 和 `report.json` 对照算力需求和分层字节，观察 Controller 路径如何在本地读取向量并返回结果。
+
+两课使用手工教学成本，硬件状态为 `configured_unvalidated`。比较报告描述本次配置的模拟行为。正式 SIFT1M 数据、采集与精度验证另见[图搜索采集指南](../workloads/graph-search/CAPTURE.md)及[V0.4.5 发布记录](releases/v0.4.5.md)。扩展算子与映射见[块求和实现说明](../workloads/block-sum/README.md)，参数与预算见[统一 CLI 使用说明](../python/CLI.md)。

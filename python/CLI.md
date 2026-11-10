@@ -19,6 +19,13 @@ ndpsim simulate --config experiment.json --build build/delivery --output new-run
 ndpsim compare --spec comparison.json --output new-comparison
 ```
 
+The [two-workload quickstart](../docs/quickstart-v0.4.5.md) uses the same four
+commands with `--workload block-sum` and `--workload graph`. Block-sum supports
+complete capture with `block_sum_capture.py` and emits both experiment specs
+alongside the package. Its independent check uses the original capture config
+and `capture/semantic.json`. Its run uses a compiled operator contract and
+binds that registry identity through the package receipts.
+
 Capture config and native preparation follow the independent workload's
 [CAPTURE.md](../workloads/graph-search/CAPTURE.md). `--mode sample --package ...`
 uses a **separately captured** package; `--mode benchmark` runs a separate native
@@ -62,8 +69,9 @@ measured-table sources remain separate.
 
 The budget object alone is also `execution-budget.json`. All fields are positive
 integers; RAM and available disk are checked anew. `run.json` is the actual
-[P11 resident](../docs/memory-timing-v0.4.5.md) `ndpsim-memory-run/1` or
-[P13 SSD](../docs/graph-ssd-v0.4.5.md) `ndpsim-graph-ssd-run/1` configuration.
+[P11 resident](../docs/memory-timing-v0.4.5.md) `ndpsim-memory-run/1`,
+[P13 graph SSD](../docs/graph-ssd-v0.4.5.md) `ndpsim-graph-ssd-run/1`, or
+[block-sum SSD](../workloads/block-sum/README.md) `ndpsim-block-sum-run/1` configuration.
 Package, registry, profile, receipts, Layout and XML resolve relative to that run
 file; command-line paths resolve relative to cwd. Input `output` and `scratch`
 are replaced with new paths inside the CLI output directory. No business data,

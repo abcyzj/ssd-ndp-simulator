@@ -6,34 +6,15 @@
 
 ## 复现
 
-在仓库根目录执行；Python 使用已经具有 jsonschema 等依赖的解释器。命令不读取历史 results，不会自动构建或执行其他验收。输出目录必须不存在。
+[快速上手第一课](../../docs/quickstart-v0.4.5.md#第一课--块求和)使用公共 `ndpsim capture → check → simulate → compare`。默认配置在 `capture.json`，可复制后修改八个 u32 值和设备路径。也可独立构建原生采集程序，只需要本目录与显式提供的 SDK。
 
 ```sh
-# 独立原生工程；只需本目录和显式提供的 SDK，不需 src/、SST 或 MQSim。
-cmake -S examples/extension -B build/block-sum-native -DNDPSIM_SDK_ROOT="$PWD/sdk"
+cmake -S workloads/block-sum -B build/block-sum-native -DNDPSIM_SDK_ROOT="$PWD/sdk"
 cmake --build build/block-sum-native -j2
-
-# 根 CMake 仅登记扩展，构建新的 SST 模块。
-cmake -S . -B build/delivery -DBUILD_TESTING=ON
-cmake --build build/delivery -j2
-
-# 安装公共包到独立位置，不修改系统 Python。
-python3 -m pip install --no-deps --no-build-isolation --target /tmp/ndpsim-p17-python ./python
-PYTHONPATH=/tmp/ndpsim-p17-python python3 examples/extension/tutorial.py \
-  --native "$PWD/build/block-sum-native/block_sum_native" \
-  --device "$PWD/configs/devices/native-small.xml" \
-  --build "$PWD/build/delivery" --output /tmp/ndpsim-block-sum-new
-
-PYTHONPATH=/tmp/ndpsim-p17-python python3 -m ndpsim check \
-  --package /tmp/ndpsim-block-sum-new/package \
-  --registry examples/extension/operators.json \
-  --report /tmp/ndpsim-block-sum-check-new.json
-ctest --test-dir build/delivery --output-on-failure -R '^extension_v045$'
+ctest --test-dir build/delivery --output-on-failure -R '^(extension_v045|unified_cli_v045)$'
 ```
 
-`tutorial.py` 的 `prepare()` 与 `simulate()` 可分别调用。原生程序接受 `INPUT NEW_CAPTURE REGISTRY_SHA SOURCE_SHA`；输入必须恰32B，不能覆盖已有采集目录。Python 用 `struct.unpack` 和整数 sum 独立重建真实输出，并逐字段核验完整三操作、Work、端口、访问、依赖、终态及输入身份；核验后生成结构／语义receipt，再删除原始 input.u32。模拟不读取原生输出数值，不打开业务数据，不做真实 sum。输出 digest 是来源证据，不是模拟预填结果。
-
-输出目录包含原生命令/退出码/stdout、SDK capture、新 IR 包、独立 semantic.json、structural.json、registry、Layout、Profile、双映射配置、SST 命令日志及逐事件 JSONL，最终 comparison.json 只标 teaching_passed。原生值可从 semantic.json 和 native-command.json 核查。用自己的8项输入可调用 `prepare(native, device, new_output, values=[...])`；unsigned u32 总和不会溢出 u64。
+`block_sum_capture.py` 是 CLI 显式适配器。原生程序接受 `INPUT NEW_CAPTURE REGISTRY_SHA SOURCE_SHA`。Python oracle 独立重建期望数值并逐字段核验操作、Work、端口、访问、依赖、终态和输入身份。采集完成后删除临时二进制输入。模拟只读取元数据和已绑定的收据。公共比较报告是描述性输出，独立的流量、服务、依赖和排空断言由 P17 和 CLI 回归执行。
 
 ## 扩展落点
 
@@ -41,10 +22,10 @@ ctest --test-dir build/delivery --output-on-failure -R '^extension_v045$'
 - `native.cc`：真实数值实现及 SDK Recorder；不链接模拟器。
 - `tutorial.py`：独立 Python 功能／Work oracle、封包、Profile和配置生成、独立流量/依赖核对。通用 `ndpsim check` 可检查结构；业务语义核对由此适配器完成。
 - `run.h`：扩展自己的 lowering 回调；通用 DAG 按依赖调用。Host 使用普通 NVMe read，经数据 DMA 和 CQ 后才计算；Controller 注册 `example-sum/1` 协议，通过真实 local-read、buffer、compute、结果返回及 CloseAck。输入不回传 Host。命令和返回显式为48B/40B，返回逻辑8B；Open/ACK/Close为32B封套。PCIe由现有共享链路计费，不在公式重复收费。
-- `sst.cc`、`simulate.py`：SST 唯一时间权威与编译期模块接线。扩展当前通过显式 SST 脚本运行；统一 `ndpsim simulate` 尚只登记现有内存/图搜索路径，示例没有向 CLI 增加隐式动态插件。
+- `sst.cc` 与公共包的 SST 入口脚本负责编译期模块接线。`ndpsim simulate` 按显式运行格式启动该模块，SST 提供模拟时间。
 - `probe.cc`：仅用于 ASan 的测试事件驱动，不是生产第二时钟。
 
-根工程仅新增 `add_subdirectory(examples/extension)`；核心 DAG、Runtime、cost、Controller、Layout、SST Core和 MQSim 源码均不改。新增真实业务算子需要同时修改本目录的契约、原生实现、独立oracle、成本适用域和映射，不是仅改算子名称。
+根工程仅新增 `add_subdirectory(workloads/block-sum)`；核心 DAG、Runtime、cost、Controller、Layout、SST Core和 MQSim 源码均不改。新增真实业务算子需要同时修改本目录的契约、原生实现、独立oracle、成本适用域和映射，不是仅改算子名称。
 
 ## 范围和限制
 

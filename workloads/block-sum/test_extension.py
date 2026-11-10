@@ -16,7 +16,7 @@ class Extension(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory(prefix='P17 扩展 ');self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name)
     def prepare(self,name='run',values=None):
-        return prepare(BUILD/'examples/extension/block_sum_native',ROOT/'configs/devices/native-small.xml',self.root/name,values)
+        return prepare(BUILD/'workloads/block-sum/block_sum_native',ROOT/'configs/devices/native-small.xml',self.root/name,values)
     def test_dual_mapping_and_independent_oracle(self):
         out=self.prepare();self.assertFalse((out/'input.u32').exists())
         r=simulate(BUILD,out);self.assertTrue(r['teaching_passed'])

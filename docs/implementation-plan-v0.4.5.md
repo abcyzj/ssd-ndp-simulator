@@ -40,7 +40,7 @@ P01 完成后，独立原生、模型、运行时和配置可以按接口分别�
 | `src/layout/`、`src/backend/`、`src/transport/` | 元数据布局、运行时设备配置、已有 MQSim 桥和读路径、size-only 传输。SST Core 不变。 |
 | `python/ndpsim/` | 通用校验、训练／拟合、CLI、输出、manifest 和运行编排；负载专用配方由扩展提供。使用可安装包和 `ndpsim` console entry point。 |
 | `configs/layouts/`、`configs/devices/`、`configs/models/`、`configs/experiments/` | 用户可编辑配置，提供 schema、默认样例、单位及支持范围；无构建时设备参数嵌入。 |
-| `examples/extension/`、`tests/` | 最小接入教程；核心契约、映射、独立 oracle、包门控和发布检查。测试源码不成为生产依赖。 |
+| `workloads/block-sum/`、`tests/` | 最小接入教程；核心契约、映射、独立 oracle、包门控和发布检查。测试源码不成为生产依赖。 |
 
 根 CMake 仍是模拟构建入口，继续使用 prepare_sst 和缓存；原生子工程不执行根构建。只安装／使用拟合工具不需要 C++、SST 或 MQSim。构建产物身份按实际文件重新计算，不能因只移动目录而豁免 Profile 绑定。
 
@@ -99,7 +99,7 @@ P01 输出版本化 schema、头文件级接口设计和可执行最小夹具，
 | **P14 统一 CLI／报告（已完成）**；FR06/10/12；AC07/11 | P04/P06/P11/P13；抽取 run_native/run_graph/run_config/run_experiment、experiment_output 的可用模块。 | 安装 `ndpsim`，子命令见 §5；有效配置与输入快照，错误退出码、预算和新目录输出；不自动构建或跑验收；报告区分参考结果、服务预测、实测表、目标硬件和宿主。相对路径、带空格路径与外部 cwd 验证。**实际出口**：[P14统一CLI/报告](cli-v0.4.5.md)，安装后采集/校验/拟合/三放置模拟/描述比较，资源预算及身份快照；verify明确拒绝未实现总验收，三层Validator仍属P15；定向7项、根137项、ASan2项、P01/P00及398文件迁移审计通过，不计AC07/11或总AC完成。 |
 | **P15 三层 Validator（已完成）**；FR09～12；AC02/04/06/08/12 | P04/P06/P11/P13/P14；拆 validate_v04 和 compare_reference_paths 的独立核对。 | capture 语义／Work，simulate 调度／账本，native-vs-sim 精度分别生成报告；按稳定键关联但不依赖模拟器真实结果。删样本、篡改表、重复配置、少重复、quick／失败均不能出总通过。**实际出口**：[P15三层Validator](validator-v0.4.5.md)，安装CLI三层报告、全阶段稳定键/依赖/服务唯一计费、独立SSD账本及精度/质量重核；最终定向8项、根138项、P01/P00及402文件迁移审计通过。只关闭实现及夹具出口，未执行正式精度/SSD账本或12项AC；P16出口见下项。 |
 | **P16 独立 MQSim 对拍工具（已完成）**；FR11；AC05 | P10/P12；从 verify_acceptance 的 AC-08 提取独立 oracle 导出／构建，不调用旧总 AC。 | 锁定原生 commit 独立导出；固定请求清单、共同配置／初态和独立账本，QD1/QD32/small-CMT 至少各两次；共同顺序／LBA／size／完成时间及指定状态统计严格一致。新增配置修改用例证明两边加载相同文件；平台扩展另由 P12/P19 验证。**实际出口**：[P16实现与检查](mqsim-oracle-v0.4.5.md)，锁定原生独立导出/编译，显式请求及Python独立XML/初态/页事务账本；QD1/QD32/small-CMT/修改XML四组原生及真实SST各2次严格一致；定向7项、根139项、ASan2项及4组显式请求、P01/P00与404文件/139CTest审计通过。保留失败，不计平台卸载/硬件校准或12项总AC通过。 |
-| **P17 教学扩展全链路（已完成）**；FR04/05/07/12；AC09 | P02/P05/P08/P12/P14；examples/extension。 | 建议小型只读块求和：原生真实计算／采集，两个独立分支汇合；Host／Controller 映射、显式输入输出大小和独立常数或线性成本。仅扩展目录及注册清单变化，不改核心调度或 MQSim；教程可独立复现，无第二负载精度承诺。**实际出口**：[P17实现与检查](extension-v0.4.5.md)、[独立复现教程](../examples/extension/README.md)，原生真实求和/SDK采集与Python数值/Work oracle、两个独立分支汇合、同包真实SST双映射及独立字节/服务/返回/排空断言；5项定向、根140项、ASan定向1项（同5测试）、隔离原生构建/安装包教程/通用check、P01/P00及415文件/140CTest审计通过。只新增扩展目录和根注册（另同步文档/清单），保留失败；不计正式精度或最终AC验收，不开始P18。 |
+| **P17 教学扩展全链路（已完成）**；FR04/05/07/12；AC09 | P02/P05/P08/P12/P14；workloads/block-sum。 | 建议小型只读块求和：原生真实计算／采集，两个独立分支汇合；Host／Controller 映射、显式输入输出大小和独立常数或线性成本。仅扩展目录及注册清单变化，不改核心调度或 MQSim；教程可独立复现，无第二负载精度承诺。**实际出口**：[P17实现与检查](extension-v0.4.5.md)、[独立复现教程](../workloads/block-sum/README.md)，原生真实求和/SDK采集与Python数值/Work oracle、两个独立分支汇合、同包真实SST双映射及独立字节/服务/返回/排空断言；5项定向、根140项、ASan定向1项（同5测试）、隔离原生构建/安装包教程/通用check、P01/P00及415文件/140CTest审计通过。只新增扩展目录和根注册（另同步文档/清单），保留失败；不计正式精度或最终AC验收，不开始P18。 |
 
 ### M5/M6：正式验收、清理与发布
 

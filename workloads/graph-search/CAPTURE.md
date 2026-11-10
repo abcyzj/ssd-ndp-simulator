@@ -1,5 +1,9 @@
 # Graph IR/2 capture and independent validation (P04)
 
+The [two-workload quickstart](../../docs/quickstart-v0.4.5.md) runs the small
+graph fixture through the public CLI and both SSD placements. This guide covers
+the standalone native and capture tools.
+
 The graph workload builds independently with an explicit C++ Capture SDK. Python
 capture tools require the separately installed `ndpsim-tools` package (including
 `jsonschema` and `referencing`). No SST, MQSim, historical tools or results are

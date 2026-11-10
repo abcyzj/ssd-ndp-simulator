@@ -101,6 +101,9 @@ class Run {
               {"op", s.key.op},
               {"elements", i.work.at("elements").first},
               {"location", i.location},
+              {"source", "prediction"},
+              {"operator", i.operator_id},
+              {"stage_kind", i.stage_kind},
               {"duration_ns", ns},
               {"output_bytes", 8}});
         timing::Operation o;
@@ -184,7 +187,7 @@ public:
     Run(const std::filesystem::path& path, EventBridge& b, EventBridge::Clock n)
         : bridge(b), now(n), runtime(b, n), cpu(b, n, 2), endpoint(b, n, 1) {
         auto c = J::parse(bytes(path));
-        need(c.at("format") == "ndpsim-block-sum-run/1" && c.size() == 15, "example config fields");
+        need(c.at("format") == "ndpsim-block-sum-run/1" && c.size() == 15 + c.contains("layout"), "example config fields");
         auto resolve = [&](std::string k) {
             return std::filesystem::absolute(path).parent_path() / c.at(k).get<std::string>();
         };
@@ -200,6 +203,9 @@ public:
         cost::register_builtin_formulas(registry);
         registry.add_operator(contract());
         auto raw = bytes(resolve("profile"));
+        const auto profile_descriptor = J::parse(raw);
+        for (const auto& rule : profile_descriptor.at("rules"))
+            need(rule.at("source") == "prediction", "block-sum requires teaching predictions");
         profile = std::make_unique<cost::Profile>(
             cost::Profile::parse(raw, c.at("profile_sha256"), registry, target, true));
         dag::Receipt receipt;
@@ -219,7 +225,7 @@ public:
                                j.at("size_bytes"),
                                j.at("shape").get<std::vector<uint64_t>>(),
                                ""});
-        layout = std::make_unique<layout::Layout>("layout.json", path, objects);
+        layout = std::make_unique<layout::Layout>(c.value("layout", "layout.json"), path, objects);
         config = std::make_unique<DeviceConfig>(c.at("device").get<std::string>(), path);
         // All mappings, domains and reads checked before device creation.
         for (size_t q = 0; q < package->queries().size(); ++q)
@@ -234,6 +240,7 @@ public:
         trace.open(out);
         emit({{"type", "configuration"},
               {"config", c},
+              {"context", "example-readonly/1"},
               {"layout_sha256", layout->source_sha256()},
               {"device_sha256", config->source_sha256()},
               {"profile_sha256", profile->source_sha256()}});
@@ -300,8 +307,19 @@ public:
         executor->stages().sink = [this](auto x) {
             emit({{"type", "stage"},
                   {"op", x.key.op},
+                  {"query", x.key.query},
+                  {"stage", x.key.stage},
                   {"submitted", x.submitted},
                   {"completed", x.completed},
+                  {"success", x.success}});
+        };
+        executor->requests().sink = [this](const auto& x) {
+            emit({{"type", "request"},
+                  {"query", x.query},
+                  {"offered", x.offered},
+                  {"admitted", x.admitted},
+                  {"visible", x.visible},
+                  {"drained", x.drained},
                   {"success", x.success}});
         };
     }

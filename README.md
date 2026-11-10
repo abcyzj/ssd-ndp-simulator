@@ -25,7 +25,7 @@ cmake --build build/graph -j2
 
 - [统一 CLI](python/CLI.md)覆盖采集、校验、拟合、模拟、比较及三层验证。
 - [图搜索采集](workloads/graph-search/CAPTURE.md)说明原生输入、完整 IR/2 和测量。
-- [教学扩展](examples/extension/README.md)提供从真实块求和采集到两种 SSD 放置的夹具。
+- [教学扩展](workloads/block-sum/README.md)提供从真实块求和采集到两种 SSD 放置的夹具。
 - [配置入口](configs/README.md)说明运行时 XML、Layout 和测试配置。
 - [V0.4.5 PRD](docs/prd-v0.4.5.md)说明支持范围。SSD、PCIe、Controller 为 `configured_unvalidated`。
 

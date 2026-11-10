@@ -52,7 +52,7 @@ def ctest_passed(log, count):
 def source_identity(boundary, clean_source):
     files = boundary['source_sha256']
     require(set(files) == set(inventory()) - {'tools/verify_release.py'}, 'P20 source inventory differs')
-    release_docs = {'examples/extension/README.md', 'python/CLI.md', 'python/VALIDATION.md'}
+    release_docs = {'workloads/block-sum/README.md', 'python/CLI.md', 'python/VALIDATION.md'}
     check_files(ROOT, {name: expected for name, expected in files.items() if name not in release_docs})
     check_files(clean_source, files)
     deps = boundary['dependencies']

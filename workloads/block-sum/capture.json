@@ -1,0 +1,12 @@
+{
+  "format": "ndpsim-block-sum-capture/1",
+  "values": [1, 2, 3, 4, 5, 6, 7, 8],
+  "device": "../../configs/devices/native-small.xml",
+  "budget": {
+    "output_bytes": 33554432,
+    "scratch_bytes": 33554432,
+    "rss_bytes": 536870912,
+    "timeout_seconds": 60,
+    "min_disk_free_bytes": 1048576
+  }
+}

@@ -68,11 +68,11 @@ def reduce_trace(output, config, b, deadline):
         window = db.execute('select max(visible_ns)-min(admitted_ns) from requests').fetchone()[0]
         result = dict(format='ndpsim-run-report/1', execution_succeeded=True, full_acceptance_passed=False,
             mode=config['format'], placement=config.get('placement','host'), package_sha256=config['package_sha256'],
-            profile_sha256=config['profile_sha256'], target_hardware=config['target'], context=config['context'],
+            profile_sha256=config['profile_sha256'], target_hardware=config['target'], context=config['context'] if 'context' in config else snapshot['context'],
             service_sources=dict(sources), service_demand_ns_by_location=dict(total_services),
             service_demand_ns_by_source=dict(source_services), service_demand_ns_by_stage=dict(stage_services),
             interpretation='configured, prediction and measured-table demands are reported separately; hardware validation requires independent evidence',
-            reference_results=dict(status='Unsupported', reason='timing-only does not recompute top-k; capture evidence remains external'),
+            reference_results=dict(status='Unsupported', reason='timing-only does not recompute workload results; capture evidence remains external'),
             semantic_validation='trusted-independent-receipt' if 'semantic_report' in config else 'structure-only',
             requests=n, latency_ns=quantiles('latency'), offered_latency_ns=quantiles('offered_latency'), latency_definition='visible-admitted; offered latency reported separately', admission_wait_ns=quantiles('admission'), quantile_method='nearest_rank',
             measurement_window_ns=window, throughput_queries_per_second=n*1e9/window if window else None,

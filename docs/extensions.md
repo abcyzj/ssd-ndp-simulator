@@ -1,6 +1,6 @@
 # V0.1 扩展指南
 
-> 历史说明。以下命令和路径属于 V0.4 及其继承版本。V0.4.5 的算子、依赖、成本和双放置接入以 [教学扩展](../examples/extension/README.md)、[采集 SDK](capture-sdk-v0.4.5.md)和[拟合工具](../python/FITTING.md)为准。
+> 历史说明。以下命令和路径属于 V0.4 及其继承版本。V0.4.5 的算子、依赖、成本和双放置接入以 [教学扩展](../workloads/block-sum/README.md)、[采集 SDK](capture-sdk-v0.4.5.md)和[拟合工具](../python/FITTING.md)为准。
 
 当前接口是仓库内 C++17 源接口，没有稳定的插件 ABI 或动态注册框架。通常修改平台代码并从根 CMake 重建，无需修改 SST 或 MQSim FTL/NAND。设计草案与实际入口不同时，以本页链接到的头文件为准。
 

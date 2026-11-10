@@ -2,11 +2,13 @@
 
 日期：2026-11-07（Asia/Shanghai）。依据 [PRD FR04/05/07/12、AC09](prd-v0.4.5.md)、[实施计划 P17](implementation-plan-v0.4.5.md)。**P17 已完成**，实现及教学夹具出口见下；没有启动 P18，不计正式精度或最终12项AC验收。当前正式可运行交付仍为 V0.4。
 
+现行教学入口已迁至 `workloads/block-sum`，通过 [两课快速上手](quickstart-v0.4.5.md) 的统一 CLI 复现。以下命令、构建身份及通过数记录 P17 当时的证据。
+
 ## 实现
 
-[可独立复现教程](../examples/extension/README.md)展示固定8项u32的真实块求和。独立C++原生程序只依赖SDK，执行两个16B分支和一个u64汇合，SDK按逆拓扑文件顺序采集。Python独立整数oracle检查全部操作、输出digest、Work、访问、依赖与终态，再生成语义receipt；通用封包／校验不认识块求和语义。原生默认输出10、26、36；还覆盖包含UINT32_MAX的输入。
+[可独立复现教程](../workloads/block-sum/README.md)展示固定8项u32的真实块求和。独立C++原生程序只依赖SDK，执行两个16B分支和一个u64汇合，SDK按逆拓扑文件顺序采集。Python独立整数oracle检查全部操作、输出digest、Work、访问、依赖与终态，再生成语义receipt；通用封包／校验不认识块求和语义。原生默认输出10、26、36；还覆盖包含UINT32_MAX的输入。
 
-扩展契约、外部registry、原生实现、纯元数据lowering、SST模块、协议大小规则、成本配置生成、独立核对器和测试均位于 `examples/extension`。根CMake只增加编译期扩展登记；没有修改通用DAG、Runtime、Cost、Layout、Controller、SST Core或MQSim。迁移清单逐文件登记新增源码／教程和CTest。
+扩展契约、外部registry、原生实现、纯元数据lowering、SST模块、协议大小规则、成本配置生成、独立核对器和测试当时均位于独立教学扩展目录。根CMake只增加编译期扩展登记；没有修改通用DAG、Runtime、Cost、Layout、Controller、SST Core或MQSim。迁移清单逐文件登记新增源码／教程和CTest。
 
 模拟沿用同一个已独立验证的新IR包，只切 placement。两分支在相同模拟时刻ready，汇合只能在两结果返回后放行；没有按rank或文件顺序补ORDER边。Host经普通NVMe数据DMA/CQ再计算；Controller经新注册的size-only协议、local-read、buffer、compute和结果返回，CloseAck也纳入汇合返回门控，随后DAG回收所有令牌。没有读取payload、真实sum、等大占位数组或另设生产时钟。
 

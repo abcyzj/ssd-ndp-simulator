@@ -9,6 +9,13 @@ from .execution import budget, enforce, identities, launch, load, preflight, res
 from .static_ir import OperatorRegistry, file_hash, require, validate_package
 from .reporting import reduce_trace
 
+CAPTURE_ADAPTERS = {'graph': 'graph_capture.py', 'block-sum': 'block_sum_capture.py'}
+RUN_MODULES = {
+    'ndpsim-memory-run/1': ('memory', 'ndpsim_memory', '.'),
+    'ndpsim-graph-ssd-run/1': ('ssd', 'ndpsim_graph_ssd', '.'),
+    'ndpsim-block-sum-run/1': ('block_sum', 'ndpsim_block_sum', 'workloads/block-sum'),
+}
+
 
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
@@ -18,9 +25,9 @@ def parser():
     s.add_argument('--config', required=True, type=Path)
     s.add_argument('--build', required=True, type=Path)
     s.add_argument('--output', required=True, type=Path)
-    c = sub.add_parser('capture', help='explicit graph adapter: capture, sample or benchmark separately')
-    c.add_argument('--workload', choices=['graph'], required=True)
-    c.add_argument('--adapter', required=True, type=Path, help='independent graph-search/python/graph_capture.py')
+    c = sub.add_parser('capture', help='invoke an explicit workload adapter')
+    c.add_argument('--workload', choices=CAPTURE_ADAPTERS, required=True)
+    c.add_argument('--adapter', required=True, type=Path, help='independent workload capture adapter')
     c.add_argument('--native', required=True, type=Path)
     c.add_argument('--operators', required=True, type=Path)
     c.add_argument('--config', required=True, type=Path)
@@ -34,7 +41,7 @@ def parser():
     c.add_argument('--report', required=True, type=Path)
     c.add_argument('--expected-package-sha256')
     c.add_argument('--allow-fixture', action='store_true')
-    c.add_argument('--adapter', type=Path, help='explicit graph_capture.py for graph metadata rules or semantic check')
+    c.add_argument('--adapter', type=Path, help='explicit workload adapter for metadata rules or semantic check')
     c.add_argument('--semantic-config', type=Path, help='native payload config; only for explicit semantic check')
     c.add_argument('--reference', type=Path, help='independent native reference, required with semantic-config')
     f = sub.add_parser('fit', help='independent fit/table/evaluate/measurement-quality tools')
@@ -55,10 +62,11 @@ def simulate(args, output):
     path = args.config.resolve(); spec = load(path)
     require(set(spec) == {'format','run','budget'} and spec['format'] == 'ndpsim-experiment/1', 'expected ndpsim-experiment/1 with run and budget')
     b = budget(spec['budget']); run_path = resolve(path.parent,spec['run']); c = load(run_path)
-    require(c.get('format') in ('ndpsim-memory-run/1','ndpsim-graph-ssd-run/1'), 'unsupported run format; old engines/configurations require migration')
+    require(c.get('format') in RUN_MODULES, 'unsupported run format; old engines/configurations require migration')
     save(output/'experiment-input.json', spec)
     save(output/'run-input.json', c)
-    names = ['registry','profile','report']+[n for n in ('semantic_report','layout','device') if n in c]
+    names = ['profile','report']+[n for n in ('registry','semantic_report','layout','device') if n in c]
+    require('registry' in c or c['format']=='ndpsim-block-sum-run/1', 'run registry missing')
     inputs = {n:resolve(run_path.parent,c[n]) for n in names}
     package = resolve(run_path.parent,c['package'])
     # Package itself contains metadata only; no original payload/truth paths are resolved.
@@ -77,8 +85,9 @@ def simulate(args, output):
     save(output/'effective-config.json',c)
     build = args.build.resolve(); paths=load(build/'sst-paths.json')
     sst=resolve(build,paths['sst']); require(sst.is_file(), 'SST binary missing; build explicitly before simulate')
-    module = 'memory' if c['format']=='ndpsim-memory-run/1' else 'ssd'
-    libraries = sorted(build.glob('libndpsim_'+('memory' if module=='memory' else 'graph_ssd')+'.*'))
+    module, library, relative_lib_dir = RUN_MODULES[c['format']]
+    lib_dir = build/relative_lib_dir
+    libraries = sorted(lib_dir.glob('lib'+library+'.*'))
     require(libraries, 'timing-only SST module missing; build explicitly before simulate')
     entry = Path(__file__).with_name('sst')/(module+'.py')
     save(output/'input-identities.json', dict(files=before, package_files=package_hashes,package_sha256=c['package_sha256'],profile_sha256=c['profile_sha256'],
@@ -86,7 +95,7 @@ def simulate(args, output):
         implementation={p.name:file_hash(p) for p in Path(__file__).parent.glob('*.py')}))
     # SST serializes model argv as shell-like text internally; JSON quoting preserves spaces/unicode.
     import json
-    launch([str(sst),'--add-lib-path='+str(build),str(entry),'--',json.dumps(str(output/'effective-config.json'),ensure_ascii=False)],output,b)
+    launch([str(sst),'--add-lib-path='+str(lib_dir),str(entry),'--',json.dumps(str(output/'effective-config.json'),ensure_ascii=False)],output,b)
     require(all(file_hash(p)==h for p,h in before.items()),'input changed during run')
     result = reduce_trace(output,c,b,start+b['timeout_seconds'])
     import resource
@@ -103,16 +112,24 @@ def capture(args, output):
     require(args.mode != 'sample' or args.package is not None,'sample requires separately captured package')
     config=load(args.config)
     b=config['budget']
-    # Adapter owns native and semantic RAM/time/disk enforcement and input snapshots.
-    adapter=args.adapter.resolve(); require(adapter.name=='graph_capture.py' and adapter.is_file(),'explicit graph capture adapter required')
-    limits=budget(dict(output_bytes=b['output_bytes']+1024**2,scratch_bytes=2*b['output_bytes'],rss_bytes=max(b['native_rss_bytes'],b['postprocess_rss_bytes']),timeout_seconds=b['timeout_seconds'],min_disk_free_bytes=b['min_disk_free_bytes']))
+    adapter=args.adapter.resolve()
+    require(adapter.name==CAPTURE_ADAPTERS[args.workload] and adapter.is_file(), 'explicit workload capture adapter required')
+    if args.workload == 'block-sum':
+        require(args.mode == 'capture' and args.package is None, 'block-sum supports complete capture only')
+        limits=budget(b)
+        reference='capture/semantic.json'
+        adapter_sources=[adapter.with_name('tutorial.py')]
+    else:
+        limits=budget(dict(output_bytes=b['output_bytes']+1024**2,scratch_bytes=2*b['output_bytes'],rss_bytes=max(b['native_rss_bytes'],b['postprocess_rss_bytes']),timeout_seconds=b['timeout_seconds'],min_disk_free_bytes=b['min_disk_free_bytes']))
+        reference='capture/reference.json'
+        adapter_sources=sorted(p for p in adapter.parent.glob('graph_*.py') if p != adapter)
     preflight(output,limits)
     command=[sys.executable,str(adapter),args.mode,'--config',str(args.config.resolve()),'--operators',str(args.operators.resolve()),'--binary',str(args.native.resolve()),'--output',str(output/'capture'),'--stride',str(args.stride)]
     if args.package:command+=['--package',str(args.package.resolve())]
-    save(output/'adapter-identities.json',{str(p):file_hash(p) for p in [adapter,*sorted(adapter.parent.glob('graph_*.py')),args.operators.resolve(),args.native.resolve()]})
+    save(output/'adapter-identities.json',{str(p):file_hash(p) for p in [adapter,*adapter_sources,args.operators.resolve(),args.native.resolve(),args.config.resolve()]})
     launch(command,output,limits)
     require(load(output/'capture/status.json')['passed'] is True,'capture failed')
-    save(output/'report.json',dict(format='ndpsim-capture-report/1',mode=args.mode,reference_results='capture/reference.json: native reference evidence, not simulated results',full_acceptance_passed=False))
+    save(output/'report.json',dict(format='ndpsim-capture-report/1',mode=args.mode,reference_results=reference+': native reference evidence, not simulated results',full_acceptance_passed=False))
 
 
 def compare(args, output):
@@ -143,7 +160,7 @@ def main(argv=None):
                     if args.adapter:
                         import subprocess
                         import tempfile
-                        require(args.adapter.name=='graph_capture.py','explicit graph adapter required')
+                        require(args.adapter.name in CAPTURE_ADAPTERS.values(),'explicit workload adapter required')
                         require(bool(args.semantic_config)==bool(args.reference),'semantic-config and reference are required together')
                         with tempfile.TemporaryDirectory(prefix='ndpsim-check-') as tmp:
                             result=Path(tmp)/'result'
@@ -151,7 +168,7 @@ def main(argv=None):
                             if args.semantic_config:command+=['--config',str(args.semantic_config.resolve()),'--reference',str(args.reference.resolve())]
                             if args.allow_fixture:command+=['--allow-fixture']
                             p= subprocess.run(command,capture_output=True,text=True,timeout=300)
-                            require(p.returncode==0,'graph validation failed: '+p.stderr)
+                            require(p.returncode==0,'workload validation failed: '+p.stderr)
                             r=load(result/('semantic.json' if args.semantic_config else 'structural.json'))
                             require(args.allow_fixture or r.get('source',r.get('provenance',{}).get('kind'))!='synthetic-fixture','synthetic fixture requires --allow-fixture')
                             r['adapter_command']=dict(argv=command,exit_code=p.returncode,source_sha256=file_hash(args.adapter))

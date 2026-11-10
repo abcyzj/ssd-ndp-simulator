@@ -9,7 +9,7 @@
 | 新用户：环境准备、构建和运行一个端到端示例 | [V0.4.5 快速上手](quickstart-v0.4.5.md) |
 | V0.4.5 发布验收与干净目录复现 | [发布记录](releases/v0.4.5.md) |
 | V0.4.5 P20 旧路径清理、回归与正式复验 | [执行记录与限制](cleanup-v0.4.5.md) |
-| V0.4.5 P17 教学算子、真实采集、双映射与独立核对 | [实现记录](extension-v0.4.5.md)、[复现教程](../examples/extension/README.md) |
+| V0.4.5 P17 教学算子、真实采集、双映射与独立核对 | [实现记录](extension-v0.4.5.md)、[复现教程](../workloads/block-sum/README.md) |
 | V0.4.5 P18 新图身份、逐调用表与正式驻留精度 | [执行记录与限制](resident-accuracy-v0.4.5.md) |
 | V0.4.5 P19 正式 SSD 账本与条件预测 | [执行记录与限制](ssd-accounting-v0.4.5.md) |
 | V0.4.5 独立MQSim共同设备行为对拍 | [P16实现、命令与边界](mqsim-oracle-v0.4.5.md) |
