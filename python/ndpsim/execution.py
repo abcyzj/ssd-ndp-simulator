@@ -63,6 +63,13 @@ def preflight(output, b, input_bytes=0):
         percent = int(free_percent[1])
         require(physical > 0 and 0 <= percent <= 100, 'invalid macOS RAM budget')
         available = physical*percent//100
+    elif sys.platform.startswith('linux'):
+        import re
+        physical = os.sysconf('SC_PHYS_PAGES')*os.sysconf('SC_PAGE_SIZE')
+        meminfo = Path('/proc/meminfo').read_text()
+        match = re.search(r'^MemAvailable:\s+(\d+)\s+kB\s*$', meminfo, re.MULTILINE)
+        require(match is not None, 'cannot determine Linux MemAvailable from /proc/meminfo')
+        available = int(match[1])*1024
     else:
         physical = os.sysconf('SC_PHYS_PAGES')*os.sysconf('SC_PAGE_SIZE')
         available = os.sysconf('SC_AVPHYS_PAGES')*os.sysconf('SC_PAGE_SIZE')
