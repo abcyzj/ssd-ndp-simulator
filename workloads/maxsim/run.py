@@ -9,8 +9,9 @@ import subprocess
 import sys
 
 from ndpsim.static_ir import canonical, decode, digest_bytes, file_hash, require
+from ndpsim.execution import budget, enforce, launch, preflight
 
-from config import MAIN, derive, validate
+from config import MAIN, derive, uint, validate
 from generate import check, write
 
 HERE = Path(__file__).resolve().parent
@@ -66,25 +67,49 @@ def checked_inputs(bundle, platform_path):
     return config, audited, backend, platform
 
 
-def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-run.json"):
+def execute(command, output, name):
+    stdout_path, stderr_path = (output / f"{name}.{suffix}" for suffix in ("stdout", "stderr"))
+    with stdout_path.open("w") as stdout, stderr_path.open("w") as stderr:
+        try:
+            process = subprocess.run(command, cwd="/tmp", stdout=stdout, stderr=stderr, timeout=180)
+            exit_code, timed_out = process.returncode, False
+        except subprocess.TimeoutExpired:
+            exit_code, timed_out = None, True
+    write(output / f"{name}.process.json", dict(command=command, cwd="/tmp",
+                                                 exit_code=exit_code, timed_out=timed_out))
+    require(exit_code == 0, f"{name}: SST failed; see {stderr_path}")
+
+
+def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-run.json", *,
+        device_limits=None, execution_budget=None, preflight_only=False):
     bundle, build, output, platform_path = (p.resolve() for p in (bundle, build, output, platform_path))
     require(placements and len(placements) == len(set(placements)) and all(p in PLACEMENTS for p in placements),
             "invalid MaxSim placements")
     require(bundle != output and bundle not in output.parents, "output must be outside the immutable input bundle")
+    if device_limits is not None:
+        require(type(device_limits) is dict and device_limits.keys() == {"xml_bytes", "metadata_bytes", "preload_pages"},
+                "DeviceLimits require xml_bytes, metadata_bytes and preload_pages")
+        for key, value in device_limits.items():
+            uint(value, key, 1)
+        require(preflight_only or execution_budget is not None, "custom DeviceLimits require an execution budget")
+    if execution_budget is not None:
+        execution_budget = budget(execution_budget)
     config, audit, backend, platform = checked_inputs(bundle, platform_path)
     sst = Path(json_file(build / "sst-paths.json")["sst"])
     library_dir = build / "workloads/maxsim"
     modules = [p for p in library_dir.glob("libndpsim_maxsim.*") if p.suffix in (".so", ".dylib")]
     require(sst.is_file() and len(modules) == 1, "build the ndpsim_maxsim SST element first")
-    require(shutil.disk_usage(output.parent).free >= 32 * 1024**2 * len(placements),
+    require(shutil.disk_usage(output.parent).free >= 32 * 1024**2 * (1 if preflight_only else len(placements)),
             "insufficient output space for E0 traces")
     output.mkdir()
     source_digest = backend_digest()
     sources = [*HERE.glob("*.cc"), *HERE.glob("*.h"), *HERE.glob("*.h.in"), *HERE.glob("*.py"),
                HERE / "CMakeLists.txt", ROOT / "CMakeLists.txt", ROOT / "src/backend/event_bridge.h",
-               ROOT / "src/layout/layout.h", ROOT / "src/layout/layout.cc"]
+               ROOT / "src/backend/device_config.cc", ROOT / "src/backend/device_config.h",
+               ROOT / "src/layout/layout.h", ROOT / "src/layout/layout.cc", ROOT / "python/ndpsim/execution.py"]
     write(output / "inputs.json", {
         "bundle": str(bundle), "generation_receipt_sha256": file_hash(bundle / "receipt.json"),
+        "requested_device_limits": device_limits, "execution_budget": execution_budget,
         "platform_path": str(platform_path), "platform_sha256": file_hash(platform_path),
         "package_sha256": audit["package_sha256"], "mqsim": backend,
         "mqsim_src_sha256": source_digest,
@@ -95,27 +120,46 @@ def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-r
         "sources_sha256": {p.relative_to(ROOT).as_posix(): file_hash(p) for p in sorted(sources)},
         "build_cache_sha256": file_hash(build / "CMakeCache.txt"),
     })
-    summaries = {}
-    for placement in placements:
-        run_name = output / f"{placement}.json"
-        trace = output / f"{placement}.jsonl"
-        write(run_name, {
+    def prepare(name, placement, **extra):
+        run_name = output / f"{name}.json"
+        trace = output / f"{name}.jsonl"
+        spec = {
             "format": "ndpsim-maxsim-run/1", "placement": placement, "bundle": str(bundle),
             "receipt_sha256": file_hash(bundle / "receipt.json"), "mqsim_source_sha256": source_digest,
-            "scratch": f"{placement}.sqlite", "output": trace.name, "platform": platform,
-        })
+            "scratch": f"{name}.sqlite", "output": trace.name, "platform": platform, **extra,
+        }
+        if device_limits is not None:
+            spec["device_limits"] = device_limits
+        write(run_name, spec)
         command = [str(sst), f"--add-lib-path={library_dir}", str(HERE / "sst.py"),
                    "--", json.dumps(str(run_name), ensure_ascii=False)]
-        stdout_path, stderr_path = (output / f"{placement}.{suffix}" for suffix in ("stdout", "stderr"))
-        with stdout_path.open("w") as stdout, stderr_path.open("w") as stderr:
-            try:
-                process = subprocess.run(command, cwd="/tmp", stdout=stdout, stderr=stderr, timeout=180)
-                exit_code, timed_out = process.returncode, False
-            except subprocess.TimeoutExpired:
-                exit_code, timed_out = None, True
-        write(output / f"{placement}.process.json", dict(command=command, cwd="/tmp",
-                                                        exit_code=exit_code, timed_out=timed_out))
-        require(exit_code == 0, f"{placement}: SST failed; see {stderr_path}")
+        return command, trace
+
+    if preflight_only or execution_budget is not None:
+        name = "device-preflight"
+        command, trace = prepare(name, placements[0], preflight_only=True)
+        execute(command, output, name)
+        with trace.open("rb") as stream:
+            header, result = map(decode, stream)
+        require(result["type"] == "device_preflight" and result["success"] and not result["allocated"],
+                "missing non-allocating device preflight report")
+        report = dict(result, device=header["device"], package_sha256=audit["package_sha256"],
+                      layout_sha256=header["layout_sha256"], trace_sha256=file_hash(trace))
+        write(output / "device-preflight-report.json", report)
+        if preflight_only:
+            return report
+        require(header["device"]["metadata_estimate_bytes"] <= execution_budget["rss_bytes"],
+                "device metadata estimate exceeds execution RAM budget")
+        preflight(output, execution_budget)
+        enforce(output, execution_budget)
+
+    summaries = {}
+    for placement in placements:
+        command, trace = prepare(placement, placement)
+        if execution_budget is None:
+            execute(command, output, placement)
+        else:
+            launch(command, output, execution_budget, cwd="/tmp", prefix=f"{placement}.")
         summary = {}
         with trace.open("rb") as stream:
             for line in stream:
@@ -136,9 +180,15 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--platform", type=Path, default=HERE / "e0-run.json")
     parser.add_argument("--placement", action="append", choices=PLACEMENTS)
+    parser.add_argument("--device-limits", type=Path, help="explicit DeviceLimits JSON")
+    parser.add_argument("--budget", type=Path, help="RAM, disk and wall-time budget JSON for execution")
+    parser.add_argument("--preflight-only", action="store_true", help="validate device and layout without allocating MQSim")
     args = parser.parse_args()
     try:
-        summary = run(args.input, args.build, args.output, args.placement or PLACEMENTS, args.platform)
+        summary = run(args.input, args.build, args.output, args.placement or PLACEMENTS, args.platform,
+                      device_limits=json_file(args.device_limits) if args.device_limits else None,
+                      execution_budget=json_file(args.budget) if args.budget else None,
+                      preflight_only=args.preflight_only)
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
         print(f"MaxSim E0: {error}", file=sys.stderr)
         return 1

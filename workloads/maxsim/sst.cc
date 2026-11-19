@@ -35,7 +35,11 @@ public:
         primaryComponentDoNotEndSim();
     }
 
-    void setup() override { run_->start(); }
+    void setup() override {
+        run_->start();
+        if (run_->finished())
+            primaryComponentOKToEndSim();
+    }
     void finish() override { run_->verify(); }
 
 private:

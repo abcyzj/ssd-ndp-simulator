@@ -160,7 +160,17 @@ Run::State* Run::State::active = nullptr;
 Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock)
     : bridge(b), now(std::move(clock)) {
     const auto run = J::parse(read(path));
-    require(run.at("format") == "ndpsim-maxsim-run/1" && run.size() == 8, "MaxSim run format/fields");
+    require(run.at("format") == "ndpsim-maxsim-run/1" &&
+                run.size() == 8 + size_t(run.contains("device_limits")) + size_t(run.contains("preflight_only")),
+            "MaxSim run format/fields");
+    const bool preflight_only = run.value("preflight_only", false);
+    DeviceLimits limits;
+    if (run.contains("device_limits")) {
+        const auto& l = run.at("device_limits");
+        require(l.is_object() && l.size() == 3, "MaxSim DeviceLimits fields");
+        limits = {integer(l.at("xml_bytes")), integer(l.at("metadata_bytes")), integer(l.at("preload_pages"))};
+        require(limits.xml_bytes && limits.metadata_bytes && limits.preload_pages, "MaxSim DeviceLimits must be positive");
+    }
     placement = run.at("placement");
     offload = placement == "device_all";
     free = placement == "host_compute_free";
@@ -268,7 +278,7 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
         std::vector<capture::Object>{{object.at("id"), object.at("version"), object.at("type"),
                                       object.at("size_bytes"), object.at("shape"),
                                       object.at("content_sha256")}});
-    config = std::make_unique<DeviceConfig>(h.at("mqsim_config_path").get<std::string>(), fs::absolute(path));
+    config = std::make_unique<DeviceConfig>(h.at("mqsim_config_path").get<std::string>(), fs::absolute(path), limits);
     const auto& g = config->geometry();
     require(config->source_sha256() == h.at("mqsim_config_hash") &&
                 h.at("external_effective_GBps") == g.lanes * g.lane_bandwidth,
@@ -349,6 +359,15 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
           {"mqsim_pcie_configured_GBps", g.lanes * g.lane_bandwidth},
           {"configured_unvalidated", true}});
 
+    if (preflight_only) {
+        emit({{"type", "device_preflight"}, {"success", true}, {"allocated", false},
+              {"mapped_end_sectors", layout->mapped_end_sectors()}, {"preload_sectors", preload},
+              {"preload_pages", preload / g.page_sectors}, {"logical_reads", checked_requests}});
+        trace.flush();
+        require(bool(trace), "cannot flush MaxSim preflight");
+        reported = true;
+        return;
+    }
     device = std::make_unique<OrdinaryDevice>(preload, *config, *layout);
     local = std::make_unique<timing::MetadataLocalReads>(
         *static_cast<SSD_Components::Host_Interface_NVMe*>(device->device->Host_interface), bridge, now);
@@ -812,6 +831,8 @@ Run::Run(const fs::path& path, EventBridge& bridge, EventBridge::Clock now)
     : state_(std::make_unique<State>(path, bridge, std::move(now))) {}
 Run::~Run() = default;
 void Run::start() {
+    if (finished())
+        return;
     state_->device->start();
     state_->bridge.start();
 }
@@ -819,6 +840,7 @@ void Run::poll() { state_->poll(); }
 bool Run::finished() const { return state_->reported; }
 void Run::verify() const {
     require(state_->reported, "MaxSim summary missing");
-    state_->verify();
+    if (state_->device)
+        state_->verify();
 }
 } // namespace maxsim

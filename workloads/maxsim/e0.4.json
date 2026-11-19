@@ -1,0 +1,69 @@
+{
+  "workload": {
+    "model_preset": "colqwen3",
+    "embedding_dim": 320,
+    "document_vectors": 1024,
+    "template_token_increment": 0,
+    "query_vectors": 32,
+    "candidate_count": 150,
+    "top_k": 10,
+    "storage_dtype": "fp16",
+    "corpus_documents": 1000000,
+    "distribution": "zipf",
+    "zipf_alpha": 0.8
+  },
+  "cache": {
+    "host_capacity_bytes": 0,
+    "device_extra_capacity_bytes": 0,
+    "initial_state": "cold"
+  },
+  "layout": {
+    "alignment_bytes": 4096,
+    "logical_read_bytes": 65536,
+    "sort_candidates_by_lba": false,
+    "namespace_capacity_sectors": 1997159792,
+    "namespace_page_bytes": 16384
+  },
+  "execution": {
+    "read_window_documents_per_query": 16,
+    "global_outstanding_reads": 256,
+    "compute_batch_documents": 8,
+    "wait_for_full_batch": false,
+    "cross_query_compute_batching": false,
+    "input_buffer_bytes_per_side": 33554432,
+    "overlap_read_compute": true,
+    "scoring_engines_per_side": 1
+  },
+  "compute": {
+    "mode": "equivalent_full_maxsim",
+    "host_effective_tflops": 1.0,
+    "device_effective_tflops": 1.0,
+    "batch_launch_us": 10,
+    "offload_command_us": 20,
+    "host_compute_free_zeros_launch": true
+  },
+  "protocol": {
+    "query_component_bytes": 2,
+    "document_id_bytes": 8,
+    "score_bytes": 4,
+    "return_mode": "all_candidate_scores"
+  },
+  "hardware": {
+    "mqsim_config_path": "e0.4-device.xml",
+    "mqsim_config_hash": "9074bab6816c4c40e13fda2db2a6402eb195e1e77a49b08a81103d2f9f82012d",
+    "backend_commit": "8f7ddf6d8cafdb7c783b3fcfd4693f15c6c5854b",
+    "external_effective_GBps": 7,
+    "internal_bandwidth_mode": "simulated",
+    "hbf_enabled": false
+  },
+  "load": {
+    "mode": "closed_loop",
+    "closed_loop_concurrency": 1
+  },
+  "generation": {
+    "queries": 1,
+    "layout_seed": 11,
+    "candidate_seed": 11,
+    "arrival_seed": 11
+  }
+}

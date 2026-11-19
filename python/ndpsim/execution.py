@@ -91,15 +91,17 @@ def enforce(output, b):
     require(shutil.disk_usage(output).free >= b['min_disk_free_bytes'], 'disk free reserve')
 
 
-def launch(argv, output, b, *, env=None):
+def launch(argv, output, b, *, env=None, cwd=None, prefix=''):
     """Never uses a shell. A timeout kills the isolated process group and reaps the child."""
     start = time.monotonic()
-    record = dict(argv=list(map(str, argv)), cwd=str(Path.cwd()), exit_code=None)
-    save(output/'command.json', record)
+    record = dict(argv=list(map(str, argv)), cwd=str(Path(cwd).resolve() if cwd else Path.cwd()), exit_code=None)
+    command_path = output/(prefix+'command.json')
+    save(command_path, record)
     proc = None
     try:
-        with (output/'stdout.log').open('wb') as stdout, (output/'stderr.log').open('wb') as stderr:
-            proc = subprocess.Popen(record['argv'], stdout=stdout, stderr=stderr, env=env, start_new_session=True)
+        with (output/(prefix+'stdout.log')).open('wb') as stdout, (output/(prefix+'stderr.log')).open('wb') as stderr:
+            proc = subprocess.Popen(record['argv'], stdout=stdout, stderr=stderr, env=env, cwd=cwd,
+                                    start_new_session=True)
             while True:
                 pid, status, usage = os.wait4(proc.pid, os.WNOHANG)
                 if pid:
@@ -111,7 +113,7 @@ def launch(argv, output, b, *, env=None):
                 time.sleep(.05)
         require(record['peak_child_rss_bytes'] <= b['rss_bytes'], 'child peak RSS budget')
         enforce(output, b)
-        require(proc.returncode == 0, 'subprocess failed; see stderr.log (exit '+str(proc.returncode)+')')
+        require(proc.returncode == 0, 'subprocess failed; see '+prefix+'stderr.log (exit '+str(proc.returncode)+')')
         return record
     finally:
         if proc is not None and proc.returncode is None:
@@ -120,7 +122,7 @@ def launch(argv, output, b, *, env=None):
             proc.returncode = os.waitstatus_to_exitcode(status)
             record.update(exit_code=proc.returncode, peak_child_rss_bytes=usage.ru_maxrss*(1 if sys.platform == 'darwin' else 1024), terminated_by_budget=True)
         record['wall_seconds'] = time.monotonic()-start
-        save(output/'command.json', record)
+        save(command_path, record)
 
 
 def identities(output):

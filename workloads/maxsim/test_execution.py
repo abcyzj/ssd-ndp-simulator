@@ -20,6 +20,8 @@ from generate import write
 from verify import rows
 
 BUILD = Path(sys.argv.pop(1)).resolve()
+SMALL_BUDGET = dict(output_bytes=64 * 1024**2, scratch_bytes=64 * 1024**2, rss_bytes=512 * 1024**2,
+                    timeout_seconds=180, min_disk_free_bytes=32 * 1024**2)
 
 
 def ceil_div(value, unit):
@@ -61,11 +63,11 @@ class Execution(unittest.TestCase):
         self.assertEqual(process.returncode == 0, success, process.stderr or process.stdout)
         return process
 
-    def bundle(self, parameters=None):
-        config = HERE / "e0.json"
+    def bundle(self, parameters=None, *, base="e0.json"):
+        config = HERE / base
         if parameters is not None:
             override = json_file(config)
-            override["hardware"]["mqsim_config_path"] = str(HERE / "e0-device.xml")
+            override["hardware"]["mqsim_config_path"] = str(HERE / override["hardware"]["mqsim_config_path"])
             for name, fields in parameters.items():
                 override[name].update(fields)
             config = self.directory / "override.json"
@@ -93,7 +95,7 @@ class Execution(unittest.TestCase):
         self.assertEqual(header["effective_config"], cfg)
         self.assertEqual(header["effective_platform"], platform)
         self.assertEqual(header["layout_sha256"], file_hash(bundle / "layout.json"))
-        self.assertEqual(header["device_sha256"], file_hash(HERE / "e0-device.xml"))
+        self.assertEqual(header["device_sha256"], file_hash(Path(cfg["hardware"]["mqsim_config_path"])))
         self.assertEqual(header["mqsim_pcie_configured_GBps"], 7)
         origin = s["origin_ns"]
         (measurement,) = by_type["measurement_start"]
@@ -428,6 +430,78 @@ class Execution(unittest.TestCase):
 
     def test_buffer_pressure(self):
         self.pressure("buffer", {"input_buffer_bytes_per_side": 655360})
+
+    def test_million_document_preflight(self):
+        bundle = self.bundle(base="e0.4.json")
+        limits = json_file(HERE / "e0.4-device-limits.json")
+        command = [sys.executable, str(HERE / "run.py"), "--input", str(bundle), "--build", str(BUILD)]
+        metadata_only = self.directory / "metadata-only.json"
+        write(metadata_only, dict(limits, preload_pages=1_000_000))
+        for name, extra, expected in [
+            ("default-limits", [], "metadata estimate exceeds allocation budget"),
+            ("default-preload", ["--device-limits", str(metadata_only)], "preload page budget"),
+        ]:
+            output = self.directory / name
+            self.command(name, command + ["--output", str(output), "--preflight-only", *extra], success=False)
+            self.assertIn(expected, (output / "device-preflight.stderr").read_text())
+            self.assertFalse((output / "device-preflight.jsonl").exists())
+
+        output = self.directory / "preflight"
+        report = run(bundle, BUILD, output, device_limits=limits, preflight_only=True)
+        self.assertFalse(report["allocated"])
+        device = report["device"]
+        self.assertEqual(device["limits"], limits)
+        self.assertEqual(device["page_bytes"], 16_384)
+        self.assertEqual(device["raw_sectors"], 2**31)
+        self.assertEqual(device["partition"]["capacity_sectors"], 1_997_159_792)
+        self.assertEqual(device["metadata_estimate_bytes"], 18_257_870_848)
+        self.assertEqual(report["mapped_end_sectors"], 1_280_000_000)
+        self.assertEqual(report["preload_sectors"], 1_280_000_000)
+        self.assertEqual(report["preload_pages"], 40_000_000)
+        self.assertEqual(report["logical_reads"], 1500)
+        self.assertEqual(report["layout_sha256"], file_hash(bundle / "layout.json"))
+        self.assertEqual(json_file(bundle / "logical-layout.json")["corpus_allocated_bytes"], 655_360_000_000)
+        self.assertEqual(json_file(bundle / "accounting.json")["document_effective_bytes"], 98_304_000)
+        self.assertEqual([e["type"] for e in rows(output / "device-preflight.jsonl")],
+                         ["configuration", "device_preflight"])
+        budget_path = self.directory / "small-budget.json"
+        write(budget_path, SMALL_BUDGET)
+        output = self.directory / "ram-rejection"
+        rejected = self.command("ram-rejection", command + ["--output", str(output), "--device-limits",
+                                str(HERE / "e0.4-device-limits.json"), "--budget", str(budget_path)], success=False)
+        self.assertIn("device metadata estimate exceeds execution RAM budget", rejected.stderr)
+        self.assertFalse(any((output / f"{p}.json").exists() for p in PLACEMENTS))
+        self.assertFalse((output / "execution.json").exists())
+        write(self.directory / "verified.json", report)
+
+    def test_scaled_million_device_nand_execution(self):
+        # Preserve the large device's topology, 16 KiB page and 256-page block.
+        xml = self.directory / "scaled-device.xml"
+        xml.write_bytes((HERE / "e0.4-device.xml").read_bytes().replace(
+            b"<Block_No_Per_Plane>65536<", b"<Block_No_Per_Plane>128<"))
+        bundle = self.bundle({
+            "workload": {"corpus_documents": 1000},
+            "layout": {"namespace_capacity_sectors": 3_900_700},
+            "hardware": {"mqsim_config_path": str(xml), "mqsim_config_hash": file_hash(xml)},
+        }, base="e0.4.json")
+        limits = dict(xml_bytes=1024**2, metadata_bytes=64 * 1024**2, preload_pages=40_000)
+        output = self.directory / "run"
+        run(bundle, BUILD, output, device_limits=limits, execution_budget=SMALL_BUDGET)
+        report = json_file(output / "device-preflight-report.json")
+        self.assertEqual(report["preload_pages"], 40_000)
+        self.assertEqual(report["device"]["xml_fields"]["flash"]["Page_No_Per_Block"], 256)
+        self.assertEqual(report["device"]["limits"], limits)
+        verified = {}
+        for placement in PLACEMENTS:
+            trace = output / f"{placement}.jsonl"
+            summary, _ = self.verify_execution(bundle, trace)
+            self.assertEqual(next(rows(trace))["device"], report["device"])
+            process = json_file(output / f"{placement}.command.json")
+            self.assertEqual(process["exit_code"], 0)
+            self.assertGreater(process["peak_child_rss_bytes"], 0)
+            verified[placement] = dict(summary=summary, rss=process["peak_child_rss_bytes"],
+                                       wall_seconds=process["wall_seconds"])
+        write(self.directory / "verified.json", verified)
 
     def test_multiple_ready_documents_and_padded_tail(self):
         bundle = self.bundle({"workload": {"corpus_documents": 16, "candidate_count": 8, "top_k": 4,

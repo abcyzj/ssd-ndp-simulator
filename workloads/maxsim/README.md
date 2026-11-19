@@ -75,6 +75,41 @@ PYTHONPATH=python python workloads/maxsim/test_maxsim.py
 
 执行验收逐条重建逻辑读与 NAND 用户页账本，按 NAND 原始区间重算介质和总线占用，并从 PCIe 事件核对分方向排队、服务、到达与协议账本。三个反压夹具各运行全部放置，检查请求在对应配额恢复后继续提交。主点三条路径各复跑一次并比较轨迹字节。
 
+## E0.4 百万文档
+
+[e0.4.json](e0.4.json) 保留 E0 的单查询、FP16 形状和地址语义。配套的 [设备 XML](e0.4-device.xml) 使用 1 TiB raw、16 KiB 页、256 页/块和 7% OP。逻辑 namespace 为 1,997,159,792 个 512 B sector，百万文档 Layout 覆盖前 1,280,000,000 个 sector，共 655,360,000,000 B。生成只写元数据。
+
+```sh
+export PYTHONPATH="$PWD/python"
+python workloads/maxsim/generate.py generate --config workloads/maxsim/e0.4.json \
+  --point E0-single-01 --output /tmp/maxsim-e04
+python workloads/maxsim/generate.py check --input /tmp/maxsim-e04
+python workloads/maxsim/run.py --input /tmp/maxsim-e04 --build build/delivery \
+  --output /tmp/maxsim-e04-preflight --preflight-only \
+  --device-limits workloads/maxsim/e0.4-device-limits.json
+```
+
+`--preflight-only` 在 SST 中使用实际执行入口核验设备、Layout 和读计划，输出 `device-preflight-report.json` 后结束。它在分配 MQSim 前运行。全量预装载需 40,000,000 页，设备元数据估算为 18,257,870,848 B。[DeviceLimits](e0.4-device-limits.json) 显式给出 18 GiB 元数据上限和 4,000 万页上限。
+
+实际执行还需要主机预算。以下为单查询、逐放置执行的预算示例。运行时会先比较设备估算与 RSS 预算，再检查本机物理和可用内存、输出与 SQLite 的磁盘空间。每条路径分别记录超时、退出码、墙钟和子进程峰值 RSS。RSS 在子进程退出时核对。
+
+```sh
+cat > /tmp/maxsim-e04-budget.json <<'EOF'
+{
+  "rss_bytes": 25769803776,
+  "output_bytes": 134217728,
+  "scratch_bytes": 134217728,
+  "min_disk_free_bytes": 1073741824,
+  "timeout_seconds": 7200
+}
+EOF
+python workloads/maxsim/run.py --input /tmp/maxsim-e04 --build build/delivery \
+  --output /tmp/maxsim-e04-run --device-limits workloads/maxsim/e0.4-device-limits.json \
+  --budget /tmp/maxsim-e04-budget.json
+```
+
+每个 SST 进程逐页预装载整个 Layout，排空后才进入测量窗口。全量墙钟需在目标机实测。增加查询量须另行核验 IR、索引、trace 和输出预算，当前 E0 执行域为单查询。百万 FP32 和千万 FP16 超出当前 MQSim 几何上限。当前本机证据覆盖百万 Layout 的分配前核验与缩小几何的 NAND 执行，详见 [实施计划](IMPLEMENTATION_PLAN.md#e04-交付记录中的百万文档扩展)。
+
 ## 扫描与随机种子
 
 [scan.json](scan.json) 声明 E0～E5 的轴。E1 展开容量、分布和封闭并发的指定组合。E3～E5 为单因素扫描。E2 的开放压力点可生成到达序列，选择哪些 E1 点作性能对照须待执行结果。扫描输出包括点 ID、覆盖项、种子组和派生账本。默认生成 1 个查询，实验建议的 10,000 查询记录在 `measured_queries_initial`。预检报告候选、切片、stage、IR/SQLite 估计和输出磁盘预算。默认预算会拒绝将主配置直接生成成 10,000 查询包。
