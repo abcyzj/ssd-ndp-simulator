@@ -404,3 +404,4 @@ endif()
 
 # P17: compile-time teaching extension registration; implementation stays external.
 add_subdirectory(workloads/block-sum)
+add_subdirectory(workloads/maxsim)

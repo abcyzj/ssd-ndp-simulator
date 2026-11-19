@@ -146,6 +146,26 @@ Layout::Layout(const std::filesystem::path& reference,
     hash_ = capture::sha256(source_);
     effective_ = j.dump();
 }
+Plan Layout::resolve_request(const capture::Access& a, uint64_t bytes) const {
+    auto it = objects_.find({a.object, a.version});
+    need(it != objects_.end(), "unknown request object/version");
+    const auto& object = it->second;
+    auto end = add(a.offset_bytes, bytes);
+    need(a.length_bytes && a.length_bytes <= bytes && end <= object.size &&
+             bytes % sector_ == 0 && bytes / sector_ <= limits_.plan_sectors,
+         "invalid contiguous request range/size");
+    auto e = std::lower_bound(object.extents.begin(), object.extents.end(), a.offset_bytes,
+                              [](const Extent& x, uint64_t offset) {
+                                  return x.logical + x.length <= offset;
+                              });
+    need(e != object.extents.end() && a.offset_bytes >= e->logical &&
+             end <= e->logical + e->length,
+         "request crosses layout extents");
+    auto physical = add(e->physical, a.offset_bytes - e->logical);
+    need(physical % sector_ == 0, "unaligned contiguous request");
+    return {a.length_bytes, bytes, {{physical / sector_, bytes / sector_,
+                                     {{0, a.offset_bytes, 0, a.length_bytes}}}}};
+}
 Plan Layout::resolve(const std::vector<capture::Access>& accesses) const {
     need(accesses.size() <= limits_.accesses, "access budget");
     // One entry per touched sector, never a payload-sized placeholder. Bound it

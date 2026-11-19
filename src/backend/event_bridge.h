@@ -139,6 +139,9 @@ public:
     bool idle() const {
         return !reserved_;
     }
+    bool pending_now() const {
+        return reserved_ && *reserved_ == clock_();
+    }
 
 private:
     using Key = std::tuple<uint64_t, uint64_t, Phase, uint64_t>;

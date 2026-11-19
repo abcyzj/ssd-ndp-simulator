@@ -31,6 +31,9 @@ public:
            const std::vector<capture::Object>& objects,
            Limits = {});
     Plan resolve(const std::vector<capture::Access>&) const;
+    // A caller-defined contiguous request, including any tail padding. One
+    // extent must cover the whole request; the device owns page segmentation.
+    Plan resolve_request(const capture::Access&, uint64_t request_bytes) const;
     uint64_t capacity_sectors() const {
         return capacity_;
     }

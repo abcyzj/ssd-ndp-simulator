@@ -1,0 +1,5 @@
+#pragma once
+namespace maxsim {
+inline constexpr char mqsim_commit[] = "@MAXSIM_MQSIM_COMMIT@";
+inline constexpr char mqsim_source_sha256[] = "@MAXSIM_MQSIM_SOURCE_SHA256@";
+}
