@@ -60,7 +60,22 @@ ctest --test-dir build/delivery -R '^maxsim_e0_execution$' --output-on-failure
 - [e0-run.json](e0-run.json) 固化 16 B/ns 盘控暂存、Host DRAM 与 Top-K 零服务，以及下行命令和上行结果各 32 B 的应用协议头假设。每批按最早就绪顺序取最多 8 份文档，同一时刻按候选序号排序。批次成本使用等效 FLOP 和一次启动开销。
 - 报告分列有效文档字节、含填充的逻辑请求字节、普通 NVMe 和 MQSim 本地请求、PHY 完成的 NAND 事务、盘控搬运和实际 PCIe 链路服务。NAND 读取放大为总 NAND 读字节（含 FTL 等额外读）除以有效文档字节。PCIe 服务量按方向累加已完成传输的服务时间。Host DRAM 的物理服务和评分内核中归约的独立成本不可观测。
 
-执行入口支持单查询、闭环并发 1、关闭缓存、读算重叠、单侧单评分引擎。实验扫描点超出该执行域时可继续生成元数据。E0 硬件模型状态为 `configured_unvalidated`。设置 `NDPSIM_MAXSIM_EVIDENCE` 为已有的空目录，可保留 CTest 中的正负样本和复跑产物。
+执行入口支持单查询、闭环并发 1、关闭缓存、读算重叠、单侧单评分引擎。实验扫描点超出该执行域时可继续生成元数据。E0 硬件模型状态为 `configured_unvalidated`。
+
+### 复跑 E0.3 验收
+
+在完成上述构建后，从仓库根目录运行下列命令。指定新证据目录可保留主点、三类反压夹具、多文档批和预检失败样本，以及各次运行的有效配置、身份和事件。
+
+```sh
+mkdir -p results/maxsim
+evidence=$(mktemp -d "$PWD/results/maxsim/e0.3.XXXXXX")
+NDPSIM_MAXSIM_EVIDENCE="$evidence" ctest --test-dir build/delivery --output-on-failure
+PYTHONPATH=python python workloads/maxsim/test_maxsim.py
+```
+
+执行验收逐条重建逻辑读与 NAND 用户页账本，按 NAND 原始区间重算介质和总线占用，并从 PCIe 事件核对分方向排队、服务、到达与协议账本。三个反压夹具各运行全部放置，检查请求在对应配额恢复后继续提交。主点三条路径各复跑一次并比较轨迹字节。
+
+## 扫描与随机种子
 
 [scan.json](scan.json) 声明 E0～E5 的轴。E1 展开容量、分布和封闭并发的指定组合。E3～E5 为单因素扫描。E2 的开放压力点可生成到达序列，选择哪些 E1 点作性能对照须待执行结果。扫描输出包括点 ID、覆盖项、种子组和派生账本。默认生成 1 个查询，实验建议的 10,000 查询记录在 `measured_queries_initial`。预检报告候选、切片、stage、IR/SQLite 估计和输出磁盘预算。默认预算会拒绝将主配置直接生成成 10,000 查询包。
 

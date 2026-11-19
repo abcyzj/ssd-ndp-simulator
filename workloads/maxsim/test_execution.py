@@ -26,6 +26,20 @@ def ceil_div(value, unit):
     return (value + unit - 1) // unit
 
 
+def interval_union(spans):
+    edges = Counter()
+    for start, end in spans:
+        edges[start] += 1
+        edges[end] -= 1
+    busy = total = previous = 0
+    for time, delta in sorted(edges.items()):
+        if busy:
+            total += time - previous
+        busy += delta
+        previous = time
+    return total
+
+
 class Execution(unittest.TestCase):
     def setUp(self):
         evidence = os.environ.get("NDPSIM_MAXSIM_EVIDENCE")
@@ -69,6 +83,7 @@ class Execution(unittest.TestCase):
         cfg = json_file(bundle / "effective-config.json")["config"]
         workload, protocol, schedule = (cfg[name] for name in ("workload", "protocol", "execution"))
         header = log[0]
+        platform = json_file(HERE / "e0-run.json")
         s = log[-1]
         where = s["placement"]
         controller = where == "device_all"
@@ -76,6 +91,9 @@ class Execution(unittest.TestCase):
         self.assertEqual(s["type"], "summary")
         self.assertTrue(s["success"] and s["all_resources_drained"] and s["configured_unvalidated"])
         self.assertEqual(header["effective_config"], cfg)
+        self.assertEqual(header["effective_platform"], platform)
+        self.assertEqual(header["layout_sha256"], file_hash(bundle / "layout.json"))
+        self.assertEqual(header["device_sha256"], file_hash(HERE / "e0-device.xml"))
         self.assertEqual(header["mqsim_pcie_configured_GBps"], 7)
         origin = s["origin_ns"]
         (measurement,) = by_type["measurement_start"]
@@ -114,6 +132,10 @@ class Execution(unittest.TestCase):
         submit_order = []
         completions = {}
         document_done = Counter()
+        read_times = {}
+        credits = {}
+        blocked = {}
+        recovered = Counter()
         for e in log:
             event = e["type"]
             if event not in ("input_buffer", "read_window", "read_submit", "read_complete", "backpressure"):
@@ -128,6 +150,15 @@ class Execution(unittest.TestCase):
                 else:
                     bucket.remove(candidate)
                     self.assertEqual(document_done[candidate], ceil_div(size, read_size))
+                    if event == "read_window":
+                        self.assertEqual(e["time_ns"], read_times[candidate])
+                if event == "input_buffer":
+                    self.assertEqual(e["bytes"], size)
+                    if e["reserve"]:
+                        self.assertNotIn(e["credit"], credits)
+                        credits[e["credit"]] = candidate
+                    else:
+                        self.assertEqual(credits.pop(e["credit"]), candidate)
                 self.assertEqual(e["used"], len(bucket) * (size if event == "input_buffer" else 1))
             elif event == "backpressure":
                 self.assertEqual(e["outstanding_reads"], len(pending))
@@ -142,6 +173,7 @@ class Execution(unittest.TestCase):
                     self.assertEqual(e["reason"], "buffer")
                     self.assertGreater(size * (len(buffers) + 1), schedule["input_buffer_bytes_per_side"])
                     self.assertNotIn(candidate, buffers)
+                blocked[e["reason"]] = (candidate, e["time_ns"])
             else:
                 key = candidate, e["slice"]
                 if event == "read_submit":
@@ -149,6 +181,11 @@ class Execution(unittest.TestCase):
                     self.assertNotIn(key, pending)
                     self.assertEqual(planned[key], (e["document_id"], e["lba"], e["sectors"], e["valid_bytes"]))
                     self.assertEqual(e["path"], "local" if controller else "ordinary")
+                    for reason, (waiting, since) in blocked.items():
+                        self.assertEqual(candidate, waiting)
+                        self.assertGreater(e["time_ns"], since)
+                        recovered[reason] += 1
+                    blocked.clear()
                     submit_order.append(key)
                     pending[key] = e["time_ns"]
                 else:
@@ -156,6 +193,7 @@ class Execution(unittest.TestCase):
                     self.assertNotIn(key, completions)
                     completions[key] = e["time_ns"]
                     document_done[candidate] += 1
+                    read_times[candidate] = e["time_ns"]
                 self.assertEqual(e["outstanding_reads"], len(pending))
             highs = [len(pending), len(open_docs), size * len(buffers)]
             peaks = [max(a, b) for a, b in zip(peaks, highs)]
@@ -163,7 +201,8 @@ class Execution(unittest.TestCase):
                                              "input_buffer_bytes_per_side")):
                 self.assertLessEqual(observed, schedule[cap])
         self.assertEqual(submit_order, list(planned))
-        self.assertFalse(pending or open_docs or buffers)
+        self.assertFalse(pending or open_docs or buffers or credits or blocked)
+        self.assertEqual(recovered, Counter(r["reason"] for r in by_type["backpressure"]))
         self.assertEqual(set(completions), set(planned))
         self.assertEqual(peaks, [s["peak_outstanding_reads"], s["peak_read_window_documents"],
                                  s["peak_input_buffer_bytes"]])
@@ -175,11 +214,13 @@ class Execution(unittest.TestCase):
             self.assertNotIn(key, staged)
             self.assertEqual(row["submitted_ns"], completions[key])
             self.assertEqual(row["start_ns"], max(stage_finish, completions[key]))
-            self.assertEqual(row["duration_ns"], ceil_div(planned[key][3], 16))
+            self.assertEqual(row["duration_ns"], ceil_div(planned[key][3],
+                                                         platform["controller_staging_bytes_per_ns"]))
             self.assertEqual(row["end_ns"], row["start_ns"] + row["duration_ns"])
             staged[key] = stage_finish = row["end_ns"]
         self.assertEqual(set(staged), set(planned) if controller else set())
         stage = {r["op"]: r for r in by_type["stage"]}
+        self.assertEqual(len(stage), len(by_type["stage"]))
         self.assertEqual(set(stage), {"input", "topk"} | {f"{op}-{i}" for i in range(len(ids))
                                                         for op in ("read", "score")})
         self.assertTrue(all(r["success"] for r in stage.values()))
@@ -198,12 +239,15 @@ class Execution(unittest.TestCase):
         batches = by_type["score_batch"]
         compute = cfg["compute"]
         rate = int(1000 * Decimal(str(compute["device_effective_tflops" if controller else "host_effective_tflops"])))
-        for batch in batches:
+        for number, batch in enumerate(batches, 1):
+            self.assertEqual(batch["batch"], number)
             current = max(current, min(time for i, time in ready.items() if i not in seen))
             self.assertEqual(batch["start_ns"], current)
             eligible = sorted((time, i) for i, time in ready.items() if i not in seen and time <= current)
             chosen = [i for _, i in eligible[:schedule["compute_batch_documents"]]]
             self.assertEqual(batch["candidates"], chosen)
+            self.assertLessEqual(1, len(chosen))
+            self.assertLessEqual(len(chosen), 8)
             self.assertEqual(batch["flop"], flop * len(chosen))
             duration = (int(1000 * Decimal(str(compute["batch_launch_us"]))) +
                         ceil_div(flop * len(chosen), rate))
@@ -221,6 +265,14 @@ class Execution(unittest.TestCase):
         self.assertEqual(s["peak_scoring_engines"], 1)
 
         nand = by_type["nand_read"]
+        page_sectors = cfg["layout"]["namespace_page_bytes"] // 512
+        expected_pages = Counter()
+        for _, lba, sectors, _ in planned.values():
+            for page in range(lba // page_sectors, ceil_div(lba + sectors, page_sectors)):
+                page_start = page * page_sectors
+                bytes_read = (min(lba + sectors, page_start + page_sectors) - max(lba, page_start)) * 512
+                expected_pages[page, bytes_read] += 1
+        self.assertEqual(Counter((r["lpa"], r["bytes"]) for r in nand if r["user_data"]), expected_pages)
         self.assertEqual(s["nand_read_transactions"], len(nand))
         self.assertEqual(s["nand_user_read_bytes"], sum(r["bytes"] for r in nand if r["user_data"]))
         self.assertEqual(s["nand_user_read_bytes"], all_bytes)
@@ -228,23 +280,49 @@ class Execution(unittest.TestCase):
         self.assertAlmostEqual(s["nand_read_amplification"], s["nand_read_bytes"] / (len(ids) * size))
         self.assertTrue(all(origin <= r["time_ns"] <= s["drained_ns"] and r["transfer_ns"] > 0
                             for r in nand))
-        self.assertTrue(by_type["nand_interval_union"])
+        nand_spans = defaultdict(list)
+        for event in by_type["nand_interval"]:
+            r = event["mqsim"]
+            self.assertLessEqual(origin, r["start_ns"])
+            self.assertLessEqual(r["start_ns"], r["end_ns"])
+            self.assertLessEqual(r["end_ns"], s["drained_ns"])
+            span = r["start_ns"], r["end_ns"]
+            nand_spans[r["kind"], r["channel"], r["chip"], r["die"]].append(span)
+            if r["kind"] in ("command_bus", "command_data_in_bus", "data_out_bus"):
+                nand_spans["bus", r["channel"], -1, -1].append(span)
+        unions = {}
+        for event in by_type["nand_interval_union"]:
+            r = event["mqsim"]
+            key = r["kind"], r["channel"], r["chip"], r["die"]
+            self.assertNotIn(key, unions)
+            self.assertEqual((r["window_start_ns"], r["window_end_ns"]), (origin, s["drained_ns"]))
+            unions[key] = r["union_ns"]
+        self.assertTrue({"array", "data_out_bus", "bus"} <= {key[0] for key in unions})
+        self.assertEqual(unions, {key: interval_union(spans) for key, spans in nand_spans.items()})
 
         pcie = defaultdict(dict)
         for row in by_type["pcie"]:
             self.assertNotIn(row["event"], pcie[row["id"]])
             pcie[row["id"]][row["event"]] = row
         arrivals = []
-        for transfers in pcie.values():
+        last_arrival = {"H2D": origin, "D2H": origin}
+        for _, transfers in sorted(pcie.items()):
             self.assertEqual(set(transfers), {"enqueue", "start", "arrive"})
             enqueued, start, arrive = (transfers[phase] for phase in ("enqueue", "start", "arrive"))
+            for field in ("layer", "direction", "platform_id", "payload_bytes", "wire_bytes", "service_ns"):
+                self.assertEqual(enqueued[field], start[field])
+                self.assertEqual(start[field], arrive[field])
             wire = 32 if arrive["layer"] == "sq_fetch" else (
                 arrive["payload_bytes"] + 28 * ceil_div(arrive["payload_bytes"], 128))
             self.assertEqual(arrive["wire_bytes"], wire)
             service = ceil_div(wire, 4) * 4 // 7
             self.assertEqual(arrive["service_ns"], service)
-            self.assertGreaterEqual(start["time_ns"], enqueued["time_ns"])
+            self.assertGreaterEqual(enqueued["time_ns"], origin)
+            direction = arrive["direction"]
+            self.assertEqual(start["time_ns"], max(enqueued["time_ns"], last_arrival[direction]))
             self.assertEqual(arrive["time_ns"], start["time_ns"] + service)
+            self.assertLessEqual(arrive["time_ns"], s["drained_ns"])
+            last_arrival[direction] = arrive["time_ns"]
             arrivals.append(arrive)
         for direction in ("H2D", "D2H"):
             link = [x for x in arrivals if x["direction"] == direction]
@@ -267,10 +345,16 @@ class Execution(unittest.TestCase):
             self.assertTrue(all(stage[f"score-{i}"]["visible_ns"] == result["arrived_ns"] for i in seen))
             self.assertEqual({r["layer"] for r in arrivals}, {"platform"})
             for item, kind, direction in ((command, "command", "H2D"), (result, "result", "D2H")):
-                self.assertEqual((item["kind"], item["direction"], item["header_bytes"]), (kind, direction, 32))
+                header_bytes = platform[f"{kind}_header_bytes"]
+                self.assertEqual((item["kind"], item["direction"], item["header_bytes"]),
+                                 (kind, direction, header_bytes))
                 (link,) = [r for r in arrivals if r["platform_id"] == item["link_platform_id"]]
-                self.assertEqual(link["payload_bytes"], item["effective_payload_bytes"] + 32)
+                self.assertEqual(link["payload_bytes"], item["effective_payload_bytes"] + header_bytes)
+                self.assertEqual(link["payload_bytes"], item["link_payload_bytes"])
                 self.assertEqual(link["wire_bytes"], item["wire_bytes"])
+                self.assertEqual(link["time_ns"], item["arrived_ns"])
+                self.assertEqual(link["direction"], direction)
+                self.assertEqual(pcie[link["id"]]["enqueue"]["time_ns"], item["submitted_ns"])
         else:
             self.assertFalse(by_type["offload_command_service"] or by_type["protocol"])
             counts = Counter(row["layer"] for row in arrivals)
@@ -289,6 +373,16 @@ class Execution(unittest.TestCase):
         self.assertEqual(s["visible_ns"], topk["time_ns"])
         self.assertEqual(s["query_latency_ns"], topk["time_ns"] - origin)
         self.assertGreaterEqual(s["drained_ns"], s["visible_ns"])
+        (query,) = by_type["query"]
+        self.assertTrue(query["success"])
+        self.assertEqual(query["visible_ns"], s["visible_ns"])
+        self.assertLessEqual(query["visible_ns"], query["drained_ns"])
+        self.assertLessEqual(query["drained_ns"], s["drained_ns"])
+        for field, expected in (("controller_query_ids_bytes", command["effective_payload_bytes"] if controller else 0),
+                                ("controller_score_bytes", 12 * len(ids) if controller else 0),
+                                ("host_score_bytes", 12 * len(ids))):
+            self.assertEqual(max(r[field] for r in by_type["metadata_buffers"]), expected)
+            self.assertEqual(s[f"peak_{field}"], expected)
         return s, by_type
 
     def test_main_and_replay(self):
@@ -304,6 +398,9 @@ class Execution(unittest.TestCase):
             self.assertEqual((summary["logical_reads"], summary["effective_document_bytes"],
                               summary["flop"], summary["topk_bytes"]), (1500, 98304000, 3145728000, 120))
             self.assertEqual(events["measurement_start"][0]["preload_pages"], 40000)
+            self.assertEqual(summary["document_d2h_payload_bytes"], 0 if placement == "device_all" else 98304000)
+            if placement == "device_all":
+                self.assertEqual([p["effective_payload_bytes"] for p in events["protocol"]], [21680, 1800])
             verified[placement] = summary
         self.assertEqual(verified["host"]["origin_ns"], verified["device_all"]["origin_ns"])
         self.assertEqual(verified["host"]["origin_ns"], verified["host_compute_free"]["origin_ns"])
