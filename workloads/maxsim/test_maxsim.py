@@ -1,4 +1,4 @@
-"""First-delivery acceptance for the synthetic MaxSim generator."""
+"""Acceptance checks for the synthetic MaxSim generator and E0 inputs."""
 
 import json
 from pathlib import Path
@@ -78,6 +78,34 @@ class MaxSimAcceptance(unittest.TestCase):
         self.assertFalse(structure["independent_semantic_passed"])
         self.assertEqual(structure["counts"], dict(queries=1, operations=302, stages=302, dependencies=600))
         self.assertIn("output already exists", self.cli("generate", "--output", one, success=False))
+
+    def test_e0_bundle_matches_local_acceptance(self):
+        output = self.root / "e0"
+        receipt = self.cli("generate", "--config", ROOT / "e0.json", "--point", "E0-single-01",
+                           "--output", output)
+        inspection = self.cli("check", "--input", output)
+        self.assertEqual(inspection["package_sha256"], receipt["package_sha256"])
+        record = read(output / "effective-config.json")
+        cfg, derived = record["config"], record["derived"]
+        self.assertEqual(cfg["workload"]["corpus_documents"], 1000)
+        self.assertEqual(cfg["load"]["closed_loop_concurrency"], 1)
+        self.assertEqual(cfg["cache"]["host_capacity_bytes"], 0)
+        self.assertEqual(cfg["cache"]["device_extra_capacity_bytes"], 0)
+        self.assertEqual(cfg["experiment"]["schemes"], ["host", "host_compute_free", "device_all"])
+        self.assertEqual([cfg["generation"][f"{domain}_seed"]
+                          for domain in ("layout", "candidate", "arrival")], [11, 11, 11])
+        self.assertEqual(record["hardware_fields_pending"], [])
+        self.assertEqual(Path(cfg["hardware"]["mqsim_config_path"]), ROOT / "e0-device.xml")
+        document_ids = lines(output / "candidates.jsonl")[0]["document_ids"]
+        self.assertEqual(len(set(document_ids)), 150)
+        self.assertTrue(all(0 <= doc < 1000 for doc in document_ids))
+        layout = read(output / "layout.json")
+        self.assertEqual(layout["namespace"]["capacity_sectors"], 3_900_700)
+        self.assertEqual(layout["namespace"]["page_bytes"], 16_384)
+        self.assertEqual(layout["objects"][0]["extents"][0]["length_bytes"], 655_360_000)
+        self.assertEqual(derived["minimum_capacity_sectors"], 1_280_000)
+        self.assertEqual(inspection["accounting"]["all_miss_logical_requests"], 1500)
+        self.assertEqual(inspection["accounting"]["dot_product_flop"], 3_145_728_000)
 
     def test_full_candidate_coverage_tail_padding_and_arrival_order(self):
         output = self.root / "small"

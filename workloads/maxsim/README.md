@@ -33,9 +33,12 @@ python workloads/maxsim/generate.py check --input /tmp/maxsim-main
 ```sh
 python workloads/maxsim/generate.py scan
 python workloads/maxsim/generate.py scan --batch E1
-python workloads/maxsim/generate.py describe --point E0-single-01
-python workloads/maxsim/generate.py generate --point E0-single-01 --seed 23 --output /tmp/maxsim-e0-seed23
+python workloads/maxsim/generate.py describe --config workloads/maxsim/e0.json --point E0-single-01
+python workloads/maxsim/generate.py generate --config workloads/maxsim/e0.json --point E0-single-01 --output /tmp/maxsim-e0
+python workloads/maxsim/generate.py check --input /tmp/maxsim-e0
 ```
+
+[e0.json](e0.json) 固化本机 E0 的 1000 文档页、单查询、缓存关闭和种子组 11。它绑定 [e0-device.xml](e0-device.xml) 的 SHA-256 和 MQSim commit，并导出匹配 16 KiB NAND 页的标准 Layout。配置中沿用生成器字段名 `external_effective_GBps`，本点的 7 GB/s 指 XML 的 PCIe 配置速率，即 4 lane × 1.75 GB/s/lane。E0.1 的设备探针证据见 [实施计划](IMPLEMENTATION_PLAN.md#e01-冻结本机运行配置)。
 
 [scan.json](scan.json) 声明 E0～E5 的轴。E1 展开容量、分布和封闭并发的指定组合。E3～E5 为单因素扫描。E2 的开放压力点可生成到达序列，选择哪些 E1 点作性能对照须待执行结果。扫描输出包括点 ID、覆盖项、种子组和派生账本。默认生成 1 个查询，实验建议的 10,000 查询记录在 `measured_queries_initial`。预检报告候选、切片、stage、IR/SQLite 估计和输出磁盘预算。默认预算会拒绝将主配置直接生成成 10,000 查询包。
 
