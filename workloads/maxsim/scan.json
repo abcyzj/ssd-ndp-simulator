@@ -1,0 +1,54 @@
+{
+  "E0": {
+    "purpose": "账本与规模核验，三条路径共享语义输入",
+    "blocks": [{"name": "single", "base": {"cache": {"host_capacity_bytes": 0}, "load": {"mode": "closed_loop", "closed_loop_concurrency": 1}, "generation": {"queries": 1}}}]
+  },
+  "E1": {
+    "purpose": "缓存容量、局部性和封闭并发的主矩阵",
+    "blocks": [{"name": "boundary", "mode": "product", "base": {"load": {"mode": "closed_loop"}}, "axes": [
+      {"cache": {"host_capacity_bytes": [0, 8589934592, 34359738368, 137438953472]}},
+      {"workload": {"distribution": ["uniform", "zipf", "zipf"], "zipf_alpha": [0, 0.8, 1.2]}},
+      {"load": {"closed_loop_concurrency": [1, 4, 16, 64]}}
+    ]}]
+  },
+  "E2": {
+    "purpose": "开放到达，生成阶段展开速率，执行阶段再选取 E1 的有收益、临界和无收益基线",
+    "blocks": [{"name": "poisson", "base": {"load": {"mode": "open_loop"}}, "axes": [
+      {"load": {"open_loop_qps": [10, 30, 100, 300, 1000]}}
+    ]}]
+  },
+  "E3": {
+    "purpose": "带宽和主机、盘侧算力单因素扫描",
+    "blocks": [{"name": "rates", "axes": [
+      {"hardware": {"external_effective_GBps": [7, 14, 28]}},
+      {"compute": {"host_effective_tflops": [0.25, 1, 4, 16]}},
+      {"compute": {"device_effective_tflops": [0.25, 1, 4, 16]}}
+    ]}]
+  },
+  "E4": {
+    "purpose": "模型对照、表示大小、候选规模和语料规模单因素扫描",
+    "blocks": [{"name": "representation", "axes": [
+      {"workload": {"model_preset": ["colqwen2.5", "colpali"]}},
+      {"workload": {"candidate_count": [50, 100, 150, 200, 500]}},
+      {"workload": {"query_vectors": [16, 32, 64, 128]}},
+      {"workload": {"document_vectors": [512, 768, 1024, 1280]}},
+      {"workload": {"template_token_increment": [0, 16, 64]}},
+      {"workload": {"top_k": [5, 10, 20]}},
+      {"workload": {"storage_dtype": ["fp16", "fp32"]}},
+      {"workload": {"corpus_documents": [100000, 1000000, 10000000]}}
+    ]}]
+  },
+  "E5": {
+    "purpose": "逻辑读粒度、并发配额、暂存、批次和固定开销单因素扫描",
+    "blocks": [{"name": "execution", "axes": [
+      {"layout": {"logical_read_bytes": [4096, 16384, 65536, 131072]}},
+      {"execution": {"read_window_documents_per_query": [4, 16, 64]}},
+      {"execution": {"global_outstanding_reads": [64, 256, 1024]}},
+      {"execution": {"input_buffer_bytes_per_side": [8388608, 33554432, 134217728]}},
+      {"execution": {"compute_batch_documents": [1, 8, 16]}},
+      {"execution": {"overlap_read_compute": [true, false]}},
+      {"compute": {"batch_launch_us": [0, 10, 50]}},
+      {"compute": {"offload_command_us": [0, 20, 100]}}
+    ]}]
+  }
+}

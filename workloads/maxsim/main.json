@@ -1,0 +1,100 @@
+{
+  "experiment": {
+    "name": "colqwen3_maxsim_nmc_v01",
+    "scope": "reranking_only",
+    "schemes": ["host", "host_compute_free", "device_all"],
+    "seed_set": [11, 23, 47],
+    "measured_queries_initial": 10000
+  },
+  "workload": {
+    "model_preset": "colqwen3",
+    "model_reference": "TomoroAI/tomoro-colqwen3-embed-4b",
+    "model_revision": null,
+    "embedding_dim": 320,
+    "document_vectors": 1024,
+    "template_token_increment": 0,
+    "query_vectors": 32,
+    "candidate_count": 150,
+    "top_k": 10,
+    "storage_dtype": "fp16",
+    "bytes_per_component": 2,
+    "scoring": "full_maxsim",
+    "rerank_hnsw_m": 0,
+    "corpus_documents": 1000000,
+    "distribution": "zipf",
+    "zipf_alpha": 0.8,
+    "unique_candidates": true,
+    "randomize_rank_to_document": true,
+    "inter_query_sampling": "independent"
+  },
+  "cache": {
+    "host_capacity_bytes": 34359738368,
+    "policy": "document_lru_bytes",
+    "device_extra_capacity_bytes": 0,
+    "host_fill_on_miss": true,
+    "cross_query_miss_coalescing": false,
+    "initial_state": "cold",
+    "warmup_window_queries": 10000,
+    "warmup_stable_windows": 3,
+    "warmup_max_hit_rate_delta": 0.01
+  },
+  "layout": {
+    "contiguous_document": true,
+    "alignment_bytes": 4096,
+    "logical_read_bytes": 65536,
+    "sort_candidates_by_lba": false,
+    "namespace_capacity_sectors": null,
+    "namespace_page_bytes": null
+  },
+  "execution": {
+    "read_window_documents_per_query": 16,
+    "global_outstanding_reads": 256,
+    "compute_batch_documents": 8,
+    "wait_for_full_batch": false,
+    "cross_query_compute_batching": false,
+    "input_buffer_bytes_per_side": 33554432,
+    "overlap_read_compute": true,
+    "scoring_engines_per_side": 1,
+    "cross_query_read_arbitration": "round_robin"
+  },
+  "compute": {
+    "mode": "equivalent_full_maxsim",
+    "host_effective_tflops": 1.0,
+    "device_effective_tflops": 1.0,
+    "batch_launch_us": 10,
+    "offload_command_us": 20,
+    "host_compute_free_zeros_launch": true
+  },
+  "protocol": {
+    "query_component_bytes": 2,
+    "document_id_bytes": 8,
+    "score_bytes": 4,
+    "return_mode": "all_candidate_scores"
+  },
+  "hardware": {
+    "mqsim_config_path": null,
+    "mqsim_config_hash": null,
+    "backend_commit": null,
+    "external_effective_GBps": 7,
+    "internal_bandwidth_mode": "simulated",
+    "target_internal_GBps_reference_only": 100,
+    "hbf_enabled": false,
+    "local_memory_cost_model": "inherit_or_explicit_upper_bound",
+    "topk_cost_model": "inherit_or_explicit_zero"
+  },
+  "load": {
+    "mode": "closed_loop",
+    "closed_loop_concurrency": 16,
+    "open_loop_arrival": "poisson",
+    "open_loop_qps": 100
+  },
+  "generation": {
+    "queries": 1,
+    "layout_seed": 11,
+    "candidate_seed": 11,
+    "arrival_seed": 11,
+    "package_budget_bytes": 2147483648,
+    "scratch_budget_bytes": 4294967296,
+    "sampling_memory_budget_bytes": 536870912
+  }
+}
