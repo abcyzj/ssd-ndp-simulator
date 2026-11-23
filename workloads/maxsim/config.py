@@ -4,6 +4,7 @@ import math
 import re
 import shutil
 import tempfile
+from decimal import Decimal
 from pathlib import Path
 
 from ndpsim.static_ir import Limits, U64, decode, file_hash, require
@@ -71,6 +72,10 @@ def merge(base, override):
             if "storage_dtype" in values:
                 choice(values["storage_dtype"], DTYPES, "storage_dtype")
                 current["bytes_per_component"] = DTYPES[values["storage_dtype"]]
+        if section == "cache":
+            capacity_keys = {"host_capacity_bytes", "host_capacity_fraction"}
+            if len(capacity_keys & values.keys()) == 1:
+                current.update(dict.fromkeys(capacity_keys - values.keys()))
         current.update(values)
 
 
@@ -82,7 +87,7 @@ def load_config(path=None, override=None, seed=None):
         merge(config, override)
     if seed is not None:
         config["generation"].update(dict.fromkeys(SEEDS, seed))
-    validate(config)
+    validate(config, resolve_cache=True)
     hardware = config["hardware"]
     if hardware["mqsim_config_path"] is not None:
         path = path or MAIN
@@ -94,7 +99,7 @@ def load_config(path=None, override=None, seed=None):
     return config
 
 
-def validate(config):
+def validate(config, *, resolve_cache=False):
     exp, work, cache, layout, run, compute, protocol, hardware, load, gen = (
         config[key] for key in ("experiment", "workload", "cache", "layout", "execution",
                                 "compute", "protocol", "hardware", "load", "generation")
@@ -111,10 +116,21 @@ def validate(config):
     ):
         for key in keys:
             uint(section[key], key, 1)
-    for section, keys in ((work, ("template_token_increment",)), (cache, ("host_capacity_bytes",)),
-                          (gen, SEEDS)):
+    for section, keys in ((work, ("template_token_increment",)), (gen, SEEDS)):
         for key in keys:
             uint(section[key], key)
+
+    fraction = cache.get("host_capacity_fraction")
+    if fraction is not None:
+        number(fraction, "host_capacity_fraction")
+        require(fraction <= 1, "host_capacity_fraction must be within [0, 1]")
+        numerator, denominator = Decimal(str(fraction)).as_integer_ratio()
+        doc = uint(document_bytes(work), "document_bytes", 1)
+        capacity = work["corpus_documents"] * doc * numerator // denominator
+        if resolve_cache and cache["host_capacity_bytes"] is None:
+            cache["host_capacity_bytes"] = capacity
+        require(cache["host_capacity_bytes"] == capacity, "host cache bytes do not match the capacity fraction")
+    uint(cache["host_capacity_bytes"], "host_capacity_bytes")
 
     for section, fixed in (
         (exp, {"scope": "reranking_only", "schemes": SCHEMES}),
@@ -193,11 +209,16 @@ def validate(config):
     require(path is not None or hardware["mqsim_config_hash"] is None, "MQSim hash requires a file path")
 
 
+def document_bytes(work):
+    vectors = work["document_vectors"] + work["template_token_increment"]
+    return vectors * work["embedding_dim"] * work["bytes_per_component"]
+
+
 def derive(config):
     work, layout, protocol = (config[key] for key in ("workload", "layout", "protocol"))
     count = work["candidate_count"]
     vectors = work["document_vectors"] + work["template_token_increment"]
-    doc = vectors * work["embedding_dim"] * work["bytes_per_component"]
+    doc = document_bytes(work)
     query = work["query_vectors"] * work["embedding_dim"] * protocol["query_component_bytes"]
     stride = align(doc, layout["alignment_bytes"])
     corpus = work["corpus_documents"]

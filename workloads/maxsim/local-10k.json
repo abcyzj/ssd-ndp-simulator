@@ -1,0 +1,24 @@
+{
+  "workload": {
+    "corpus_documents": 10000
+  },
+  "cache": {
+    "host_capacity_bytes": 0
+  },
+  "layout": {
+    "namespace_capacity_sectors": 15602808,
+    "namespace_page_bytes": 16384
+  },
+  "hardware": {
+    "mqsim_config_path": "local-10k-device.xml",
+    "mqsim_config_hash": "5c2b10f4be403f75f5e03b6ef032f91edf1d3f0478decca99f0452070534b95f",
+    "backend_commit": "8f7ddf6d8cafdb7c783b3fcfd4693f15c6c5854b"
+  },
+  "load": {
+    "mode": "closed_loop",
+    "closed_loop_concurrency": 1
+  },
+  "generation": {
+    "queries": 1
+  }
+}

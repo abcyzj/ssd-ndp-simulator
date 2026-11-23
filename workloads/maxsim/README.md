@@ -17,7 +17,7 @@ python workloads/maxsim/generate.py check --input /tmp/maxsim-main
 
 ## 配置与扫描
 
-[main.json](main.json) 是完整默认配置。通过 `--config <文件>` 传入 JSON 覆盖项。命令依次应用主配置、配置文件、`--point` 扫描覆盖、`--queries` 与 `--seed`。下例切换对照模型、减少候选数并开启开放到达。
+[main.json](main.json) 是完整默认配置，语料为一万页。通过 `--config <文件>` 传入 JSON 覆盖项。命令依次应用主配置、配置文件、`--point` 扫描覆盖、`--queries` 与 `--seed`。下例切换对照模型、减少候选数并开启开放到达。
 
 ```json
 {
@@ -30,15 +30,15 @@ python workloads/maxsim/generate.py check --input /tmp/maxsim-main
 
 `model_preset` 支持 `colqwen3`、`colqwen2.5`、`colpali` 和 `custom`。ColQwen3 可扫描基准文档长度，自定义维度用 `custom`。模板 token 通过 `template_token_increment` 追加。文档 dtype 自动联动每分量字节数，查询分量字节独立配置。模型引用和可用 revision 保存为配置元数据。
 
+`host_capacity_fraction` 按语料的有效向量字节数换算缓存容量，向下取整。默认比例为 5.24288%，在一万页 FP16 主配置下为 343,597,383 B。E1 扫描 0%、1.31072%、5.24288%、20.97152%，可用 `scan` 输出的 `host_capacity_bytes` 查看各点容量。单独指定 `host_capacity_bytes` 可切换到固定容量，例如本机 E0 使用 0。
+
 ```sh
 python workloads/maxsim/generate.py scan
 python workloads/maxsim/generate.py scan --batch E1
-python workloads/maxsim/generate.py describe --config workloads/maxsim/e0.json --point E0-single-01
-python workloads/maxsim/generate.py generate --config workloads/maxsim/e0.json --point E0-single-01 --output /tmp/maxsim-e0
-python workloads/maxsim/generate.py check --input /tmp/maxsim-e0
+python workloads/maxsim/generate.py describe --config workloads/maxsim/local-10k.json --point E0-single-01
 ```
 
-[e0.json](e0.json) 固化本机 E0 的 1000 文档页、单查询、缓存关闭和种子组 11。它绑定 [e0-device.xml](e0-device.xml) 的 SHA-256 和 MQSim commit，并导出匹配 16 KiB NAND 页的标准 Layout。配置中沿用生成器字段名 `external_effective_GBps`，本点的 7 GB/s 指 XML 的 PCIe 配置速率，即 4 lane × 1.75 GB/s/lane。E0.1 的设备探针证据见 [实施计划](IMPLEMENTATION_PLAN.md#e01-冻结本机运行配置)。
+[local-10k.json](local-10k.json) 为本机 E0 提供一万页、单查询和零缓存配置，并绑定 [8 GiB raw 设备 XML](local-10k-device.xml) 的 SHA-256 和 MQSim commit。设备使用 16 KiB NAND 页、256 页/块和 7% OP，逻辑 namespace 为 15,602,808 个 512 B sector。一万页 FP16 Layout 占前 12,800,000 个 sector，需预装载 400,000 个 NAND 页。沿用的 7 GB/s 是 XML 中 4 lane × 1.75 GB/s/lane 的 PCIe 配置速率。
 
 ## 在 SST 中执行 E0
 
@@ -46,10 +46,10 @@ python workloads/maxsim/generate.py check --input /tmp/maxsim-e0
 cmake -S . -B build/delivery -DBUILD_TESTING=ON
 cmake --build build/delivery -j2
 export PYTHONPATH="$PWD/python"
-python workloads/maxsim/generate.py generate --config workloads/maxsim/e0.json \
-  --point E0-single-01 --output /tmp/maxsim-e0
-python workloads/maxsim/run.py --input /tmp/maxsim-e0 --build build/delivery \
-  --output /tmp/maxsim-e0-run
+python workloads/maxsim/generate.py generate --config workloads/maxsim/local-10k.json \
+  --point E0-single-01 --output /tmp/maxsim-local-10k
+python workloads/maxsim/run.py --input /tmp/maxsim-local-10k --build build/delivery \
+  --output /tmp/maxsim-local-10k-run
 ctest --test-dir build/delivery -R '^maxsim_e0_execution$' --output-on-failure
 ```
 
@@ -62,7 +62,7 @@ ctest --test-dir build/delivery -R '^maxsim_e0_execution$' --output-on-failure
 
 执行入口支持单查询、闭环并发 1、关闭缓存、读算重叠、单侧单评分引擎。实验扫描点超出该执行域时可继续生成元数据。E0 硬件模型状态为 `configured_unvalidated`。
 
-### 复跑 E0.3 验收
+### 复跑 E0 执行验收
 
 在完成上述构建后，从仓库根目录运行下列命令。指定新证据目录可保留主点、三类反压夹具、多文档批和预检失败样本，以及各次运行的有效配置、身份和事件。
 
@@ -73,7 +73,7 @@ NDPSIM_MAXSIM_EVIDENCE="$evidence" ctest --test-dir build/delivery --output-on-f
 PYTHONPATH=python python workloads/maxsim/test_maxsim.py
 ```
 
-执行验收逐条重建逻辑读与 NAND 用户页账本，按 NAND 原始区间重算介质和总线占用，并从 PCIe 事件核对分方向排队、服务、到达与协议账本。三个反压夹具各运行全部放置，检查请求在对应配额恢复后继续提交。主点三条路径各复跑一次并比较轨迹字节。
+执行验收逐条重建逻辑读与 NAND 用户页账本，按 NAND 原始区间重算介质和总线占用，并从 PCIe 事件核对分方向排队、服务、到达与协议账本。三个反压夹具各运行全部放置，检查请求在对应配额恢复后继续提交。历史 [千页 E0 夹具](e0.json)的三条路径各复跑一次并比较轨迹字节，一万页本机配置也执行三条路径并核对事件账本。
 
 ## E0.4 百万文档
 
@@ -130,7 +130,7 @@ python workloads/maxsim/run.py --input /tmp/maxsim-e04 --build build/delivery \
 | `package/` | 标准 IR manifest、operations、index 和 tail。每文档的评分等待读取全部有效切片，Top-K 等待全部候选分数。 |
 | `structure.json`、`accounting.json`、`receipt.json` | SDK 校验、独立账本校验和整次生成的发布凭据。 |
 
-主配置每查询记录 **98,304,000 B** 有效文档输入、**3,145,728,000 FLOP**、**1,500** 个 64 KiB 全 miss 逻辑读，以及 **21,680 B** 下发、**1,800 B** 返回的有效负载。655.36 GB 语料只占一个逻辑对象。三条路径共用语义包。本机 E0 执行使用 1000 个文档页。
+主配置每查询记录 **98,304,000 B** 有效文档输入、**3,145,728,000 FLOP**、**1,500** 个 64 KiB 全 miss 逻辑读，以及 **21,680 B** 下发、**1,800 B** 返回的有效负载。6.5536 GB 语料只占一个逻辑对象。三条路径共用语义包。
 
 ## 首批验收命令
 

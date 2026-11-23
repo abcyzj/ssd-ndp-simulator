@@ -20,7 +20,7 @@
     "bytes_per_component": 2,
     "scoring": "full_maxsim",
     "rerank_hnsw_m": 0,
-    "corpus_documents": 1000000,
+    "corpus_documents": 10000,
     "distribution": "zipf",
     "zipf_alpha": 0.8,
     "unique_candidates": true,
@@ -28,7 +28,8 @@
     "inter_query_sampling": "independent"
   },
   "cache": {
-    "host_capacity_bytes": 34359738368,
+    "host_capacity_bytes": null,
+    "host_capacity_fraction": 0.0524288,
     "policy": "document_lru_bytes",
     "device_extra_capacity_bytes": 0,
     "host_fill_on_miss": true,

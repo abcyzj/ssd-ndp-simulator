@@ -38,6 +38,8 @@ def configuration_record(config, derived, budget):
     sources = {f"{section}.{key}": SOURCES.get(f"{section}.{key}", "scenario_assumption_or_operator_input")
                for section, values in config.items() for key in values}
     sources["derived"] = SOURCES["derived"]
+    if config["cache"].get("host_capacity_fraction") is not None:
+        sources["cache.host_capacity_bytes"] = SOURCES["derived"]
     load = config["load"]
     offer = "completion_driven" if load["mode"] == "closed_loop" else "arrivals.jsonl"
     return dict(format=FORMAT, config=config, derived=derived, estimated_resources=budget,
@@ -223,6 +225,7 @@ def main(argv=None):
                 if args.batch is None or point.startswith(args.batch + "-"):
                     config = load_config(args.config, override)
                     result.append(dict(id=point, override=override, derived=derive(config),
+                                       host_capacity_bytes=config["cache"]["host_capacity_bytes"],
                                        seed_set=config["experiment"]["seed_set"]))
         else:
             config = config_for(args)

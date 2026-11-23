@@ -431,6 +431,20 @@ class Execution(unittest.TestCase):
     def test_buffer_pressure(self):
         self.pressure("buffer", {"input_buffer_bytes_per_side": 655360})
 
+    def test_local_10k_nand_execution(self):
+        bundle = self.bundle(base="local-10k.json")
+        output = self.directory / "run"
+        run(bundle, BUILD, output, execution_budget=SMALL_BUDGET)
+        report = json_file(output / "device-preflight-report.json")
+        self.assertEqual(report["preload_pages"], 400_000)
+        self.assertEqual(report["mapped_end_sectors"], 12_800_000)
+        self.assertEqual(report["device"]["raw_sectors"], 16_777_216)
+        self.assertEqual(report["device"]["partition"]["capacity_sectors"], 15_602_808)
+        for placement in PLACEMENTS:
+            summary, events = self.verify_execution(bundle, output / f"{placement}.jsonl")
+            self.assertEqual(events["measurement_start"][0]["preload_pages"], 400_000)
+            self.assertEqual((summary["logical_reads"], summary["flop"]), (1500, 3_145_728_000))
+
     def test_million_document_preflight(self):
         bundle = self.bundle(base="e0.4.json")
         limits = json_file(HERE / "e0.4-device-limits.json")

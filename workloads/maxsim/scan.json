@@ -6,7 +6,7 @@
   "E1": {
     "purpose": "缓存容量、局部性和封闭并发的主矩阵",
     "blocks": [{"name": "boundary", "mode": "product", "base": {"load": {"mode": "closed_loop"}}, "axes": [
-      {"cache": {"host_capacity_bytes": [0, 8589934592, 34359738368, 137438953472]}},
+      {"cache": {"host_capacity_fraction": [0, 0.0131072, 0.0524288, 0.2097152]}},
       {"workload": {"distribution": ["uniform", "zipf", "zipf"], "zipf_alpha": [0, 0.8, 1.2]}},
       {"load": {"closed_loop_concurrency": [1, 4, 16, 64]}}
     ]}]
@@ -35,7 +35,7 @@
       {"workload": {"template_token_increment": [0, 16, 64]}},
       {"workload": {"top_k": [5, 10, 20]}},
       {"workload": {"storage_dtype": ["fp16", "fp32"]}},
-      {"workload": {"corpus_documents": [100000, 1000000, 10000000]}}
+      {"workload": {"corpus_documents": [100000]}}
     ]}]
   },
   "E5": {

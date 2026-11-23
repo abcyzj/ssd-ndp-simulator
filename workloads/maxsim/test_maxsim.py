@@ -70,8 +70,10 @@ class MaxSimAcceptance(unittest.TestCase):
                     "downlink_bytes_per_query": 21_680, "uplink_bytes_per_query": 1800}
         self.assertEqual({name: tally[name] for name in expected}, expected)
         layout = read(one / "logical-layout.json")
-        self.assertEqual(layout["minimum_capacity_sectors"], 1_280_000_000)
-        self.assertEqual(layout["corpus_effective_bytes"], 655_360_000_000)
+        self.assertEqual(layout["minimum_capacity_sectors"], 12_800_000)
+        self.assertEqual(layout["corpus_effective_bytes"], 6_553_600_000)
+        self.assertEqual(read(one / "effective-config.json")["config"]["cache"]["host_capacity_bytes"],
+                         343_597_383)
         self.assertFalse((one / "layout.json").exists())
         self.assertFalse((one / "arrivals.jsonl").exists())
         structure = read(one / "structure.json")
@@ -147,6 +149,16 @@ class MaxSimAcceptance(unittest.TestCase):
         self.assertEqual(len({point["id"] for point in points}), len(points))
         self.assertEqual(sum(point["id"].startswith("E1-") for point in points), 48)
         self.assertEqual({point["id"].split("-")[0] for point in points}, {f"E{i}" for i in range(6)})
+        expected_cache = {0: 0, 0.0131072: 85_899_345, 0.0524288: 343_597_383,
+                          0.2097152: 1_374_389_534}
+        reference = self.config_file({"workload": {"corpus_documents": 1_000_000}})
+        reference_points = self.cli("scan", "--batch", "E1", "--config", reference)
+        self.assertEqual({point["host_capacity_bytes"] for point in reference_points},
+                         {0, 8 * 1024**3, 32 * 1024**3, 128 * 1024**3})
+        for point in points:
+            if point["id"].startswith("E1-"):
+                fraction = point["override"]["cache"]["host_capacity_fraction"]
+                self.assertEqual(point["host_capacity_bytes"], expected_cache[fraction])
         comparisons = {"colqwen2.5": (128, 755, 28_992_000, 927_744_000),
                        "colpali": (128, 1030, 39_552_000, 1_265_664_000)}
         for point in points:
@@ -163,8 +175,12 @@ class MaxSimAcceptance(unittest.TestCase):
         self.assertEqual(result["document_bytes"], 1_392_640)
         self.assertEqual(result["query_bytes"], 20_480)
         self.assertEqual(result["query_flop"], 3_342_336_000)
+        self.assertEqual(fp32["cache"]["host_capacity_bytes"], 730_144_440)
         large = max(point["derived"]["corpus_effective_bytes"] for point in points)
-        self.assertEqual(large, 6_553_600_000_000)
+        self.assertEqual(large, 65_536_000_000)
+        corpus_sizes = [point["override"]["workload"]["corpus_documents"] for point in points
+                        if "corpus_documents" in point["override"].get("workload", {})]
+        self.assertEqual(corpus_sizes, [100_000])
 
     def test_distribution_and_rng_isolation(self):
         base = {"corpus_documents": 100, "candidate_count": 1, "top_k": 1, "randomize_rank_to_document": False}
@@ -212,6 +228,9 @@ class MaxSimAcceptance(unittest.TestCase):
             ({"workload": {"zipf_alpha": True}}, "finite number"),
             ({"workload": {"document_vectors": 2**64 - 1}}, "document_bytes"),
             ({"workload": {"unknown": 0}}, "unknown configuration key"),
+            ({"cache": {"host_capacity_fraction": 1.01}}, "host_capacity_fraction"),
+            ({"cache": {"host_capacity_fraction": 0.5, "host_capacity_bytes": 1}},
+             "host cache bytes do not match"),
             ({"layout": {"namespace_capacity_sectors": 1, "namespace_page_bytes": 4096}}, "namespace capacity"),
             ({"execution": {"input_buffer_bytes_per_side": 1}}, "one complete document"),
             ({"generation": {"package_budget_bytes": 1024}}, "package budget"),
