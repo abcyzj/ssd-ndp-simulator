@@ -1,6 +1,6 @@
 {
   "format": "ndpsim-maxsim-e0-platform/1",
-  "controller_staging_bytes_per_ns": 16,
+  "controller_staging_bytes_per_ns": 64,
   "host_dram_service_ns": 0,
   "host_topk_service_ns": 0,
   "command_header_bytes": 32,

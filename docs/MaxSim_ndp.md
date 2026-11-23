@@ -1,7 +1,7 @@
-# 多向量 MaxSim 近存计算仿真实验参数配置 v0.1
+# 多向量 MaxSim 近存计算仿真实验参数配置 v0.2
 
 - 项目：快速近存计算需求分析
-- 日期：2026-11-18
+- 日期：2026-11-23
 - 接收对象：负责负载生成、语义 IR 映射、MQSim 实验与结果分析的 Agent
 - 文档性质：根据本次讨论整理的首轮实验配置与参数扫描规范；不是实机标定结果。
 - 主负载：参照 Tomoro ColQwen3-4B 的文档页多向量 MaxSim 精排。
@@ -149,9 +149,12 @@ ColQwen2.5 的 755 来自模型卡示例，不是数据集平均值；ColPali �
 
 | 参数 | 主配置/处理方式 | 扫描或对照 | 来源 |
 |---|---|---|---|
-| NAND 几何、时序、FTL | 继承现有 MQSim 配置 | 硬件架构扩展另设组 | 继承配置 |
-| 内部有效读取带宽 | 由 MQSim 输出 | 100 GB/s 仅为目标架构/解析情景 | 不能作为无条件常数 |
-| SSD—主机有效链路带宽 | 7 GB/s | 14、28 GB/s | 仿真假设 |
+| NAND 通道 | 16 通道 × 3600 MT/s，每通道宽 1 B（x8） | E0 核验几何与非零传输时间 | 配置假设，每通道理论 3.6 GB/s |
+| 盘内理论总线带宽 | 57.6 GB/s | 由通道数、宽度与速率派生 | 总线传输上界 |
+| 盘内有效读取带宽 | 由 MQSim 测量 | 40 GB/s 为待验证目标 | 分别记录顺序读和 MaxSim 候选访问的吞吐 |
+| 盘控暂存端口 | 64 GB/s（64 B/ns） | 配置值须至少为 57.6 GB/s | 搬运服务单独计费 |
+| SSD—主机链路配置带宽 | 28 GB/s（4 lane × 7 GB/s/lane） | 7、14 GB/s 压低外部链路对照 | 记录协议开销后的有效载荷吞吐 |
+| NAND 页、阵列时序和 FTL | 16 KiB 页，沿用对应夹具的阵列时序和 FTL 设置 | 按语料规模配置每 plane 块数 | 合成设备配置 |
 | host_effective_tflops | 1 | 0.25、4、16；另有计算趋零组 | 等效评分吞吐 |
 | device_effective_tflops | 1 | 0.25、4、16 | 等效评分吞吐 |
 | batch_launch_us | 每批 10 μs | 0、50 μs | 两侧相同的初始假设 |
@@ -167,7 +170,7 @@ T_batch = batch_launch_us + F_batch / P_effective
 
 P_effective 使用点积 FLOP 归一化整个 MaxSim 内核耗时，**包含归约影响**，不是峰值算力。若已有平台将矩阵乘法与 max/sum 分开建模，应改用分项模式并关闭等效内核耗时，不能双重计算。
 
-主配置评分计算量与文档字节数之比约为 32 FLOP/Byte。在 100 GB/s 实际输入流量下，评分内核需要约 3.2 TFLOP/s 等效吞吐，另有启动与命令开销。1 TFLOP/s 主配置显然不能无条件消费 100 GB/s 输入，这是待观察的算力瓶颈。
+主配置评分计算量与文档字节数之比约为 32 FLOP/Byte。40 GB/s 的有效输入需要至少 1.28 TFLOP/s。若输入达到总线理论上界 57.6 GB/s，则至少需要 1.8432 TFLOP/s。两者均另计批启动与命令开销。主配置保留 1 TFLOP/s，E3 用 4 TFLOP/s 等档位核对算力瓶颈。
 
 补充协议假设（用于使 IR 可执行，不声称等同于 Qdrant 协议）：
 
@@ -190,7 +193,8 @@ P_effective 使用点积 FLOP 归一化整个 MaxSim 内核耗时，**包含归�
 2. 记录原始容量、逻辑容量和 OP，以及 channel/die/plane/page、读时延、总线带宽等配置。
 3. 下沉路径仍经过真实介质读取、内部总线和缓冲；仅取消不需要的文档向量对外传输。
 4. 如 MQSim 已包含 PCIe/主机传输时间，语义 IR 桥接层不得重复添加；明确资源与时间由哪层负责。
-5. 100 GB/s 必须由具体通道、介质、队列和内部路径配置支持；否则仅绘制解析参考线。
+5. 当前 MQSim 配置校验最高支持 1000 MT/s，且通道计时会提前把单次传输周期截为整数纳秒。启用 3600 MT/s 前需同步修正校验与计时，在完整事务的传输时间上取整，并进行粒度与账本核验。
+6. 先测量大块顺序读，再用 64 KiB 请求和 MaxSim 候选序列测量有效盘内读吞吐。两条路径都应记录设备利用率与有效字节。
 
 ## 7. 到达模型、并发与扫描顺序
 
@@ -207,12 +211,14 @@ P_effective 使用点积 FLOP 归一化整个 MaxSim 内核耗时，**包含归�
 
 ### 7.2 推荐实验批次
 
+E0～E2 按本版配置重新执行，状态均为待运行。E1 使用新 E0 核验通过的设备，E2 从新 E1 结果选取场景并加密压力点。
+
 | 批次 | 变量 | 固定项/目标 |
 |---|---|---|
-| E0 正确性与数量级 | 缓存 0、单查询；host/device_all | 校验请求数、字节数、FLOP、依赖及反压 |
+| E0 正确性与数量级 | 缓存 0、单查询；三种放置 | 验证新设备的通道计时、请求数、字节数、FLOP、依赖和反压 |
 | E1 主收益边界 | 缓存覆盖率 0%/1.31072%/5.24288%/20.97152% × 均匀/Zipf 0.8/Zipf 1.2 × 封闭并发 1/4/16/64 | 按每点的有效向量字节数换算容量 |
 | E2 到达压力 | 开放 QPS 10/30/100/300/1000，临界点加密 | 选 E1 中有收益、临界、无收益场景 |
-| E3 带宽与算力 | 外部 7/14/28 GB/s；主机与盘侧算力分别 0.25/1/4/16 | 先单因素扫描，再做临界区域组合 |
+| E3 带宽与算力 | 外部 28 GB/s 为主点，7/14 GB/s 为对照；主机与盘侧算力分别 0.25/1/4/16 TFLOP/s | 以 16 条 3600 MT/s NAND 通道和 64 GB/s 盘控暂存为固定配置，先单因素扫描，再做临界区域组合 |
 | E4 表示与候选 | 两种对照模型、C、Nq、Nd、FP32 及 1 万页与 10 万页语料对照 | 各维度单独扫描，10 万页为语料上限 |
 | E5 执行敏感性 | I/O 粒度、窗口、QD、buffer、批次和固定开销 | 检查调度/资源限制 |
 | E6 可选扩展 | hybrid、主题聚集、压缩、HBF、新介质 | 各自独立定义，不能混入主结论 |
@@ -227,7 +233,7 @@ P_effective 使用点积 FLOP 归一化整个 MaxSim 内核耗时，**包含归�
 
 ```yaml
 experiment:
-  name: colqwen3_maxsim_nmc_v01
+  name: colqwen3_maxsim_nmc_v02
   scope: reranking_only
   schemes: [host, host_compute_free, device_all]
   seed_set: [11, 23, 47]
@@ -290,9 +296,13 @@ hardware:
   mqsim_config_path: null
   mqsim_config_hash: null
   backend_commit: null
-  external_effective_GBps: 7
+  external_effective_GBps: 28  # 对应 XML 配置速率
+  nand_channels: 16            # XML 字段
+  nand_channel_width_bytes: 1  # XML 字段
+  nand_transfer_rate_mtps: 3600 # XML 字段
+  controller_staging_bytes_per_ns: 64  # 执行平台配置
   internal_bandwidth_mode: simulated
-  target_internal_GBps_reference_only: 100
+  target_internal_GBps_reference_only: 40
   hbf_enabled: false
   local_memory_cost_model: inherit_or_explicit_upper_bound
   topk_cost_model: inherit_or_explicit_zero
@@ -327,9 +337,10 @@ load:
 | 单查询有效文档向量量 | 98.304 MB |
 | 单查询点积计算量 | 3.145728 GFLOP |
 | 完全未命中时逻辑读取请求 | 1500 个 |
-| 7 GB/s 链路传输资源服务时间 | 14.043 ms |
-| 14 GB/s 链路传输资源服务时间 | 7.022 ms |
-| 100 GB/s 内部读取参考服务时间 | 0.983 ms |
+| 28 GB/s 主机链路参考服务时间 | 3.511 ms |
+| 57.6 GB/s 盘内总线上界参考服务时间 | 1.707 ms |
+| 40 GB/s 盘内有效读取目标参考服务时间 | 2.458 ms |
+| 64 GB/s 盘控暂存搬运服务时间 | 1.536 ms |
 | 1 TFLOP/s 等效评分服务时间 | 3.146 ms，未计批启动 |
 
 上述服务时间既不能直接相加当成流水线总延迟，也不能把最大值当成有限窗口下的准确查询延迟。由 IR 依赖、资源仲裁和实际重叠决定最终时间。

@@ -38,9 +38,11 @@ python workloads/maxsim/generate.py scan --batch E1
 python workloads/maxsim/generate.py describe --config workloads/maxsim/local-10k.json --point E0-single-01
 ```
 
-[local-10k.json](local-10k.json) 为本机 E0 提供一万页、单查询和零缓存配置，并绑定 [8 GiB raw 设备 XML](local-10k-device.xml) 的 SHA-256 和 MQSim commit。设备使用 16 KiB NAND 页、256 页/块和 7% OP，逻辑 namespace 为 15,602,808 个 512 B sector。一万页 FP16 Layout 占前 12,800,000 个 sector，需预装载 400,000 个 NAND 页。沿用的 7 GB/s 是 XML 中 4 lane × 1.75 GB/s/lane 的 PCIe 配置速率。
+[local-10k.json](local-10k.json) 为本机 E0 提供一万页、单查询和零缓存配置，并绑定 [8 GiB raw 设备 XML](local-10k-device.xml) 的 SHA-256 和 MQSim commit。设备使用 16 KiB NAND 页、256 页/块和 7% OP，逻辑 namespace 为 15,602,784 个 512 B sector。一万页 FP16 Layout 占前 12,800,000 个 sector，需预装载 400,000 个 NAND 页。后续重跑使用同一 XML 中的 28 GB/s PCIe 配置速率（4 lane × 7 GB/s/lane）和 16 条 1 B 宽、3600 MT/s 的 NAND 通道。NAND 总线理论带宽为 57.6 GB/s。
 
 ## 在 SST 中执行 E0
+
+新配置待 MQSim 支持 3600 MT/s 后执行。当前后端校验最高支持 1000 MT/s，修正校验时还需把高速 NAND 的取整推迟到完整事务的传输耗时。E0～E2 均待用新配置重新执行。
 
 ```sh
 cmake -S . -B build/delivery -DBUILD_TESTING=ON
@@ -57,7 +59,7 @@ ctest --test-dir build/delivery -R '^maxsim_e0_execution$' --output-on-failure
 
 - `host` 和 `host_compute_free` 提交普通 NVMe 读，CQ 和数据 DMA 到达后释放读配额。两者使用相同的输入门控。免费路径的实际评分批次仍走异步资源，服务时间为 0 ns。
 - `device_all` 在命令开销和下行消息完成后提交 MQSim 本地读。读窗口和 QD 在读完成后回收，盘控暂存端口完成搬运后文档才可评分。回传合并为一条全候选分数消息，随后执行相同的 Host Top-K。
-- [e0-run.json](e0-run.json) 固化 16 B/ns 盘控暂存、Host DRAM 与 Top-K 零服务，以及下行命令和上行结果各 32 B 的应用协议头假设。每批按最早就绪顺序取最多 8 份文档，同一时刻按候选序号排序。批次成本使用等效 FLOP 和一次启动开销。
+- [e0-run.json](e0-run.json) 固化 64 B/ns 盘控暂存、Host DRAM 与 Top-K 零服务，以及下行命令和上行结果各 32 B 的应用协议头假设。每批按最早就绪顺序取最多 8 份文档，同一时刻按候选序号排序。批次成本使用等效 FLOP 和一次启动开销。
 - 报告分列有效文档字节、含填充的逻辑请求字节、普通 NVMe 和 MQSim 本地请求、PHY 完成的 NAND 事务、盘控搬运和实际 PCIe 链路服务。NAND 读取放大为总 NAND 读字节（含 FTL 等额外读）除以有效文档字节。PCIe 服务量按方向累加已完成传输的服务时间。Host DRAM 的物理服务和评分内核中归约的独立成本不可观测。
 
 执行入口支持单查询、闭环并发 1、关闭缓存、读算重叠、单侧单评分引擎。实验扫描点超出该执行域时可继续生成元数据。E0 硬件模型状态为 `configured_unvalidated`。
@@ -73,11 +75,11 @@ NDPSIM_MAXSIM_EVIDENCE="$evidence" ctest --test-dir build/delivery --output-on-f
 PYTHONPATH=python python workloads/maxsim/test_maxsim.py
 ```
 
-执行验收逐条重建逻辑读与 NAND 用户页账本，按 NAND 原始区间重算介质和总线占用，并从 PCIe 事件核对分方向排队、服务、到达与协议账本。三个反压夹具各运行全部放置，检查请求在对应配额恢复后继续提交。历史 [千页 E0 夹具](e0.json)的三条路径各复跑一次并比较轨迹字节，一万页本机配置也执行三条路径并核对事件账本。
+执行验收逐条重建逻辑读与 NAND 用户页账本，按 NAND 原始区间重算介质和总线占用，并从 PCIe 事件核对分方向排队、服务、到达与协议账本。三个反压夹具各运行全部放置，检查请求在对应配额恢复后继续提交。[千页 E0 夹具](e0.json)的三条路径各复跑一次并比较轨迹字节，一万页本机配置也执行三条路径并核对事件账本。
 
 ## E0.4 百万文档
 
-[e0.4.json](e0.4.json) 保留 E0 的单查询、FP16 形状和地址语义。配套的 [设备 XML](e0.4-device.xml) 使用 1 TiB raw、16 KiB 页、256 页/块和 7% OP。逻辑 namespace 为 1,997,159,792 个 512 B sector，百万文档 Layout 覆盖前 1,280,000,000 个 sector，共 655,360,000,000 B。生成只写元数据。
+[e0.4.json](e0.4.json) 保留 E0 的单查询、FP16 形状和地址语义。配套的 [设备 XML](e0.4-device.xml) 使用 1 TiB raw、16 KiB 页、256 页/块和 7% OP。逻辑 namespace 为 1,997,159,776 个 512 B sector，百万文档 Layout 覆盖前 1,280,000,000 个 sector，共 655,360,000,000 B。生成只写元数据。
 
 ```sh
 export PYTHONPATH="$PWD/python"
@@ -108,7 +110,7 @@ python workloads/maxsim/run.py --input /tmp/maxsim-e04 --build build/delivery \
   --budget /tmp/maxsim-e04-budget.json
 ```
 
-每个 SST 进程逐页预装载整个 Layout，排空后才进入测量窗口。全量墙钟需在目标机实测。增加查询量须另行核验 IR、索引、trace 和输出预算，当前 E0 执行域为单查询。百万 FP32 和千万 FP16 超出当前 MQSim 几何上限。当前本机证据覆盖百万 Layout 的分配前核验与缩小几何的 NAND 执行，详见 [实施计划](IMPLEMENTATION_PLAN.md#e04-交付记录中的百万文档扩展)。
+每个 SST 进程逐页预装载整个 Layout，排空后才进入测量窗口。全量墙钟需在目标机实测。增加查询量须另行核验 IR、索引、trace 和输出预算，当前 E0 执行域为单查询。百万 FP32 和千万 FP16 超出当前 MQSim 几何上限。百万 Layout 的分配前核验和缩小几何的 NAND 执行均待使用新配置重跑。
 
 ## 扫描与随机种子
 

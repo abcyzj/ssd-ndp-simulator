@@ -102,7 +102,7 @@ class MaxSimAcceptance(unittest.TestCase):
         self.assertEqual(len(set(document_ids)), 150)
         self.assertTrue(all(0 <= doc < 1000 for doc in document_ids))
         layout = read(output / "layout.json")
-        self.assertEqual(layout["namespace"]["capacity_sectors"], 3_900_700)
+        self.assertEqual(layout["namespace"]["capacity_sectors"], 3_900_672)
         self.assertEqual(layout["namespace"]["page_bytes"], 16_384)
         self.assertEqual(layout["objects"][0]["extents"][0]["length_bytes"], 655_360_000)
         self.assertEqual(derived["minimum_capacity_sectors"], 1_280_000)
@@ -136,7 +136,7 @@ class MaxSimAcceptance(unittest.TestCase):
         right = load_config(override={**base, "load": {"mode": "closed_loop"},
                                       "cache": {"host_capacity_bytes": 0},
                                       "compute": {"host_effective_tflops": 16},
-                                      "hardware": {"external_effective_GBps": 28}})
+                                      "hardware": {"external_effective_GBps": 14}})
         second = self.root / "closed"
         a, b = generate(left, first, ["test"]), generate(right, second, ["test"])
         self.assertEqual(a["package_sha256"], b["package_sha256"])

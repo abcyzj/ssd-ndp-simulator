@@ -1,6 +1,6 @@
 {
   "experiment": {
-    "name": "colqwen3_maxsim_nmc_v01",
+    "name": "colqwen3_maxsim_nmc_v02",
     "scope": "reranking_only",
     "schemes": ["host", "host_compute_free", "device_all"],
     "seed_set": [11, 23, 47],
@@ -76,9 +76,9 @@
     "mqsim_config_path": null,
     "mqsim_config_hash": null,
     "backend_commit": null,
-    "external_effective_GBps": 7,
+    "external_effective_GBps": 28,
     "internal_bandwidth_mode": "simulated",
-    "target_internal_GBps_reference_only": 100,
+    "target_internal_GBps_reference_only": 40,
     "hbf_enabled": false,
     "local_memory_cost_model": "inherit_or_explicit_upper_bound",
     "topk_cost_model": "inherit_or_explicit_zero"

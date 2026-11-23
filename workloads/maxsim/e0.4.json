@@ -21,7 +21,7 @@
     "alignment_bytes": 4096,
     "logical_read_bytes": 65536,
     "sort_candidates_by_lba": false,
-    "namespace_capacity_sectors": 1997159792,
+    "namespace_capacity_sectors": 1997159776,
     "namespace_page_bytes": 16384
   },
   "execution": {
@@ -50,9 +50,9 @@
   },
   "hardware": {
     "mqsim_config_path": "e0.4-device.xml",
-    "mqsim_config_hash": "9074bab6816c4c40e13fda2db2a6402eb195e1e77a49b08a81103d2f9f82012d",
+    "mqsim_config_hash": "d1bd5112a38c1073ccad77c2dcefee0766482edb906cf33e6781a94081c965bf",
     "backend_commit": "8f7ddf6d8cafdb7c783b3fcfd4693f15c6c5854b",
-    "external_effective_GBps": 7,
+    "external_effective_GBps": 28,
     "internal_bandwidth_mode": "simulated",
     "hbf_enabled": false
   },

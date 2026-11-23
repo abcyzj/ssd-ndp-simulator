@@ -439,7 +439,7 @@ class Execution(unittest.TestCase):
         self.assertEqual(report["preload_pages"], 400_000)
         self.assertEqual(report["mapped_end_sectors"], 12_800_000)
         self.assertEqual(report["device"]["raw_sectors"], 16_777_216)
-        self.assertEqual(report["device"]["partition"]["capacity_sectors"], 15_602_808)
+        self.assertEqual(report["device"]["partition"]["capacity_sectors"], 15_602_784)
         for placement in PLACEMENTS:
             summary, events = self.verify_execution(bundle, output / f"{placement}.jsonl")
             self.assertEqual(events["measurement_start"][0]["preload_pages"], 400_000)
@@ -467,7 +467,7 @@ class Execution(unittest.TestCase):
         self.assertEqual(device["limits"], limits)
         self.assertEqual(device["page_bytes"], 16_384)
         self.assertEqual(device["raw_sectors"], 2**31)
-        self.assertEqual(device["partition"]["capacity_sectors"], 1_997_159_792)
+        self.assertEqual(device["partition"]["capacity_sectors"], 1_997_159_776)
         self.assertEqual(device["metadata_estimate_bytes"], 18_257_870_848)
         self.assertEqual(report["mapped_end_sectors"], 1_280_000_000)
         self.assertEqual(report["preload_sectors"], 1_280_000_000)
@@ -492,13 +492,13 @@ class Execution(unittest.TestCase):
         # Preserve the large device's topology, 16 KiB page and 256-page block.
         xml = self.directory / "scaled-device.xml"
         xml.write_bytes((HERE / "e0.4-device.xml").read_bytes().replace(
-            b"<Block_No_Per_Plane>65536<", b"<Block_No_Per_Plane>128<"))
+            b"<Block_No_Per_Plane>8192<", b"<Block_No_Per_Plane>64<"))
         bundle = self.bundle({
             "workload": {"corpus_documents": 1000},
-            "layout": {"namespace_capacity_sectors": 3_900_700},
+            "layout": {"namespace_capacity_sectors": 15_602_784},
             "hardware": {"mqsim_config_path": str(xml), "mqsim_config_hash": file_hash(xml)},
         }, base="e0.4.json")
-        limits = dict(xml_bytes=1024**2, metadata_bytes=64 * 1024**2, preload_pages=40_000)
+        limits = dict(xml_bytes=1024**2, metadata_bytes=256 * 1024**2, preload_pages=40_000)
         output = self.directory / "run"
         run(bundle, BUILD, output, device_limits=limits, execution_budget=SMALL_BUDGET)
         report = json_file(output / "device-preflight-report.json")

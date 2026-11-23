@@ -1,10 +1,10 @@
 {
   "E0": {
-    "purpose": "账本与规模核验，三条路径共享语义输入",
+    "purpose": "以 28 GB/s 主机链路、16 条 3600 MT/s NAND 通道和 64 GB/s 盘控暂存重做账本与规模核验",
     "blocks": [{"name": "single", "base": {"cache": {"host_capacity_bytes": 0}, "load": {"mode": "closed_loop", "closed_loop_concurrency": 1}, "generation": {"queries": 1}}}]
   },
   "E1": {
-    "purpose": "缓存容量、局部性和封闭并发的主矩阵",
+    "purpose": "使用新 E0 设备配置扫描缓存容量、局部性和封闭并发",
     "blocks": [{"name": "boundary", "mode": "product", "base": {"load": {"mode": "closed_loop"}}, "axes": [
       {"cache": {"host_capacity_fraction": [0, 0.0131072, 0.0524288, 0.2097152]}},
       {"workload": {"distribution": ["uniform", "zipf", "zipf"], "zipf_alpha": [0, 0.8, 1.2]}},
@@ -12,13 +12,13 @@
     ]}]
   },
   "E2": {
-    "purpose": "开放到达，生成阶段展开速率，执行阶段再选取 E1 的有收益、临界和无收益基线",
+    "purpose": "开放到达，生成阶段展开速率，执行阶段从重跑后的 E1 选取有收益、临界和无收益基线",
     "blocks": [{"name": "poisson", "base": {"load": {"mode": "open_loop"}}, "axes": [
       {"load": {"open_loop_qps": [10, 30, 100, 300, 1000]}}
     ]}]
   },
   "E3": {
-    "purpose": "带宽和主机、盘侧算力单因素扫描",
+    "purpose": "以 28 GB/s 主机链路为基准，扫描外部带宽和两侧算力",
     "blocks": [{"name": "rates", "axes": [
       {"hardware": {"external_effective_GBps": [7, 14, 28]}},
       {"compute": {"host_effective_tflops": [0.25, 1, 4, 16]}},
