@@ -114,7 +114,7 @@ public:
         intervals_.clear();
         ready_.clear();
     }
-    void report(uint64_t begin, uint64_t end) {
+    void report(uint64_t begin, uint64_t end, bool detail = true) {
         if (end < begin)
             throw std::invalid_argument("negative observation window");
         using Key = std::tuple<std::string, unsigned, int, int>;
@@ -123,7 +123,7 @@ public:
             auto a = std::max(begin, i.start), b = std::min(end, i.end);
             if (b < a || i.end < begin || i.start > end)
                 return;
-            output(
+            if (detail) output(
                 false,
                 "OBS "
                 "{\"sequence\":%llu,\"event_kind\":\"interval\",\"kind\":\"%s\",\"time_ns\":%llu,"

@@ -1,4 +1,4 @@
-# MaxSim 合成负载生成与 E0 执行
+# MaxSim 合成负载与 E0/E1/E2 执行
 
 输入 [实验方案](../../docs/MaxSim_ndp.md) 的参数，生成从查询向量和候选 ID 就绪到 Host Top-K 就绪的语义 DAG。产物可用 V0.4.5 Python SDK 校验，无需构建 SST/MQSim 或准备向量文件。来源为 `synthetic-fixture`，证据覆盖结构、依赖与账本。算子输出仅有字节数和元数据摘要。
 
@@ -42,17 +42,19 @@ python workloads/maxsim/generate.py describe --config workloads/maxsim/local-10k
 
 ## 在 SST 中执行 E0
 
-新配置待 MQSim 支持 3600 MT/s 后执行。当前后端校验最高支持 1000 MT/s，修正校验时还需把高速 NAND 的取整推迟到完整事务的传输耗时。E0～E2 均待用新配置重新执行。
+3600 MT/s 夹具使用完整 NAND 事务字节数计算传输耗时，再向上取整到 ns。复跑时使用实际构建对应的 MQSim 源码。若高速计时修改尚在本地工作树中，向运行入口传入显式的 `--backend-source-sha256`。
 
 ```sh
 cmake -S . -B build/delivery -DBUILD_TESTING=ON
 cmake --build build/delivery -j2
-export PYTHONPATH="$PWD/python"
+export PYTHONPATH="$PWD/python:$PWD/workloads/maxsim"
+backend=$(python -c 'from run import backend_digest; print(backend_digest())')
 python workloads/maxsim/generate.py generate --config workloads/maxsim/local-10k.json \
   --point E0-single-01 --output /tmp/maxsim-local-10k
 python workloads/maxsim/run.py --input /tmp/maxsim-local-10k --build build/delivery \
-  --output /tmp/maxsim-local-10k-run
-ctest --test-dir build/delivery -R '^maxsim_e0_execution$' --output-on-failure
+  --output /tmp/maxsim-local-10k-run --backend-source-sha256 "$backend"
+NDPSIM_MAXSIM_BACKEND_SOURCE_SHA256="$backend" \
+  ctest --test-dir build/delivery -R '^maxsim_e0_execution$' --output-on-failure
 ```
 
 `run.py` 复检生成凭据、包结构、独立账本、Layout、XML 及 MQSim 身份，然后让三个独立的 SST 进程从同一预装载策略开始执行同一 IR。可重复指定 `--placement` 选择路径。再次执行时使用新的输出目录。每个放置输出 SST 运行配置、可重放命令、退出码、标准输出和标准错误、JSONL 事件以及汇总与哈希。重放单个 SST 配置前，为 `output` 和 `scratch` 指定新的路径。
@@ -62,7 +64,7 @@ ctest --test-dir build/delivery -R '^maxsim_e0_execution$' --output-on-failure
 - [e0-run.json](e0-run.json) 固化 64 B/ns 盘控暂存、Host DRAM 与 Top-K 零服务，以及下行命令和上行结果各 32 B 的应用协议头假设。每批按最早就绪顺序取最多 8 份文档，同一时刻按候选序号排序。批次成本使用等效 FLOP 和一次启动开销。
 - 报告分列有效文档字节、含填充的逻辑请求字节、普通 NVMe 和 MQSim 本地请求、PHY 完成的 NAND 事务、盘控搬运和实际 PCIe 链路服务。NAND 读取放大为总 NAND 读字节（含 FTL 等额外读）除以有效文档字节。PCIe 服务量按方向累加已完成传输的服务时间。Host DRAM 的物理服务和评分内核中归约的独立成本不可观测。
 
-执行入口支持单查询、闭环并发 1、关闭缓存、读算重叠、单侧单评分引擎。实验扫描点超出该执行域时可继续生成元数据。E0 硬件模型状态为 `configured_unvalidated`。
+E0 入口支持无缓存的单查询执行。E0 和 E1 均使用读算重叠、单侧单评分引擎，硬件模型状态为 `configured_unvalidated`。
 
 ### 复跑 E0 执行验收
 
@@ -110,11 +112,36 @@ python workloads/maxsim/run.py --input /tmp/maxsim-e04 --build build/delivery \
   --budget /tmp/maxsim-e04-budget.json
 ```
 
-每个 SST 进程逐页预装载整个 Layout，排空后才进入测量窗口。全量墙钟需在目标机实测。增加查询量须另行核验 IR、索引、trace 和输出预算，当前 E0 执行域为单查询。百万 FP32 和千万 FP16 超出当前 MQSim 几何上限。百万 Layout 的分配前核验和缩小几何的 NAND 执行均待使用新配置重跑。
+每个 SST 进程逐页预装载整个 Layout，排空后才进入测量窗口。全量墙钟需在目标机实测。增加查询量须另行核验 IR、索引、trace 和输出预算，当前百万页 E0.4 执行域为单查询。百万 FP32 和千万 FP16 超出当前 MQSim 几何上限。
+
+## E1 闭环缓存实验
+
+`e1.py` 在本机一万页设备上运行 E1 扫描。每个分布和种子共用候选 IR。主机两条路径使用同一个预热快照，分别按实际读完成和命中事件更新 LRU。盘侧全量下沉复用同一分布、种子和并发下的零缓存结果。每个查询完成后立即补发，读取以文档为单位在查询间轮转，评分批仅在同一查询内组合。
+
+```sh
+export PYTHONPATH="$PWD/python:$PWD/workloads/maxsim"
+backend=$(python -c 'from run import backend_digest; print(backend_digest())')
+python workloads/maxsim/e1.py --build build/delivery --output results/maxsim/e1-run \
+  --backend-source-sha256 "$backend" --queries 144 --seed 11
+```
+
+用重复的 `--point` 和 `--seed` 选择扫描点和种子。默认 10,000 查询一窗的 LRU 重放只用于预热。用 `--cold` 单独跑空缓存起点。测量 QPS 按整段有限闭环完成量计算，避免短窗口恰好落在高并发完成批次之间。短运行的 P99 只作描述。原始轨迹保留每个查询的开始、可见和排空时间，以及 NAND 利用率和资源汇总。完整逐事件对拍使用 E0 入口。夹具的 `Queue_Fetch_Size=1` 会限制普通 NVMe 路径并行度，需将该配置作为结果的适用条件。
+
+## E2 开放到达实验
+
+`e2.py` 复检 E1 的一万页候选包，并复用同组预热快照。每组放置共享同一独立随机流生成的泊松到达时刻。测量从预装载排空开始，查询按到达顺序准入，同时最多执行 16 个。入口等待从到达计到准入，精排延迟从到达计到 Top-K 可见。
+
+```sh
+export PYTHONPATH="$PWD/python:$PWD/workloads/maxsim"
+python workloads/maxsim/e2.py --build build/delivery \
+  --e1 results/maxsim/e1.Y8emQw --output results/maxsim/e2-open
+```
+
+种子 11 覆盖 10/30/100/300/1000 QPS 及临界加密点，种子 23 和 47 复测关键点。可重复使用 `--scenario`、`--rate` 和 `--seed` 选择子集。每点使用已核验的 144 次查询。在最后一次到达时截取完成数、入口排队和在途数，随后排空这批请求以复检资源与流量账本。窗口内延迟仅对后半段到达且在截点前完成的查询统计。判断持续积压时结合后半段积压增长、入口等待和种子间变化。过载点的窗口内延迟不代表稳态尾延迟。
 
 ## 扫描与随机种子
 
-[scan.json](scan.json) 声明 E0～E5 的轴。E1 展开容量、分布和封闭并发的指定组合。E3～E5 为单因素扫描。E2 的开放压力点可生成到达序列，选择哪些 E1 点作性能对照须待执行结果。扫描输出包括点 ID、覆盖项、种子组和派生账本。默认生成 1 个查询，实验建议的 10,000 查询记录在 `measured_queries_initial`。预检报告候选、切片、stage、IR/SQLite 估计和输出磁盘预算。默认预算会拒绝将主配置直接生成成 10,000 查询包。
+[scan.json](scan.json) 声明 E0～E5 的轴。E1 展开容量、分布和封闭并发的指定组合。E2 从 E1 选择零缓存均匀、5.24288% Zipf 0.8 和 20.97152% Zipf 1.2，分别覆盖明显收益、默认局部性和下沉收益反转附近。E3～E5 为单因素扫描。扫描输出包括点 ID、覆盖项、种子组和派生账本。默认生成 1 个查询，实验建议的 10,000 查询记录在 `measured_queries_initial`。预检报告候选、切片、stage、IR/SQLite 估计和输出磁盘预算。默认预算会拒绝将主配置直接生成成 10,000 查询包。
 
 `layout_seed`、`candidate_seed`、`arrival_seed` 分用三个带域标识的随机流。`--seed` 为三路设置同一组种子，配置文件可分别控制。固定置换将热度排名映射到文档 ID。均匀组直接无放回抽样。Zipf 组使用累计权重抽样并拒绝重复，连续拒绝 64 次后用剩余排名的指数竞赛继续按相同分布抽样。开放模式输出累计指数间隔上取整到 ns 的到达时间，封闭模式保留完成后补发规则及并发度。用相同的 Python 构建、生成器源码、配置、种子复现包身份。
 

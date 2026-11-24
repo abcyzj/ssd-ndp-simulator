@@ -10,18 +10,24 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from xml.etree import ElementTree
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 from ndpsim.static_ir import file_hash
-from run import PLACEMENTS, json_file, run
+from run import PLACEMENTS, json_file, run as execute_run
 from generate import write
 from verify import rows
 
 BUILD = Path(sys.argv.pop(1)).resolve()
+BACKEND_SOURCE = os.environ.get("NDPSIM_MAXSIM_BACKEND_SOURCE_SHA256")
 SMALL_BUDGET = dict(output_bytes=64 * 1024**2, scratch_bytes=64 * 1024**2, rss_bytes=512 * 1024**2,
                     timeout_seconds=180, min_disk_free_bytes=32 * 1024**2)
+
+
+def run(*args, **kwargs):
+    return execute_run(*args, **kwargs, expected_backend_source=BACKEND_SOURCE)
 
 
 def ceil_div(value, unit):
@@ -96,7 +102,10 @@ class Execution(unittest.TestCase):
         self.assertEqual(header["effective_platform"], platform)
         self.assertEqual(header["layout_sha256"], file_hash(bundle / "layout.json"))
         self.assertEqual(header["device_sha256"], file_hash(Path(cfg["hardware"]["mqsim_config_path"])))
-        self.assertEqual(header["mqsim_pcie_configured_GBps"], 7)
+        xml = ElementTree.parse(cfg["hardware"]["mqsim_config_path"])
+        lanes = int(xml.findtext("./Host_Parameter_Set/PCIe_Lane_Count"))
+        lane_rate = Decimal(xml.findtext("./Host_Parameter_Set/PCIe_Lane_Bandwidth"))
+        self.assertEqual(Decimal(str(header["mqsim_pcie_configured_GBps"])), lanes * lane_rate)
         origin = s["origin_ns"]
         (measurement,) = by_type["measurement_start"]
         self.assertEqual(measurement["time_ns"], origin)
@@ -228,6 +237,7 @@ class Execution(unittest.TestCase):
         self.assertTrue(all(r["success"] for r in stage.values()))
         ready = {}
         moves = staged if controller else completions
+        submissions = {(row["candidate"], row["slice"]): row["time_ns"] for row in by_type["read_submit"]}
         for r in by_type["score_ready"]:
             i = r["candidate"]
             self.assertNotIn(i, ready)
@@ -244,12 +254,17 @@ class Execution(unittest.TestCase):
         for number, batch in enumerate(batches, 1):
             self.assertEqual(batch["batch"], number)
             current = max(current, min(time for i, time in ready.items() if i not in seen))
+            if not schedule["overlap_read_compute"]:
+                self.assertGreaterEqual(batch["start_ns"], current)
+                current = batch["start_ns"]
+                self.assertTrue(all(not (start < batch["end_ns"] and moves[key] > current)
+                                    for key, start in submissions.items()))
             self.assertEqual(batch["start_ns"], current)
             eligible = sorted((time, i) for i, time in ready.items() if i not in seen and time <= current)
             chosen = [i for _, i in eligible[:schedule["compute_batch_documents"]]]
             self.assertEqual(batch["candidates"], chosen)
             self.assertLessEqual(1, len(chosen))
-            self.assertLessEqual(len(chosen), 8)
+            self.assertLessEqual(len(chosen), schedule["compute_batch_documents"])
             self.assertEqual(batch["flop"], flop * len(chosen))
             duration = (int(1000 * Decimal(str(compute["batch_launch_us"]))) +
                         ceil_div(flop * len(chosen), rate))
@@ -300,6 +315,12 @@ class Execution(unittest.TestCase):
             self.assertEqual((r["window_start_ns"], r["window_end_ns"]), (origin, s["drained_ns"]))
             unions[key] = r["union_ns"]
         self.assertTrue({"array", "data_out_bus", "bus"} <= {key[0] for key in unions})
+        rate = int(xml.findtext("./Device_Parameter_Set/Channel_Transfer_Rate"))
+        width = int(xml.findtext("./Device_Parameter_Set/Flash_Channel_Width"))
+        if rate > 1000:
+            transfers = Counter(b - a for key, spans in nand_spans.items() if key[0] == "data_out_bus"
+                                for a, b in spans)
+            self.assertEqual(transfers, Counter(ceil_div(r["bytes"] * 1000, rate * width) for r in nand))
         self.assertEqual(unions, {key: interval_union(spans) for key, spans in nand_spans.items()})
 
         pcie = defaultdict(dict)
@@ -317,7 +338,7 @@ class Execution(unittest.TestCase):
             wire = 32 if arrive["layer"] == "sq_fetch" else (
                 arrive["payload_bytes"] + 28 * ceil_div(arrive["payload_bytes"], 128))
             self.assertEqual(arrive["wire_bytes"], wire)
-            service = ceil_div(wire, 4) * 4 // 7
+            service = ceil_div(wire, lanes) * lanes // (lanes * lane_rate)
             self.assertEqual(arrive["service_ns"], service)
             self.assertGreaterEqual(enqueued["time_ns"], origin)
             direction = arrive["direction"]
@@ -449,6 +470,8 @@ class Execution(unittest.TestCase):
         bundle = self.bundle(base="e0.4.json")
         limits = json_file(HERE / "e0.4-device-limits.json")
         command = [sys.executable, str(HERE / "run.py"), "--input", str(bundle), "--build", str(BUILD)]
+        if BACKEND_SOURCE is not None:
+            command += ["--backend-source-sha256", BACKEND_SOURCE]
         metadata_only = self.directory / "metadata-only.json"
         write(metadata_only, dict(limits, preload_pages=1_000_000))
         for name, extra, expected in [
@@ -531,6 +554,15 @@ class Execution(unittest.TestCase):
             self.assertGreater(summary["logical_request_bytes"], summary["effective_document_bytes"])
             found[where] = sizes
         write(self.directory / "verified.json", dict(batch_sizes=found, padded_tail=True))
+
+    def test_serial_reads_and_scores_with_sixteen_document_batches(self):
+        bundle = self.bundle({"workload": {"corpus_documents": 32, "candidate_count": 20},
+                              "execution": {"overlap_read_compute": False, "compute_batch_documents": 16}})
+        output = self.directory / "run"
+        run(bundle, BUILD, output, ("host", "device_all"))
+        for where in ("host", "device_all"):
+            _, events = self.verify_execution(bundle, output / f"{where}.jsonl")
+            self.assertEqual(max(len(batch["candidates"]) for batch in events["score_batch"]), 16)
 
     def test_preflight_refuses_invalid_run_and_artifacts(self):
         bundle = self.bundle({"workload": {"corpus_documents": 16, "candidate_count": 8, "top_k": 4}})

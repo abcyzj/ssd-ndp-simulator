@@ -32,7 +32,7 @@ def backend_digest():
     return hashlib.sha256("".join(f"{name}:{file_hash(source / name)}\n" for name in entries).encode()).hexdigest()
 
 
-def checked_inputs(bundle, platform_path):
+def checked_inputs(bundle, platform_path, expected_backend_source=None):
     require((bundle / "layout.json").is_file(), "MaxSim E0 requires a physical Layout")
     audited = check(bundle)
     effective = json_file(bundle / "effective-config.json")
@@ -60,9 +60,12 @@ def checked_inputs(bundle, platform_path):
     backend = mqsim_source_snapshot()
     gitlink = subprocess.check_output(["git", "rev-parse", "HEAD:third_party/MQSim"], cwd=ROOT, text=True).strip()
     require(hardware["backend_commit"] == backend["head_commit"] == gitlink, "MQSim fork commit mismatch")
-    require(not subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=all"],
-                                       cwd=backend["source_directory"], text=True).strip(),
-            "E0 requires the pinned MQSim worktree")
+    if expected_backend_source is None:
+        require(not subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=all"],
+                                            cwd=backend["source_directory"], text=True).strip(),
+                "MaxSim requires the pinned MQSim worktree or an explicit experiment source hash")
+    else:
+        require(backend_digest() == expected_backend_source, "experimental MQSim source hash mismatch")
     platform = json_file(platform_path)
     return config, audited, backend, platform
 
@@ -81,7 +84,7 @@ def execute(command, output, name):
 
 
 def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-run.json", *,
-        device_limits=None, execution_budget=None, preflight_only=False):
+        device_limits=None, execution_budget=None, preflight_only=False, expected_backend_source=None):
     bundle, build, output, platform_path = (p.resolve() for p in (bundle, build, output, platform_path))
     require(placements and len(placements) == len(set(placements)) and all(p in PLACEMENTS for p in placements),
             "invalid MaxSim placements")
@@ -94,7 +97,7 @@ def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-r
         require(preflight_only or execution_budget is not None, "custom DeviceLimits require an execution budget")
     if execution_budget is not None:
         execution_budget = budget(execution_budget)
-    config, audit, backend, platform = checked_inputs(bundle, platform_path)
+    config, audit, backend, platform = checked_inputs(bundle, platform_path, expected_backend_source)
     sst = Path(json_file(build / "sst-paths.json")["sst"])
     library_dir = build / "workloads/maxsim"
     modules = [p for p in library_dir.glob("libndpsim_maxsim.*") if p.suffix in (".so", ".dylib")]
@@ -183,12 +186,13 @@ def main():
     parser.add_argument("--device-limits", type=Path, help="explicit DeviceLimits JSON")
     parser.add_argument("--budget", type=Path, help="RAM, disk and wall-time budget JSON for execution")
     parser.add_argument("--preflight-only", action="store_true", help="validate device and layout without allocating MQSim")
+    parser.add_argument("--backend-source-sha256", help="bind an experimental in-tree MQSim source revision")
     args = parser.parse_args()
     try:
         summary = run(args.input, args.build, args.output, args.placement or PLACEMENTS, args.platform,
                       device_limits=json_file(args.device_limits) if args.device_limits else None,
                       execution_budget=json_file(args.budget) if args.budget else None,
-                      preflight_only=args.preflight_only)
+                      preflight_only=args.preflight_only, expected_backend_source=args.backend_source_sha256)
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
         print(f"MaxSim E0: {error}", file=sys.stderr)
         return 1
