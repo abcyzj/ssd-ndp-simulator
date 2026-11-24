@@ -74,6 +74,7 @@ int main(int argc, char** argv) {
             Utils::Logical_Address_Partitioning_Unit::End_lha_available_to_flow(0);
         out["applied"] = {{"queue_depth", Device_Parameter_Set::IO_Queue_Depth},
                           {"queue_fetch", Device_Parameter_Set::Queue_Fetch_Size},
+                          {"tlc", Flash_Parameter_Set::Flash_Technology == Flash_Technology_Type::TLC},
                           {"lane_bandwidth", Host_Parameter_Set::PCIe_Lane_Bandwidth},
                           {"lanes", Host_Parameter_Set::PCIe_Lane_Count},
                           {"read_lsb_ns", Flash_Parameter_Set::Page_Read_Latency_LSB},

@@ -85,6 +85,7 @@ class RuntimeConfigTests(unittest.TestCase):
                              ('cmt_bytes','CMT_Capacity')]:
                 self.assertEqual(result['applied'][key], int(fields[tag]))
             self.assertEqual(result['applied']['lane_bandwidth'], float(fields['PCIe_Lane_Bandwidth']))
+            self.assertEqual(result['applied']['tlc'], fields['Flash_Technology'] == 'TLC')
         return result
 
     def oracle(self, effective, xml):
@@ -100,6 +101,7 @@ class RuntimeConfigTests(unittest.TestCase):
         for tag, n in [('channels',c),('chips',chips),('dies',d),('planes',planes)]:
             self.assertEqual(effective['partition'][tag], list(range(n)))
         self.assertEqual(effective['partition']['data_cache'], 'TURNED_OFF')
+        self.assertEqual(effective['pcie_max_payload_bytes'], int(fields.get('PCIe_Max_Payload_Bytes', 128)))
         for group in effective['xml_fields'].values():
             for key, value in group.items():
                 if isinstance(value, float): self.assertEqual(value, float(fields[key]))
@@ -119,6 +121,18 @@ class RuntimeConfigTests(unittest.TestCase):
         self.assertGreater(link['completions'][0]['time'], base['completions'][0]['time'])
         self.assertNotEqual(base['effective']['source_sha256'], slow['effective']['source_sha256'])
         self.assertEqual(binary, hashlib.sha256(PROBE.read_bytes()).hexdigest())
+
+    def test_tlc_and_configurable_pcie_payload(self):
+        def with_payload(xml, size):
+            return xml.replace('</Host_Parameter_Set>',
+                               f'<PCIe_Max_Payload_Bytes>{size}</PCIe_Max_Payload_Bytes></Host_Parameter_Set>')
+
+        reads = [dict(lba=0, sectors=128)]
+        tlc = edit(BASE, Flash_Technology='TLC')
+        legacy = self.run_probe(tlc, reads=reads)
+        larger = self.run_probe(with_payload(tlc, 256), reads=reads)
+        self.assertLess(larger['completions'][0]['time'], legacy['completions'][0]['time'])
+        self.run_probe(with_payload(tlc, 192), success=False, validate_only=True)
 
     def test_geometry_page_queue_seed_and_partition(self):
         for kwargs in [dict(Flash_Channel_Count=1, Die_No_Per_Chip=1, Block_No_Per_Plane=128),
@@ -166,7 +180,7 @@ class RuntimeConfigTests(unittest.TestCase):
                              ('PCIe_Lane_Count','4garbage'),('IO_Queue_Depth',65536),('Queue_Fetch_Size',16),
                              ('Enabled_Preconditioning','true'),('Ideal_Mapping_Table','true'),('Caching_Mechanism','ADVANCED'),
                              ('Address_Mapping','HYBRID'),('HostInterface_Type','SATA'),('Memory_Type','PCM'),
-                             ('Flash_Technology','TLC'),('Seed',2**64),('CMT_Capacity',0),('Page_Capacity',1000),
+                             ('Flash_Technology','SLC'),('Seed',2**64),('CMT_Capacity',0),('Page_Capacity',1000),
                              ('Flash_Channel_Count',3),('Overprovisioning_Ratio','1'),('Overprovisioning_Ratio','0.001'),
                              ('Block_No_Per_Plane',2**32),('Flash_Channel_Count',16)]:
             if field=='Flash_Channel_Count' and value==16:
@@ -205,6 +219,7 @@ class RuntimeConfigTests(unittest.TestCase):
             self.run_probe(path.read_text(), validate_only=True)
         policy = json.loads((ROOT/'schemas/ndpsim-device-policy-v1.json').read_text())
         expected = {leaf.tag for leaf in ET.fromstring(BASE).iter() if len(leaf)==0}
-        self.assertEqual({r['key'] for r in policy['fields']}, expected)
+        self.assertEqual({r['key'] for r in policy['fields'] if not r.get('optional')}, expected)
+        self.assertEqual({r['key'] for r in policy['fields'] if r.get('optional')}, {'PCIe_Max_Payload_Bytes'})
 
 if __name__ == '__main__': unittest.main()

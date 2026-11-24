@@ -69,6 +69,7 @@
 | mmap、公式布局与设备 profile | [内容与设备](content-profiles.md) |
 | 观测、资源回收与输出 | [观测与生命周期](observation-lifecycle.md)、[输出口径](output.md) |
 | SIFT1M 准备、固定矩阵与严格复用 | [SIFT1M 实验](sift1m.md) |
+| MaxSim 普通 NVMe 校准与 E0～E5 重跑 | [9550 PRO 重跑手册](../workloads/maxsim/README.md#micron-9550-pro-候选设备与重跑)、[实验方案](MaxSim_ndp.md) |
 | 测试与入口分类 | [当前迁移清单](migration-v0.4.5/tests.json)、[工具](../tools/README.md)、[配置](../configs/README.md) |
 | 未校准参数、Unsupported 和已知问题 | [模型限制](model-limitations.md) |
 | 依赖维护、原生 oracle 与许可证 | [MQSim 维护](mqsim-source-management.md)、[锁文件](../deps.lock.json) |

@@ -20,6 +20,7 @@ struct DeviceGeometry {
     uint64_t metadata_estimate, cmt_entries, queue_depth;
     double lane_bandwidth;
     unsigned lanes;
+    unsigned pcie_max_payload_bytes;
 };
 // Strict single-namespace NVMe/FLASH subset, parsed once without touching MQSim
 // globals. All validation precedes activation/device allocation. No payload API.

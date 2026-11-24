@@ -1,6 +1,6 @@
 {
   "format": "ndpsim-device-policy/1",
-  "description": "Supported external MQSim XML subset. Exact fields, no duplicate keys/attributes/entities/DTD; no omitted defaults. Geometry and budgets additionally checked in C++.",
+  "description": "Supported external MQSim XML subset. No duplicate keys, attributes, entities or DTD. Only fields marked optional may be omitted. Geometry and budgets additionally checked in C++.",
   "fields": [
     {
       "group": "host",
@@ -15,6 +15,14 @@
       "type": "uint",
       "minimum": 1,
       "maximum": 16
+    },
+    {
+      "group": "host",
+      "key": "PCIe_Max_Payload_Bytes",
+      "type": "uint",
+      "optional": true,
+      "default": 128,
+      "enum": [128, 256, 512, 1024, 2048, 4096]
     },
     {
       "group": "host",
@@ -268,7 +276,7 @@
     {
       "group": "flash",
       "key": "Flash_Technology",
-      "const": "MLC"
+      "enum": ["MLC", "TLC"]
     },
     {
       "group": "flash",

@@ -147,8 +147,9 @@ def main():
     parser.add_argument("--e1", type=Path, required=True)
     parser.add_argument("--build", type=Path, required=True)
     parser.add_argument("--workers", type=int, default=4)
-    parser.add_argument("--seed", type=int, action="append", choices=(11, 23, 47))
+    parser.add_argument("--seed", type=int, action="append")
     parser.add_argument("--scenario", action="append", choices=SCENARIOS)
+    parser.add_argument("--capacity-bytes", type=int, help="select a different tested E1 capacity for one scenario")
     parser.add_argument("--rate", type=int, action="append", help="override the selected scenarios' rates")
     args = parser.parse_args()
     output, e1, build = (path.resolve() for path in (args.output, args.e1, args.build))
@@ -158,6 +159,18 @@ def main():
     library = build / "workloads/maxsim"
     element = library / "libndpsim_maxsim.so"
     require(sst.is_file() and element.is_file(), "build the MaxSim SST module first")
+    matrix = e1 / "matrix.csv"
+    current_e1 = (e1 / "sweep.json").is_file() and matrix.is_file()
+    require(args.capacity_bytes is None or
+            (current_e1 and len(args.scenario or []) == 1 and args.capacity_bytes >= 0),
+            "--capacity-bytes requires a current E1 sweep and exactly one scenario")
+    comparison = matrix if current_e1 else e1 / "report/comparison.csv"
+    if current_e1:
+        with matrix.open(newline="") as stream:
+            e1_rows = list(csv.DictReader(stream))
+        seeds = args.seed or sorted({int(row["seed"]) for row in e1_rows})
+    else:
+        seeds = args.seed or (11, 23, 47)
     output.mkdir()
     source = backend_digest()
     write(output / "sweep.json", dict(command=sys.argv, backend_source_sha256=source,
@@ -166,7 +179,7 @@ def main():
                                     source_sha256={p.name: file_hash(p) for p in sorted(HERE.iterdir())
                                                    if p.suffix in (".py", ".cc", ".h", ".json", ".xml")},
                                     sst_sha256=file_hash(sst), element_sha256=file_hash(element),
-                                    e1_comparison_sha256=file_hash(e1 / "report/comparison.csv"),
+                                    e1_comparison_sha256=file_hash(comparison),
                                     max_active_queries=CONCURRENCY_LIMIT, sst_wall_timeout_seconds=180,
                                     measurement_end="last offered arrival",
                                     unavailable=["plane_utilization", "physical_host_dram",
@@ -176,16 +189,35 @@ def main():
     with ThreadPoolExecutor(max_workers=args.workers) as workers:
         for scenario in args.scenario or SCENARIOS:
             capacity, near_knee = SCENARIOS[scenario]
-            for seed in args.seed or (11, 23, 47):
+            if args.capacity_bytes is not None:
+                capacity = args.capacity_bytes
+            for seed in seeds:
                 key = f"{scenario}-seed{seed}"
-                previous = e1 / ("warm-c64" if seed == 11 else "extra-seeds-c64") / key
+                previous = (e1 / key if current_e1 else
+                            e1 / ("warm-c64" if seed == 11 else "extra-seeds-c64") / key)
                 group = output / key
                 group.mkdir()
                 bundle = previous / "bundle"
                 config, _, backend, platform = checked_inputs(bundle, HERE / "e0-run.json", source)
+                require(config["generation"]["queries"] >= CONCURRENCY_LIMIT,
+                        f"E2 requires at least {CONCURRENCY_LIMIT} queries in the E1 bundle for {key}")
                 write(group / "backend.json", backend)
-                initial = json_file(previous / "warmup.json")["oldest_first"][str(capacity // 655_360)]
-                rates = set(args.rate or (near_knee + MAIN_RATES if seed == 11 else REPEAT_RATES[scenario]))
+                caches = json_file(previous / "warmup.json").get("oldest_first", {})
+                initial = caches.get(str(capacity // 655_360), [])
+                if current_e1:
+                    matching = [row for row in e1_rows
+                                if f"{row['distribution']}-{row['zipf_alpha']}" == scenario
+                                and int(row["seed"]) == seed and int(row["capacity_bytes"]) == capacity]
+                    require(matching, f"E1 has no matching cases for {key}, capacity {capacity}")
+                    concurrency = max((int(row["concurrency"]) for row in matching),
+                                      key=lambda value: (value <= CONCURRENCY_LIMIT, value))
+                    knee = {max(1, round(float(row["qps"]) * factor)) for row in matching
+                            if int(row["concurrency"]) == concurrency
+                            and row["placement"] in ("host", "device_all")
+                            for factor in (.8, 1, 1.2)}
+                    rates = set(args.rate) if args.rate else set(MAIN_RATES) | knee
+                else:
+                    rates = set(args.rate or (near_knee + MAIN_RATES if seed == 11 else REPEAT_RATES[scenario]))
                 for rate in sorted(rates):
                     config["load"].update(mode="open_loop", open_loop_qps=rate)
                     offsets = [row["offered_ns"] for row in arrivals(config)]

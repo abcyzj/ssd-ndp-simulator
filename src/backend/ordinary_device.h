@@ -60,7 +60,8 @@ public:
         Simulator->Reset();
         device = std::make_unique<SSD_Device>(&config.SSD_Device_Configuration, &partitions);
         link = std::make_unique<Host_Components::PCIe_Link>(
-            "link", nullptr, nullptr, profile.lane_bandwidth, profile.lanes);
+            "link", nullptr, nullptr, profile.lane_bandwidth, profile.lanes, 20,
+            profile.pcie_max_payload_bytes);
         sw = std::make_unique<Host_Components::PCIe_Switch>(link.get(), device->Host_interface);
         root = std::make_unique<Host_Components::PCIe_Root_Complex>(
             link.get(), HostInterface_Types::NVME, nullptr, &flows);

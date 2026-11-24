@@ -22,13 +22,14 @@ ndpsim::OrdinaryDevice device(preload_sectors, config, layout);
 
 ## 支持子集、单位及失败关闭
 
-[机器可读支持字段清单](../schemas/ndpsim-device-policy-v1.json)列出61个必填字段、固定值和范围；它描述本适配器支持的 MQSim XML 子集，不是任意 MQSim XML 的兼容承诺。完整树必须为 Execution→Host/Device→Flash；未知/重复/缺失字段或组、属性、嵌套scalar、混合内容、额外根、非整数、尾部垃圾、NUL、DTD/entity/comment/PI 均拒绝。允许首个 XML declaration；固定值区分大小写并使用清单中的字面量，包括原 MQSim 的 `Busrt`、`Metadat` 拼写。
+[机器可读支持字段清单](../schemas/ndpsim-device-policy-v1.json)列出必填字段、可选字段、固定值和范围。完整树必须为 Execution→Host/Device→Flash。未知字段、重复字段、缺失必填字段或组、属性、嵌套 scalar、混合内容、额外根、尾部垃圾、NUL、DTD/entity/comment/PI 均拒绝。允许首个 XML declaration。固定值区分大小写，包括原 MQSim 的 `Busrt`、`Metadat` 拼写。
 
-支持 FLASH/NVME、MLC/ERASE、NVDDR2、PAGE_LEVEL、非Ideal Mapping、SHARED CMT、SIMPLE data-cache manager和PRIORITY_OUT_OF_ORDER/CWDP。partition始终关闭数据缓存，统计预处理关闭，GC/wear选项冻结为样例组合；不支持外部任意 flow/partition、SATA、TLC、HYBRID、ADVANCED、数据cache开启、统计预处理或多设备。修改不支持字段会拒绝，不静默忽略或转换。
+支持 FLASH/NVME、MLC 或 TLC、ERASE suspend、NVDDR2、PAGE_LEVEL、非 Ideal Mapping、SHARED CMT、SIMPLE data-cache manager 和 PRIORITY_OUT_OF_ORDER/CWDP。partition 始终关闭数据缓存，统计预处理关闭，GC 和 wear 选项沿用样例组合。流与 partition 由适配器创建，每个进程只启用一台设备。
 
 | 可变参数 | 单位／主要约束 |
 | --- | --- |
-| PCIe lane bandwidth / lane count | GB/s/每lane，0.001～64；lanes 1～16；TLP/协议开销维持现后端规则 |
+| PCIe lane bandwidth / lane count | GB/s/每 lane，0.001～64，lanes 1～16 |
+| PCIe_Max_Payload_Bytes | 可选，128～4096 B 的二次幂，省略时为 128 B。MQSim 按配置值拆分 TLP，包开销沿用现有公式 |
 | NAND读/写/擦除/suspend与DRAM时延 | ns，正整数且≤10^9；SATA delay虽保留字段，在NVMe下不提供额外计费 |
 | channel / chip / die / plane | 分别≤16/8/8/4，正二次幂；单partition覆盖所有ID |
 | blocks / pages per block / page capacity | 分别64～65536块、16～256页、512～16384B，均二次幂；metadata不大于page |

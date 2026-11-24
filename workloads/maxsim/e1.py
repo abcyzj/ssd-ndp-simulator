@@ -12,9 +12,10 @@ import shutil
 import subprocess
 import sys
 
+from ndpsim.execution import launch
 from ndpsim.static_ir import decode, file_hash, require
 
-from config import load_config
+from config import derive, load_config
 from generate import generate, write
 from run import HERE, PLACEMENTS, ROOT, backend_digest, checked_inputs, execute, json_file
 from sampling import Candidates
@@ -65,12 +66,21 @@ def summarize(trace, queries, concurrency):
     require(len(completed) == queries and {row["query"] for row in completed} == set(range(queries)) and
             all(row["success"] for row in completed), "query coverage")
     require(summary["peak_active_queries"] == concurrency, "closed-loop concurrency was not reached")
-    require(summary["flop"] == queries * 3_145_728_000 and
-            summary["effective_document_bytes"] + summary["cache_hits"] * 655_360 == queries * 98_304_000,
+    config = header["effective_config"]
+    derived = derive(config)
+    documents = queries * config["workload"]["candidate_count"]
+    misses = documents - summary["cache_hits"]
+    require(summary["flop"] == queries * derived["query_flop"] and
+            summary["effective_document_bytes"] == misses * derived["document_bytes"],
             "MaxSim work or cache/miss byte conservation")
-    require(summary["logical_reads"] * 65_536 == summary["effective_document_bytes"] ==
-            summary["nand_user_read_bytes"], "MaxSim I/O and NAND user-byte conservation")
-    schedule = header["effective_config"]["execution"]
+    require(summary["logical_reads"] == misses * derived["logical_reads_per_document"] and
+            summary["logical_request_bytes"] == summary["nand_user_read_bytes"] ==
+            misses * derived["document_stride_bytes"], "MaxSim I/O and NAND user-byte conservation")
+    offload = header["placement"] == "device_all"
+    require(summary["document_d2h_payload_bytes"] == (0 if offload else summary["logical_request_bytes"]) and
+            summary["controller_staging_bytes"] == (summary["effective_document_bytes"] if offload else 0),
+            "MaxSim placement byte conservation")
+    schedule = config["execution"]
     require(summary["peak_outstanding_reads"] <= schedule["global_outstanding_reads"] and
             summary["peak_read_window_documents"] <= schedule["read_window_documents_per_query"] and
             summary["peak_input_buffer_bytes"] <= schedule["input_buffer_bytes_per_side"],
@@ -107,8 +117,8 @@ def summarize(trace, queries, concurrency):
                 flops=summary["flop"],
                 logical_reads=summary["logical_reads"],
                 scoring_utilization=summary["compute_ns"] / span, scoring_batches=summary["batches"],
-                average_batch_documents=queries * 150 / summary["batches"],
-                channel_utilization=sum(bus) / (16 * span),
+                average_batch_documents=documents / summary["batches"],
+                channel_utilization=sum(bus) / (len(header["device"]["partition"]["channels"]) * span),
                 die_array_busy_ns=sum(array),
                 peak_qd=summary["peak_outstanding_reads"], peak_buffer_bytes=summary["peak_input_buffer_bytes"],
                 backpressure_ns=summary["backpressure_ns"], measurement_start_ns=begin, measurement_end_ns=end,
@@ -118,16 +128,29 @@ def summarize(trace, queries, concurrency):
 
 
 def run_point(directory, name, placement, bundle, platform, source, sst, library, concurrency, capacity, snapshot,
-              queries):
+              queries, *, device_limits=None, execution_budget=None, preflight_only=False):
     spec_path = directory / f"{name}.json"
     trace = spec_path.with_suffix(".jsonl")
     spec = dict(format="ndpsim-maxsim-run/1", placement=placement, bundle=str(bundle),
                 receipt_sha256=file_hash(bundle / "receipt.json"), mqsim_source_sha256=source,
                 scratch=f"{name}.sqlite", output=trace.name, platform=platform,
                 closed_loop=dict(concurrency=concurrency, host_capacity_bytes=capacity, cache_oldest_first=snapshot))
+    if device_limits is not None:
+        spec["device_limits"] = device_limits
+    if preflight_only:
+        spec["preflight_only"] = True
     write(spec_path, spec)
     cmd = [str(sst), f"--add-lib-path={library}", str(HERE / "sst.py"), "--", json.dumps(str(spec_path))]
-    execute(cmd, directory, name)
+    if execution_budget is None:
+        execute(cmd, directory, name)
+    else:
+        launch(cmd, directory, execution_budget, cwd="/tmp", prefix=f"{name}.")
+    if preflight_only:
+        with trace.open("rb") as stream:
+            header, report = map(decode, stream)
+        require(report["type"] == "device_preflight" and report["success"] and not report["allocated"],
+                "missing non-allocating device preflight report")
+        return header["device"]
     result = dict(run=name, placement=placement, concurrency=concurrency, capacity_bytes=capacity,
                   **summarize(trace, queries, concurrency))
     write(directory / f"{name}.metrics.json", result)
@@ -138,6 +161,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--build", type=Path, required=True)
+    parser.add_argument("--config", type=Path, default=HERE / "local-10k.json")
     parser.add_argument("--backend-source-sha256", required=True)
     parser.add_argument("--queries", type=int, required=True)
     parser.add_argument("--seed", type=int, action="append", required=True)
@@ -170,6 +194,7 @@ def main():
                                     sources_sha256={p.name: file_hash(p) for p in sorted(HERE.iterdir())
                                                     if p.suffix in (".py", ".cc", ".h", ".json", ".xml")},
                                     platform_sha256=file_hash(platform_path),
+                                    config_path=str(args.config.resolve()), config_sha256=file_hash(args.config),
                                     model_revision=MODEL_REVISION, sst_sha256=file_hash(sst),
                                     element_sha256=file_hash(modules[0]), matrix=dict(matrix)))
     futures, pairs = {}, []
@@ -182,18 +207,24 @@ def main():
                 subset = [(name, point) for name, point in matrix if point["workload"]["zipf_alpha"] == alpha]
                 overrides = dict(workload=dict(distribution=distribution, zipf_alpha=alpha, model_revision=MODEL_REVISION),
                                  generation=dict(queries=args.queries))
-                configuration = load_config(HERE / "local-10k.json", overrides, seed)
+                configuration = load_config(args.config, overrides, seed)
                 sizes = {name: load_config(override=point)["cache"]["host_capacity_bytes"] for name, point in subset}
                 page_sizes = {size // 655_360 for size in sizes.values()}
                 bundle = group / "bundle"
                 if args.reuse_candidates:
                     previous = args.reuse_candidates.resolve() / group.name
-                    bundle = previous / "bundle"
-                    snapshot = json_file(previous / "warmup.json")
-                    expected = json_file(bundle / "effective-config.json")["config"]
-                    require(configuration == expected, "reused candidate bundle does not match configured inputs")
+                    old_bundle = previous / "bundle"
+                    snapshot = {} if args.cold else json_file(previous / "warmup.json")
+                    expected = json_file(old_bundle / "effective-config.json")["config"]
+                    if configuration == expected:
+                        bundle = old_bundle
+                    else:
+                        generate(configuration, bundle, sys.argv, override_path=args.config)
+                        for name in ("candidates.jsonl", "logical-reads.jsonl"):
+                            require(file_hash(bundle / name) == file_hash(old_bundle / name),
+                                    f"rebound bundle changed {name}")
                 else:
-                    generate(configuration, bundle, sys.argv, override_path=HERE / "local-10k.json")
+                    generate(configuration, bundle, sys.argv, override_path=args.config)
                     snapshot = prewarm(configuration, page_sizes, args.warmup_window, 8) if not args.cold else {}
                 if snapshot:
                     snapshot["oldest_first"] = {int(k): v for k, v in snapshot["oldest_first"].items()}

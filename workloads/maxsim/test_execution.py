@@ -105,6 +105,8 @@ class Execution(unittest.TestCase):
         xml = ElementTree.parse(cfg["hardware"]["mqsim_config_path"])
         lanes = int(xml.findtext("./Host_Parameter_Set/PCIe_Lane_Count"))
         lane_rate = Decimal(xml.findtext("./Host_Parameter_Set/PCIe_Lane_Bandwidth"))
+        mps = int(xml.findtext("./Host_Parameter_Set/PCIe_Max_Payload_Bytes", "128"))
+        self.assertEqual(header["device"]["pcie_max_payload_bytes"], mps)
         self.assertEqual(Decimal(str(header["mqsim_pcie_configured_GBps"])), lanes * lane_rate)
         origin = s["origin_ns"]
         (measurement,) = by_type["measurement_start"]
@@ -336,7 +338,7 @@ class Execution(unittest.TestCase):
                 self.assertEqual(enqueued[field], start[field])
                 self.assertEqual(start[field], arrive[field])
             wire = 32 if arrive["layer"] == "sq_fetch" else (
-                arrive["payload_bytes"] + 28 * ceil_div(arrive["payload_bytes"], 128))
+                arrive["payload_bytes"] + 28 * ceil_div(arrive["payload_bytes"], mps))
             self.assertEqual(arrive["wire_bytes"], wire)
             service = ceil_div(wire, lanes) * lanes // (lanes * lane_rate)
             self.assertEqual(arrive["service_ns"], service)

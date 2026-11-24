@@ -405,8 +405,8 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     });
     for (auto kind : {MessageKind::Execute, MessageKind::Result}) {
         auto size = rules.size({protocol, kind, 0, 1, 1, 1, 1, count});
-        // MQSim's default 128 B TLP and 28 B overhead, bounded before allocation.
-        require(size.payload + 28 * ceil_div(size.payload, 128) <= INT32_MAX,
+        // MQSim's configured TLP payload and fixed 28 B overhead.
+        require(size.payload + 28 * ceil_div(size.payload, g.pcie_max_payload_bytes) <= INT32_MAX,
                 "MaxSim protocol envelope exceeds link bounds");
     }
 

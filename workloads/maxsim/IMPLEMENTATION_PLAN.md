@@ -1,6 +1,19 @@
 # MaxSim 实施计划
 
-重跑状态见 [v0.2 实验规划](../../docs/MaxSim_ndp.md#72-推荐实验批次)。下文的执行记录对应此前的设备和平台参数。E0～E2 的新配置验收待运行。
+## 9550 PRO 首轮校准与重跑交接
+
+2026-11-24，完成 TLC、可配置 PCIe MPS 和重跑入口接线。新批次使用 [9550 PRO 配置](micron-9550-pro.json)，以 4 chip/channel、`fetch=128` 作为主候选。先执行普通 NVMe 校准和 E0，再用同一设备基线重跑 E1～E5。旧 `fetch=1` 输出保留为历史对照。 [运行命令](README.md#micron-9550-pro-候选设备与重跑) · [当前扫描方案](../../docs/MaxSim_ndp.md#72-推荐实验批次)
+
+| 验证项 | 已完成的范围 |
+| --- | --- |
+| 普通 NVMe | 主候选的 4 KiB 随机 QD1 P50 为 57.3 µs，128 KiB 顺序 QD32 为 14.13 GB/s，4 KiB 随机 QD512 为 0.85 MIOPS。高 QD 规格点为 3.30 MIOPS。已测变体最高 1.63 MIOPS。 |
+| E0 与 64 KiB 对照 | 同一均匀候选轨迹通过请求、字节和排空核验。4 chip/channel 主候选为 Host 7.91 ms、盘侧 8.11 ms。相同原始容量的 8 chip/channel 变体为 Host 7.02 ms、盘侧 5.51 ms。 |
+| E1～E5 | 所有入口的代表点均通过，E1 换绑设备时验证了旧候选和逻辑读哈希一致。E4 十万文档点通过 400 万预装载页的非分配预检。完整矩阵待重跑。 |
+| 回归 | 83 项 CTest 通过。 |
+
+首轮证据存于 `results/maxsim/micron-9550-pass1.tNLrbz/pass1-summary.json`。继续用 `configured_unvalidated` 报告硬件。若后续改变几何、调度或 MPS，使用新配置身份复跑普通 NVMe 校准和 E0。E2 选择与压力点加密依据新 E1 配对结果，高 QD 缺口、盘内有效读速和下沉敏感性随批次结果披露。
+
+## 历史实现与初始夹具
 
 首批生成器、E0.1 本机配置和 E0.2 三条执行路径已交付，E0.3 本机定向验收通过（2026-11-19）。复现步骤见 [MaxSim README](README.md)。范围依据 [MaxSim 实验方案](../../docs/MaxSim_ndp.md) §2～§10 和 [V0.4.5 IR 契约](../../docs/contract-v0.4.5.md)。
 

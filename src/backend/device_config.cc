@@ -33,11 +33,13 @@ struct Rule {
     const char* key;
     const char* fixed;
     uint64_t low, high;
+    bool optional = false;
 };
 // Numeric ranges are in MQSim's XML units: ns, bytes, MT/s, GB/s/lane.
 // Fixed values deliberately reject backend modes not covered by this adapter.
 const Rule rules[] = {{"host", "PCIe_Lane_Bandwidth", nullptr, 0, 0},
                       {"host", "PCIe_Lane_Count", nullptr, 1, 16},
+                      {"host", "PCIe_Max_Payload_Bytes", nullptr, 128, 4096, true},
                       {"host", "SATA_Processing_Delay", nullptr, 0, 1000000000},
                       {"host", "Enable_ResponseTime_Logging", "false", 0, 0},
                       {"host", "ResponseTime_Logging_Period_Length", nullptr, 1, 1000000000},
@@ -79,7 +81,7 @@ const Rule rules[] = {{"host", "PCIe_Lane_Bandwidth", nullptr, 0, 0},
                       {"device", "Channel_Transfer_Rate", nullptr, 1, 3600},
                       {"device", "Chip_No_Per_Channel", nullptr, 1, 8},
                       {"device", "Flash_Comm_Protocol", "NVDDR2", 0, 0},
-                      {"flash", "Flash_Technology", "MLC", 0, 0},
+                      {"flash", "Flash_Technology", nullptr, 0, 0},
                       {"flash", "CMD_Suspension_Support", "ERASE", 0, 0},
                       {"flash", "Page_Read_Latency_LSB", nullptr, 1, 1000000000},
                       {"flash", "Page_Read_Latency_CSB", nullptr, 1, 1000000000},
@@ -192,11 +194,16 @@ DeviceConfig::DeviceConfig(const std::filesystem::path& reference,
     for (const auto& group : raw)
         actual += group.second.size();
     for (const auto& r : rules) {
+        if (r.optional && !raw[r.group].count(r.key))
+            continue;
         ++expected;
         need(raw[r.group].count(r.key), std::string("missing field ") + r.key);
         auto s = raw[r.group].at(r.key);
         if (r.fixed) {
             need(s == r.fixed, std::string("Unsupported value for ") + r.key);
+            d->values[r.group][r.key] = s;
+        } else if (std::string(r.key) == "Flash_Technology") {
+            need(s == "MLC" || s == "TLC", "Unsupported value for Flash_Technology");
             d->values[r.group][r.key] = s;
         } else if (!r.high) {
             need(!s.empty() && s.find_first_not_of("0123456789.") == std::string::npos,
@@ -272,6 +279,8 @@ DeviceConfig::DeviceConfig(const std::filesystem::path& reference,
     need(u("device", "Queue_Fetch_Size") < g.queue_depth, "queue fetch must be below queue depth");
     g.lane_bandwidth = d->values["host"]["PCIe_Lane_Bandwidth"].get<double>();
     g.lanes = unsigned(u("host", "PCIe_Lane_Count"));
+    g.pcie_max_payload_bytes = d->values["host"].value("PCIe_Max_Payload_Bytes", 128u);
+    need(pow2(g.pcie_max_payload_bytes), "PCIe maximum payload must be a power of two");
     J partition = {{"priority", "HIGH"},
                    {"data_cache", "TURNED_OFF"},
                    {"start_lba", 0},
@@ -292,6 +301,7 @@ DeviceConfig::DeviceConfig(const std::filesystem::path& reference,
                      {"partition", partition},
                      {"raw_sectors", g.raw_sectors},
                      {"page_bytes", g.page_bytes},
+                     {"pcie_max_payload_bytes", g.pcie_max_payload_bytes},
                      {"metadata_estimate_bytes", g.metadata_estimate},
                      {"cmt_entries", g.cmt_entries},
                      {"initial_state", "explicit-full-page-preload/drained/CMT-retained"},
@@ -390,7 +400,9 @@ void DeviceConfig::activate() const {
     Device_Parameter_Set::Dynamic_Wearleveling_Enabled = true;
     Device_Parameter_Set::Static_Wearleveling_Enabled = true;
     Device_Parameter_Set::Flash_Comm_Protocol = SSD_Components::ONFI_Protocol::NVDDR2;
-    Flash_Parameter_Set::Flash_Technology = Flash_Technology_Type::MLC;
+    Flash_Parameter_Set::Flash_Technology = v.at("flash").at("Flash_Technology") == "TLC"
+                                               ? Flash_Technology_Type::TLC
+                                               : Flash_Technology_Type::MLC;
     Flash_Parameter_Set::CMD_Suspension_Support = NVM::FlashMemory::Command_Suspension_Mode::ERASE;
     F(Page_Read_Latency_LSB);
     F(Page_Read_Latency_CSB);

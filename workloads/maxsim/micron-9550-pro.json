@@ -1,0 +1,26 @@
+{
+  "workload": {
+    "corpus_documents": 10000
+  },
+  "cache": {
+    "host_capacity_bytes": 0
+  },
+  "layout": {
+    "namespace_capacity_sectors": 249644544,
+    "namespace_page_bytes": 16384
+  },
+  "hardware": {
+    "mqsim_config_path": "micron-9550-pro-device.xml",
+    "mqsim_config_hash": "b7c758b6c68f4cca7eebe6d359e168d76d0b8457fc221a5d9bd618afd95bf7a0",
+    "backend_commit": "adf0f167c12ca59eb2ec3c84d95fbf567e61d95d",
+    "external_effective_GBps": 15.75384,
+    "target_internal_GBps_reference_only": 38.4
+  },
+  "load": {
+    "mode": "closed_loop",
+    "closed_loop_concurrency": 1
+  },
+  "generation": {
+    "queries": 1
+  }
+}

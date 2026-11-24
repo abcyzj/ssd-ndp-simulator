@@ -1,9 +1,9 @@
 # 多向量 MaxSim 近存计算仿真实验参数配置 v0.2
 
 - 项目：快速近存计算需求分析
-- 日期：2026-11-23
+- 更新日期：2026-11-24
 - 接收对象：负责负载生成、语义 IR 映射、MQSim 实验与结果分析的 Agent
-- 文档性质：根据本次讨论整理的首轮实验配置与参数扫描规范；不是实机标定结果。
+- 文档性质：MaxSim 实验配置与参数扫描规范。当前重跑使用 9550 PRO 规格锚定的候选设备，状态为 `configured_unvalidated`。执行命令见 [MaxSim 重跑手册](../workloads/maxsim/README.md#micron-9550-pro-候选设备与重跑)。
 - 主负载：参照 Tomoro ColQwen3-4B 的文档页多向量 MaxSim 精排。
 - 单位：KB/MB/GB 与 GB/s 使用十进制；KiB/MiB/GiB 使用二进制；乘加计 2 FLOP。
 
@@ -89,7 +89,7 @@ ColQwen2.5 的 755 来自模型卡示例，不是数据集平均值；ColPali �
 
 默认一万页语料包含 6.5536 GB（约 6.10 GiB）有效向量。生成器用语料有效向量字节数乘以覆盖比例，向下取整到字节。一万页四档为 0、85,899,345、343,597,383、1,374,389,534 B（约 0、82、328、1,311 MiB），主档可容纳 524 个整页。均匀独立访问时可用覆盖比例核对稳态命中率的数量级。Zipf、查询内去重和有限预热会改变实际命中率。
 
-同样的比例在百万页 FP16 参考语料上对应原来的 0、8、32、128 GiB。[本机一万页 E0 配置](../workloads/maxsim/local-10k.json)使用 8 GiB raw 的模拟盘、单查询和零缓存。[百万页 E0.4 配置](../workloads/maxsim/e0.4.json)作为独立参考，使用 1 TiB raw 的模拟盘和零缓存核验冷读路径。
+同样的比例在百万页 FP16 参考语料上对应原来的 0、8、32、128 GiB。当前 E0 选用 [9550 PRO 候选配置](../workloads/maxsim/micron-9550-pro.json)，一万文档预装载 40 万 NAND 页。历史一万页 E0 和百万页 E0.4 各有独立夹具和测量条件。[历史一万页夹具](../workloads/maxsim/local-10k.json) · [百万页 E0.4](../workloads/maxsim/e0.4.json)
 
 生成器约定：
 
@@ -147,14 +147,17 @@ ColQwen2.5 的 755 来自模型卡示例，不是数据集平均值；ColPali �
 
 ## 6. 硬件、cost model 与结果传输
 
+设备参数由 [执行 JSON](../workloads/maxsim/micron-9550-pro.json) 绑定实际 [MQSim XML](../workloads/maxsim/micron-9550-pro-device.xml)。物理参考为 Micron 9550 PRO 7.68 TB U.2。仿真采用 128 GiB raw 缩比几何，7% OP，逻辑命名空间 249,644,544 个 512 B 扇区。下列几何、阵列读延迟、MPS 和 fetch 值用于当前单队列候选模型。 [Micron 9550 技术规格](https://www.micron.com/content/dam/micron/global/public/products/data-sheet/ssd/9550-nvme-ssd-tech-prod-spec.pdf)
+
 | 参数 | 主配置/处理方式 | 扫描或对照 | 来源 |
 |---|---|---|---|
-| NAND 通道 | 16 通道 × 3600 MT/s，每通道宽 1 B（x8） | E0 核验几何与非零传输时间 | 配置假设，每通道理论 3.6 GB/s |
-| 盘内理论总线带宽 | 57.6 GB/s | 由通道数、宽度与速率派生 | 总线传输上界 |
-| 盘内有效读取带宽 | 由 MQSim 测量 | 40 GB/s 为待验证目标 | 分别记录顺序读和 MaxSim 候选访问的吞吐 |
-| 盘控暂存端口 | 64 GB/s（64 B/ns） | 配置值须至少为 57.6 GB/s | 搬运服务单独计费 |
-| SSD—主机链路配置带宽 | 28 GB/s（4 lane × 7 GB/s/lane） | 7、14 GB/s 压低外部链路对照 | 记录协议开销后的有效载荷吞吐 |
-| NAND 页、阵列时序和 FTL | 16 KiB 页，沿用对应夹具的阵列时序和 FTL 设置 | 按语料规模配置每 plane 块数 | 合成设备配置 |
+| NAND 通道 | 16 通道 × 2400 MT/s，每通道宽 1 B（x8） | E0 核验几何与非零传输时间 | 每通道理论 2.4 GB/s |
+| 盘内理论总线带宽 | 38.4 GB/s | 由通道数、宽度与速率派生 | 总线传输上界 |
+| 盘内有效读取带宽 | 由 MQSim 测量 | 记录相同 64 KiB 候选轨迹的 NVMe 与盘内本地两条路径 | 以实际有效字节、测量窗口及服务时间为准 |
+| 盘控暂存端口 | 64 GB/s（64 B/ns） | 配置于 `e0-run.json` | 搬运服务单独计费 |
+| SSD—主机链路 | 4 lane × 3.93846 GB/s/lane，MPS 256 B | E3 半速、主点与 28 GB/s 假设点 | 15.75384 GB/s 为配置速率，另记有效载荷吞吐 |
+| NVMe 队列 | 设备队列深度 1024，`Queue_Fetch_Size=128` | 校准扫 fetch 64/128/256/512，E5 独立扫描应用层在途读上限 | 单队列模型 |
+| NAND 几何、时序和 FTL | 每通道 4 chip，每 chip 2 die，每 die 4 plane，TLC，16 KiB 页，等效阵列读时延 55 µs，CMT 8 MiB | 8 chip/channel 等变体单独记录 | 缩比几何与仿真假设 |
 | host_effective_tflops | 1 | 0.25、4、16；另有计算趋零组 | 等效评分吞吐 |
 | device_effective_tflops | 1 | 0.25、4、16 | 等效评分吞吐 |
 | batch_launch_us | 每批 10 μs | 0、50 μs | 两侧相同的初始假设 |
@@ -170,7 +173,7 @@ T_batch = batch_launch_us + F_batch / P_effective
 
 P_effective 使用点积 FLOP 归一化整个 MaxSim 内核耗时，**包含归约影响**，不是峰值算力。若已有平台将矩阵乘法与 max/sum 分开建模，应改用分项模式并关闭等效内核耗时，不能双重计算。
 
-主配置评分计算量与文档字节数之比约为 32 FLOP/Byte。40 GB/s 的有效输入需要至少 1.28 TFLOP/s。若输入达到总线理论上界 57.6 GB/s，则至少需要 1.8432 TFLOP/s。两者均另计批启动与命令开销。主配置保留 1 TFLOP/s，E3 用 4 TFLOP/s 等档位核对算力瓶颈。
+主配置评分计算量与文档字节数之比约为 32 FLOP/Byte。若有效输入达到总线上界 38.4 GB/s，评分至少需要 1.2288 TFLOP/s，另计批启动和命令开销。主配置保留 1 TFLOP/s。E3 用其他算力档位核对实际瓶颈。
 
 补充协议假设（用于使 IR 可执行，不声称等同于 Qdrant 协议）：
 
@@ -193,8 +196,8 @@ P_effective 使用点积 FLOP 归一化整个 MaxSim 内核耗时，**包含归�
 2. 记录原始容量、逻辑容量和 OP，以及 channel/die/plane/page、读时延、总线带宽等配置。
 3. 下沉路径仍经过真实介质读取、内部总线和缓冲；仅取消不需要的文档向量对外传输。
 4. 如 MQSim 已包含 PCIe/主机传输时间，语义 IR 桥接层不得重复添加；明确资源与时间由哪层负责。
-5. 当前 MQSim 配置校验最高支持 1000 MT/s，且通道计时会提前把单次传输周期截为整数纳秒。启用 3600 MT/s 前需同步修正校验与计时，在完整事务的传输时间上取整，并进行粒度与账本核验。
-6. 先测量大块顺序读，再用 64 KiB 请求和 MaxSim 候选序列测量有效盘内读吞吐。两条路径都应记录设备利用率与有效字节。
+5. 核对 XML 实际应用了 2400 MT/s、TLC、256 B MPS 和 128 fetch。确认完整 NAND 事务计时及 PCIe 包级协议开销。
+6. 先用普通 NVMe 探针核对 4 KiB 随机 QD1/QD512 和 128 KiB 顺序 QD32，再跑 E0。同一条 64 KiB MaxSim 候选轨迹比较两条读取路径，记录设备利用率和有效字节。
 
 ## 7. 到达模型、并发与扫描顺序
 
@@ -211,21 +214,21 @@ P_effective 使用点积 FLOP 归一化整个 MaxSim 内核耗时，**包含归�
 
 ### 7.2 推荐实验批次
 
-E0～E2 按本版配置重新执行，状态均为待运行。E1 使用新 E0 核验通过的设备，E2 从新 E1 结果选取场景并加密压力点。
+9550 PRO 首轮配置已完成普通 NVMe 校准、E0 和 E1～E5 代表点冒烟。完整矩阵待重跑。按[重跑手册](../workloads/maxsim/README.md#micron-9550-pro-候选设备与重跑)复核设备和 E0，使用同一个配置完成新 E1，再依据新 E1 选择 E2 压力点。E3～E5 沿用同一设备基线。
 
 | 批次 | 变量 | 固定项/目标 |
 |---|---|---|
 | E0 正确性与数量级 | 缓存 0、单查询；三种放置 | 验证新设备的通道计时、请求数、字节数、FLOP、依赖和反压 |
 | E1 主收益边界 | 缓存覆盖率 0%/1.31072%/5.24288%/20.97152% × 均匀/Zipf 0.8/Zipf 1.2 × 封闭并发 1/4/16/64 | 按每点的有效向量字节数换算容量 |
 | E2 到达压力 | 开放 QPS 10/30/100/300/1000，临界点加密 | 选 E1 中有收益、临界、无收益场景 |
-| E3 带宽与算力 | 外部 28 GB/s 为主点，7/14 GB/s 为对照；主机与盘侧算力分别 0.25/1/4/16 TFLOP/s | 以 16 条 3600 MT/s NAND 通道和 64 GB/s 盘控暂存为固定配置，先单因素扫描，再做临界区域组合 |
+| E3 带宽与算力 | 外部 15.75384 GB/s 为主点，7.87692 和 28 GB/s 为对照。主机与盘侧算力分别 0.25/1/4/16 TFLOP/s | 固定 2400 MT/s NAND 和 64 GB/s 盘控暂存。28 GB/s 仅作假设链路点。先单因素扫描，再做临界区域组合 |
 | E4 表示与候选 | 两种对照模型、C、Nq、Nd、FP32 及 1 万页与 10 万页语料对照 | 各维度单独扫描，10 万页为语料上限 |
 | E5 执行敏感性 | I/O 粒度、窗口、QD、buffer、批次和固定开销 | 检查调度/资源限制 |
 | E6 可选扩展 | hybrid、主题聚集、压缩、HBF、新介质 | 各自独立定义，不能混入主结论 |
 
 不运行全部维度的笛卡尔积。device_all 不使用主机向量缓存，因此纯 device_all 的重复缓存容量点可以复用同一结果；报告中仍要保留与不同 host 基线的配对关系。
 
-建议测量阶段至少完成 10000 次查询，每个关键点 3 个种子；这是初始运行预算，不保证 P99 精度。尾延迟变化较大时延长样本量并报告不确定性。预热不计入主测量窗口，冷启动结果单列。仿真过载场景设置显式事件/时间预算，记录未完成请求，不静默丢弃。
+按运行手册先用种子 11、23、47 和有限查询批次完成扫描。10,000 查询是扩展采样参考，目前单包会触发默认预算拒绝。尾延迟变化较大时延长样本量并报告不确定性。预热排除在主测量窗口之外，冷启动结果单列。过载场景保存预算、截点完成数和未完成请求。
 
 ## 8. 参考配置骨架
 
@@ -296,13 +299,13 @@ hardware:
   mqsim_config_path: null
   mqsim_config_hash: null
   backend_commit: null
-  external_effective_GBps: 28  # 对应 XML 配置速率
+  external_effective_GBps: 15.75384  # 对应 XML 配置速率
   nand_channels: 16            # XML 字段
   nand_channel_width_bytes: 1  # XML 字段
-  nand_transfer_rate_mtps: 3600 # XML 字段
+  nand_transfer_rate_mtps: 2400 # XML 字段
   controller_staging_bytes_per_ns: 64  # 执行平台配置
   internal_bandwidth_mode: simulated
-  target_internal_GBps_reference_only: 40
+  target_internal_GBps_reference_only: 38.4  # NAND 总线上界
   hbf_enabled: false
   local_memory_cost_model: inherit_or_explicit_upper_bound
   topk_cost_model: inherit_or_explicit_zero
@@ -337,9 +340,9 @@ load:
 | 单查询有效文档向量量 | 98.304 MB |
 | 单查询点积计算量 | 3.145728 GFLOP |
 | 完全未命中时逻辑读取请求 | 1500 个 |
-| 28 GB/s 主机链路参考服务时间 | 3.511 ms |
-| 57.6 GB/s 盘内总线上界参考服务时间 | 1.707 ms |
-| 40 GB/s 盘内有效读取目标参考服务时间 | 2.458 ms |
+| 15.75384 GB/s 主机链路参考服务时间 | 6.240 ms，未计包开销 |
+| 14.0 GB/s 规格顺序吞吐参考服务时间 | 7.022 ms |
+| 38.4 GB/s 盘内总线上界参考服务时间 | 2.560 ms |
 | 64 GB/s 盘控暂存搬运服务时间 | 1.536 ms |
 | 1 TFLOP/s 等效评分服务时间 | 3.146 ms，未计批启动 |
 
