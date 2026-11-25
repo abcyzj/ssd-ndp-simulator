@@ -10,6 +10,7 @@
 #include "timing/local_reads.h"
 #include "timing/messages.h"
 
+#include <array>
 #include <cmath>
 #include <fstream>
 #include <list>
@@ -65,15 +66,25 @@ struct Run::State {
     struct Document {
         uint64_t id = 0, credit = 0, reads_left = 0, moves_left = 0, flop = 0;
         size_t submitted = 0;
+        bool controller = false, hit = false;
         std::vector<layout::Plan> plans;
         capture::Key key;
         Done read_done;
     };
     struct Query {
-        size_t next_document = 0;
+        std::array<size_t, 2> next_document{};
+        std::array<std::vector<size_t>, 2> routes;
+        size_t controller_candidates = 0;
+        bool command_arrived = false;
         uint64_t window = 0, controller_input = 0, controller_scores = 0, host_scores = 0;
-        std::map<std::pair<uint64_t, size_t>, Done> ready;
+        std::array<std::map<std::pair<uint64_t, size_t>, Done>, 2> ready;
         std::map<size_t, Done> awaiting_return;
+    };
+    struct Side {
+        timing::FifoResource scoring;
+        std::unique_ptr<timing::BufferModel> buffer;
+        size_t next_score_query = 0;
+        uint64_t outstanding = 0, scored = 0, batches = 0, compute_ns = 0;
     };
     struct OrdinaryRead {
         size_t candidate, slice;
@@ -86,8 +97,9 @@ struct Run::State {
     EventBridge::Clock now;
     timing::Runtime runtime{bridge, now};
     timing::HostCpu host{bridge, now, 1};
-    timing::FifoResource scoring{bridge, now, 1}, staging{bridge, now, 1};
-    std::unique_ptr<timing::BufferModel> buffer;
+    timing::FifoResource staging{bridge, now, 1}, command_service{bridge, now, 1};
+    std::array<Side, 2> sides{{{timing::FifoResource(bridge, now, 1), nullptr},
+                               {timing::FifoResource(bridge, now, 1), nullptr}}};
     timing::MessageRules rules;
     std::unique_ptr<dag::Package> package;
     std::unique_ptr<layout::Layout> layout;
@@ -107,7 +119,7 @@ struct Run::State {
     std::list<uint64_t> cache_order;
     std::unordered_map<uint64_t, std::list<uint64_t>::iterator> cached;
     size_t cache_pages = 0, count = 0, concurrency = 1;
-    size_t next_read_query = 0, next_score_query = 0;
+    size_t next_read_query = 0;
     uint64_t hits = 0;
     bool compact = false, open_loop = false, overlap = true;
     std::string last_block;
@@ -116,19 +128,20 @@ struct Run::State {
     std::map<uint64_t, size_t> active_queries;
     std::vector<bool> scored;
     std::string placement;
-    bool offload = false, free = false, launched = false, finished = false, reported = false;
+    bool offload = false, hybrid = false, free = false, launched = false, finished = false, reported = false;
     bool reserving = false, local_read_die_admission = false, nvme_read_die_admission = false;
     SSD_Components::TSU_Priority_OutOfOrder* die_admission_tsu = nullptr;
     uint64_t origin = 0, visible = 0, preload = 0;
     uint64_t window_limit = 0, qd_limit = 0, buffer_limit = 0, batch_limit = 0, port_rate = 0;
     uint64_t command_ns = 0, command_header = 0, result_header = 0, document_bytes = 0;
-    uint64_t downlink = 0, uplink = 0, topk_bytes = 0, query_flop = 0, expected_reads = 0;
+    uint64_t query_vector_bytes = 0, document_id_bytes = 0, downlink = 0, uplink = 0, topk_bytes = 0, query_flop = 0, expected_reads = 0;
     uint64_t qd = 0, window = 0, peak_qd = 0, peak_window = 0, next_document = 0;
     uint64_t submitted_reads = 0, completed_reads = 0, read_bytes = 0, effective_bytes = 0;
+    uint64_t local_reads = 0, ordinary_bytes = 0, command_payload = 0, result_payload = 0;
     uint64_t dma = 0, staged_bytes = 0, batches = 0, flops = 0, compute_ns = 0;
     uint64_t controller_input = 0, controller_scores = 0, host_scores = 0;
     uint64_t peak_controller_input = 0, peak_controller_scores = 0, peak_host_scores = 0;
-    uint64_t topk_count = 0, protocol_messages = 0;
+    uint64_t topk_count = 0, protocol_messages = 0, peak_scoring_engines = 0;
     uint64_t nand_read_bytes = 0, nand_user_read_bytes = 0, nand_reads = 0;
     std::map<std::string, LinkLedger> link_ledger;
     static State* active;
@@ -144,7 +157,11 @@ struct Run::State {
         require(bool(trace), "cannot write MaxSim trace");
     }
     void install_cost(const J& compute, uint64_t flop);
-    uint64_t demand(uint64_t flop) const;
+    uint64_t demand(uint64_t flop, bool controller) const;
+    size_t offloaded(const Query&) const;
+    uint64_t command_bytes(size_t candidates) const;
+    void route(size_t query);
+    void send_command(size_t query, Done done = {});
     void connect();
     void start_executor();
     void read_plan(const dag::Stage&, const J& candidate);
@@ -153,7 +170,7 @@ struct Run::State {
     void pump_reads();
     void complete_read(size_t index, size_t slice);
     void moved(size_t index);
-    void pump_scores();
+    void pump_scores(bool controller);
     void send_result(size_t query);
     void occupancy(size_t query);
     void touch(uint64_t id);
@@ -188,7 +205,8 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
                 run.size() == 8 + size_t(run.contains("device_limits")) + size_t(run.contains("preflight_only"))
                     + size_t(run.contains("closed_loop")) + size_t(run.contains("open_loop"))
                     + size_t(run.contains("local_read_die_admission"))
-                    + size_t(run.contains("nvme_read_die_admission")),
+                    + size_t(run.contains("nvme_read_die_admission"))
+                    + size_t(run.contains("cache_snapshot")),
             "MaxSim run format/fields");
     const bool preflight_only = run.value("preflight_only", false);
     DeviceLimits limits;
@@ -200,12 +218,15 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     }
     placement = run.at("placement");
     offload = placement == "device_all";
+    hybrid = placement == "hybrid_miss_only";
     free = placement == "host_compute_free";
     local_read_die_admission = run.value("local_read_die_admission", false);
     nvme_read_die_admission = run.value("nvme_read_die_admission", false);
-    require(!local_read_die_admission || offload, "local read die admission requires device_all placement");
-    require(!nvme_read_die_admission || !offload, "NVMe read die admission requires a host placement");
-    require(offload || free || placement == "host", "unsupported MaxSim placement");
+    require(!local_read_die_admission || offload || hybrid,
+            "local read die admission requires a controller placement");
+    require(!nvme_read_die_admission || (!offload && !hybrid),
+            "NVMe read die admission requires an ordinary-read placement");
+    require(offload || hybrid || free || placement == "host", "unsupported MaxSim placement");
     const auto directory = fs::absolute(path).parent_path();
     const fs::path bundle = directory / run.at("bundle").get<std::string>();
     const auto output = directory / run.at("output").get<std::string>();
@@ -250,7 +271,9 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     open_loop = run.contains("open_loop");
     require(!open_loop || !run.contains("closed_loop"), "MaxSim load modes are exclusive");
     const char* mode = open_loop ? "open_loop" : "closed_loop";
+    const auto* initial_cache = run.contains("cache_snapshot") ? &run.at("cache_snapshot") : nullptr;
     if (run.contains(mode)) {
+        require(!initial_cache, "standalone cache snapshot and experiment settings are exclusive");
         const auto& experiment = run.at(mode);
         require(experiment.size() == (open_loop ? 5 : 3), "MaxSim experiment configuration fields");
         concurrency = integer(experiment.at("concurrency"));
@@ -270,15 +293,21 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
         } else {
             c.at("load").at("closed_loop_concurrency") = concurrency;
         }
-        c.at("cache").at("host_capacity_bytes") = experiment.at("host_capacity_bytes");
-        c.at("cache").at("host_capacity_fraction") = nullptr;
-        if (!experiment.at("cache_oldest_first").empty())
-            c.at("cache").at("initial_state") = "prewarmed";
+        initial_cache = &experiment;
     } else {
         require(total_queries == 1 && c.at("load").at("closed_loop_concurrency") == 1 &&
                     c.at("cache").at("initial_state") == "cold" &&
                     c.at("cache").at("host_capacity_bytes") == 0,
                 "MaxSim E0 requires one query and zero cache capacity");
+    }
+    require(!initial_cache || compact || !offload, "standalone cache snapshot requires a host cache");
+    if (initial_cache) {
+        require(compact || (initial_cache->is_object() && initial_cache->size() == 2),
+                "MaxSim cache snapshot fields");
+        c.at("cache").at("host_capacity_bytes") = initial_cache->at("host_capacity_bytes");
+        c.at("cache").at("host_capacity_fraction") = nullptr;
+        if (!initial_cache->at("cache_oldest_first").empty())
+            c.at("cache").at("initial_state") = "prewarmed";
     }
     const auto& derived = effective.at("derived");
     const auto& ex = c.at("execution");
@@ -319,6 +348,8 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     document_bytes = integer(derived.at("document_bytes"));
     expected_reads = integer(derived.at("query_all_miss_reads"));
     query_flop = integer(derived.at("query_flop"));
+    document_id_bytes = integer(c.at("protocol").at("document_id_bytes"));
+    query_vector_bytes = integer(derived.at("query_bytes"));
     downlink = integer(derived.at("query_downlink_bytes"));
     uplink = integer(derived.at("query_uplink_bytes"));
     topk_bytes = integer(derived.at("topk_bytes"));
@@ -406,11 +437,15 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
                 }), "MaxSim request/scoring coverage mismatch");
 
     rules.add(protocol, [this](const auto& m) -> timing::MessageSize {
-        require(m.count == count && m.query < queries.size(), "MaxSim message identity");
-        if (m.kind == MessageKind::Execute)
-            return {downlink, checked_add(downlink, command_header)};
+        require(m.count && m.count <= count && (hybrid || m.count == count) && m.query < queries.size(),
+                "MaxSim message identity");
+        if (m.kind == MessageKind::Execute) {
+            const auto bytes = command_bytes(m.count);
+            return {bytes, checked_add(bytes, command_header)};
+        }
         require(m.kind == MessageKind::Result, "unsupported MaxSim message");
-        return {uplink, checked_add(uplink, result_header)};
+        const auto bytes = m.count * score_bytes;
+        return {bytes, checked_add(bytes, result_header)};
     });
     for (auto kind : {MessageKind::Execute, MessageKind::Result}) {
         auto size = rules.size({protocol, kind, 0, 1, 1, 1, 1, count});
@@ -421,8 +456,8 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
 
     if (!offload) {
         cache_pages = integer(cache.at("host_capacity_bytes")) / document_bytes;
-        if (compact) {
-            const auto& initial = run.at(mode).at("cache_oldest_first");
+        if (initial_cache) {
+            const auto& initial = initial_cache->at("cache_oldest_first");
             require(initial.is_array() && initial.size() <= cache_pages, "MaxSim cache snapshot exceeds capacity");
             for (const auto& id : initial) {
                 const auto doc = integer(id);
@@ -432,9 +467,14 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
             }
         }
     }
+    if (hybrid)
+        c.at("cache").at("host_fill_on_miss") = false;
+    for (auto& d : documents)
+        d.controller = offload;
     const auto geometry = J::parse(config->effective_json());
     install_cost(c.at("compute"), integer(derived.at("document_flop")));
-    buffer = std::make_unique<timing::BufferModel>(bridge, now, buffer_limit);
+    for (auto& side : sides)
+        side.buffer = std::make_unique<timing::BufferModel>(bridge, now, buffer_limit);
     require(!fs::exists(output), "trace output must be new");
     trace.open(output);
     emit({{"type", "configuration"}, {"placement", placement}, {"effective_config", c},
@@ -476,10 +516,9 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
 }
 
 void Run::State::install_cost(const J& compute, uint64_t flop) {
-    const auto rate = integral_scale(compute.at(offload ? "device_effective_tflops" : "host_effective_tflops"), 1000);
     const auto launch = integral_scale(compute.at("batch_launch_us"), 1000);
     const auto max_docs = std::min<uint64_t>(batch_limit, count);
-    require(rate && flop <= UINT64_MAX / max_docs, "MaxSim batch model domain");
+    require(flop <= UINT64_MAX / max_docs, "MaxSim batch model domain");
     target = {"maxsim-e0", "configured MaxSim E0", "simulated", "effective FLOP rate", "single engine", buffer_limit};
     cost::Registry registry;
     cost::register_builtin_formulas(registry);
@@ -490,35 +529,46 @@ void Run::State::install_cost(const J& compute, uint64_t flop) {
     stage.decomposition_rules = {"none/1"};
     stage.output_size_rule = "none";
     registry.add_operator({batch_operator, "1", {"host", "controller"}, {stage}, "maxsim.metadata-audit/1"});
-    J model = {{"operator", batch_operator}, {"operator_version", "1"}, {"stage_kind", stage.kind},
-               {"context", batch_context}, {"location", offload ? "controller" : "host"},
-               {"target_id", target.id}, {"work_units", stage.work_units},
-               {"feature_ranges", J::array({{{"name", "dot_product_flop"}, {"unit", "flop"},
-                                             {"minimum", flop}, {"maximum", max_docs * flop}}})},
-               {"source", "configured"}, {"parameter_source", "MaxSim E0 effective compute configuration"},
-               {"formula", "integer-rate/1"},
-               {"parameter_schema_sha256", registry.parameter_schema_sha256("integer-rate/1")},
-               {"parameters", {{"setup_ns", free ? 0 : launch}, {"units_per_ns", rate},
-                               {"weights", J::array({free ? 0 : 1})}}}};
+    J models = J::array();
+    for (bool controller : {false, true}) {
+        if (!hybrid && controller != offload)
+            continue;
+        const auto rate = integral_scale(compute.at(controller ? "device_effective_tflops" : "host_effective_tflops"), 1000);
+        require(rate, "MaxSim batch model rate");
+        models.push_back({{"operator", batch_operator}, {"operator_version", "1"}, {"stage_kind", stage.kind},
+                          {"context", batch_context}, {"location", controller ? "controller" : "host"},
+                          {"target_id", target.id}, {"work_units", stage.work_units},
+                          {"feature_ranges", J::array({{{"name", "dot_product_flop"}, {"unit", "flop"},
+                                                       {"minimum", flop}, {"maximum", max_docs * flop}}})},
+                          {"source", "configured"}, {"parameter_source", "MaxSim E0 effective compute configuration"},
+                          {"formula", "integer-rate/1"},
+                          {"parameter_schema_sha256", registry.parameter_schema_sha256("integer-rate/1")},
+                          {"parameters", {{"setup_ns", free ? 0 : launch}, {"units_per_ns", rate},
+                                          {"weights", J::array({free ? 0 : 1})}}}});
+    }
     J profile = {{"format", "ndpsim-cost-profile/1"}, {"fixture", true},
                  {"target", {{"id", target.id}, {"hardware", target.hardware}, {"os", target.os},
                              {"frequency", target.frequency}, {"affinity", target.affinity},
                              {"memory_bytes", target.memory_bytes}}},
-                 {"rules", J::array({model})}};
+                 {"rules", models}};
     const auto raw = profile.dump();
     cost_profile = cost::Profile::parse(raw, capture::sha256(raw), registry, target, true);
-    (void)demand(flop);
-    (void)demand(max_docs * flop);
+    for (bool controller : {false, true}) {
+        if (hybrid || controller == offload) {
+            (void)demand(flop, controller);
+            (void)demand(max_docs * flop, controller);
+        }
+    }
 }
 
-uint64_t Run::State::demand(uint64_t flop) const {
+uint64_t Run::State::demand(uint64_t flop, bool controller) const {
     cost::Input input;
     input.key = {0, "score-batch", "s0"};
     input.operator_id = batch_operator;
     input.operator_version = "1";
     input.stage_kind = "batch";
     input.context = batch_context;
-    input.location = offload ? "controller" : "host";
+    input.location = controller ? "controller" : "host";
     input.work = {{"dot_product_flop", {flop, "flop"}}};
     input.target = target;
     return cost_profile->demand(input);
@@ -555,11 +605,16 @@ void Run::State::read_plan(const dag::Stage& stage, const J& candidate) {
 void Run::State::connect() {
     runtime.observations().enabled = false;
     host.observations().enabled = false;
-    scoring.observations().enabled = false;
-    buffer->observations().sink = [this](const auto& x) {
-        if (!compact) emit({{"type", "input_buffer"}, {"time_ns", x.time}, {"candidate", std::stoull(x.lifetime)},
-              {"credit", x.id}, {"bytes", x.bytes}, {"used", x.used}, {"reserve", x.reserve}});
-    };
+    command_service.observations().enabled = false;
+    for (bool controller : {false, true}) {
+        auto& side = sides[controller];
+        side.scoring.observations().enabled = false;
+        side.buffer->observations().sink = [this, controller](const auto& x) {
+            if (!compact) emit({{"type", "input_buffer"}, {"time_ns", x.time}, {"candidate", std::stoull(x.lifetime)},
+                  {"side", controller ? "controller" : "host"}, {"credit", x.id},
+                  {"bytes", x.bytes}, {"used", x.used}, {"reserve", x.reserve}});
+        };
+    }
     staging.observations().sink = [this](const auto& x) {
         if (!compact) emit({{"type", "controller_staging"}, {"key", x.key}, {"submitted_ns", x.submitted},
               {"start_ns", x.start}, {"end_ns", x.end}, {"duration_ns", x.duration_ns}});
@@ -584,9 +639,11 @@ void Run::State::connect() {
     };
     pcie->observations().sink = [this](const auto& x) {
         ++protocol_messages;
+        (x.kind == MessageKind::Execute ? command_payload : result_payload) += x.logical;
         if (!compact) emit({{"type", "protocol"}, {"kind", x.kind == MessageKind::Execute ? "command" : "result"},
               {"direction", x.direction == timing::Direction::H2D ? "H2D" : "D2H"},
-              {"link_platform_id", x.id}, {"effective_payload_bytes", x.logical},
+              {"link_platform_id", x.id}, {"query", x.query}, {"candidates", x.count},
+              {"effective_payload_bytes", x.logical},
               {"header_bytes", x.payload - x.logical}, {"link_payload_bytes", x.payload},
               {"wire_bytes", x.wire}, {"submitted_ns", x.submitted}, {"arrived_ns", x.arrived}});
     };
@@ -638,6 +695,11 @@ void Run::State::start_executor() {
                     {"drained_ns", x.drained}, {"success", x.success}};
         if (compact)
             record["query"] = x.query;
+        if (hybrid) {
+            auto& q = queries.at(x.query);
+            record["offloaded_candidates"] = offloaded(q);
+            q.routes = {};
+        }
         if (open_loop)
             record["admitted_ns"] = x.admitted;
         emit(record);
@@ -662,19 +724,23 @@ timing::Operation Run::State::lower(const dag::Stage& stage) {
     auto& q = queries.at(query);
     if (s.kind == "input") {
         require(active_queries.emplace(query, query).second, "duplicate MaxSim query start");
-        if (!offload)
-            return op;
-        op.duration_ns = command_ns;
-        op.send_return = [this, query](Done done) {
-            if (!compact) emit({{"type", "offload_command_service"}, {"duration_ns", command_ns}, {"end_ns", now()}});
-            pcie->send({protocol, MessageKind::Execute, query, 1, 1, 1, 1, count},
-                [this, query, done = std::move(done)](const auto&) {
-                    queries.at(query).controller_input = downlink;
-                    controller_input += downlink;
-                    occupancy(query);
+        if (hybrid) {
+            route(query);
+            if (offloaded(q)) {
+                // Publish the common query input independently of the command flight.
+                // The controller's read queue is gated by command arrival.
+                op.send_return = [this, query](Done done) {
+                    command_service.submit(std::to_string(query), command_ns, [] {}, [this, query](bool ok) {
+                        require(ok, "MaxSim command service failed");
+                        send_command(query);
+                    });
                     done({});
-                });
-        };
+                };
+            }
+        } else if (offload) {
+            op.duration_ns = command_ns;
+            op.send_return = [this, query](Done done) { send_command(query, std::move(done)); };
+        }
     } else if (s.kind == "read") {
         const auto index = query * count + s.features.at("candidate_index").first;
         op.input = [this, index](Done done) {
@@ -687,19 +753,19 @@ timing::Operation Run::State::lower(const dag::Stage& stage) {
         op.input = [this, index, query](Done done) {
             const auto& d = documents.at(index);
             require(!d.reads_left && !d.moves_left && d.credit && !scored.at(index) &&
-                        queries.at(query).ready.emplace(std::make_pair(now(), index), std::move(done)).second,
+                        queries.at(query).ready[d.controller].emplace(std::make_pair(now(), index), std::move(done)).second,
                     "document score queued before input or more than once");
             if (!compact) emit({{"type", "score_ready"}, {"candidate", index}, {"time_ns", now()}});
         };
         op.send_return = [this, index, query](Done done) {
             require(scored.at(index), "score before batch completion");
-            if (!offload) {
+            if (!documents.at(index).controller) {
                 done({});
                 return;
             }
             auto& returns = queries.at(query).awaiting_return;
             require(returns.emplace(index, std::move(done)).second, "duplicate score return");
-            if (returns.size() == count)
+            if (returns.size() == offloaded(queries.at(query)))
                 send_result(query);
         };
     } else if (s.kind == "topk") {
@@ -741,9 +807,51 @@ void Run::State::poll() {
         }
         return;
     }
-    pump_scores();
-    if (overlap || !scoring.pending())
+    pump_scores(false);
+    pump_scores(true);
+    if (hybrid || overlap || !sides[offload].scoring.pending())
         pump_reads();
+}
+
+size_t Run::State::offloaded(const Query& q) const {
+    return hybrid ? q.controller_candidates : offload ? count : 0;
+}
+
+uint64_t Run::State::command_bytes(size_t candidates) const {
+    return checked_add(query_vector_bytes, candidates * document_id_bytes);
+}
+
+void Run::State::route(size_t query) {
+    auto& q = queries.at(query);
+    for (size_t candidate = 0; candidate < count; ++candidate) {
+        const auto index = query * count + candidate;
+        auto& d = documents.at(index);
+        d.hit = cached.count(d.id);
+        d.controller = !d.hit;
+        q.routes[d.controller].push_back(index);
+        if (d.hit)
+            touch(d.id);
+        if (!compact)
+            emit({{"type", "candidate_route"}, {"query", query}, {"candidate", index}, {"document_id", d.id},
+                  {"time_ns", now()}, {"path", d.hit ? "cache" : "local"}});
+    }
+    q.controller_candidates = q.routes[true].size();
+}
+
+void Run::State::send_command(size_t query, Done done) {
+    const auto candidates = offloaded(queries.at(query));
+    if (!compact) emit({{"type", "offload_command_service"}, {"query", query},
+                        {"duration_ns", command_ns}, {"end_ns", now()}});
+    pcie->send({protocol, MessageKind::Execute, query, 1, 1, 1, 1, candidates},
+        [this, query, candidates, done = std::move(done)](const auto&) {
+            auto& q = queries.at(query);
+            q.command_arrived = true;
+            q.controller_input = command_bytes(candidates);
+            controller_input += q.controller_input;
+            occupancy(query);
+            if (done)
+                done({});
+        });
 }
 
 void Run::State::touch(uint64_t id) {
@@ -753,6 +861,7 @@ void Run::State::touch(uint64_t id) {
         cache_order.splice(cache_order.end(), cache_order, it->second);
         return;
     }
+    require(!hybrid || !launched, "hybrid cache membership changed during execution");
     if (cached.size() == cache_pages) {
         cached.erase(cache_order.front());
         cache_order.pop_front();
@@ -771,7 +880,7 @@ void Run::State::blocked(const char* reason, size_t index) {
     if (reason && !compact)
         emit({{"type", "backpressure"}, {"reason", reason}, {"time_ns", now()},
               {"candidate", index}, {"outstanding_reads", qd},
-              {"window_documents", window}, {"input_buffer_bytes", buffer->used()}});
+              {"window_documents", window}, {"input_buffer_bytes", sides[documents.at(index).controller].buffer->used()}});
 }
 
 void Run::State::pump_reads() {
@@ -785,24 +894,35 @@ void Run::State::pump_reads() {
                 it = active_queries.begin();
             const auto query = it++->first;
             const auto& q = queries.at(query);
-            if (q.next_document == count)
-                continue;
-            const auto candidate = query * count + q.next_document;
-            const auto& d = documents.at(candidate);
-            if (!d.read_done)
-                continue;
-            const bool hit = !d.credit && cached.count(d.id);
-            const char* denied = !hit && qd == qd_limit ? "qd"
-                : !hit && !d.credit && q.window == window_limit ? "window"
-                : !d.credit && document_bytes > buffer_limit - buffer->used() ? "buffer" : nullptr;
-            if (denied) {
+            for (bool controller : {false, true}) {
+                if ((!hybrid && controller != offload) ||
+                    (hybrid && controller && !q.command_arrived))
+                    continue;
+                const auto& side = sides[controller];
+                if (!overlap && side.scoring.pending())
+                    continue;
+                const auto next = q.next_document[controller];
+                if (next == (hybrid ? q.routes[controller].size() : count))
+                    continue;
+                const auto candidate = hybrid ? q.routes[controller][next] : query * count + next;
+                const auto& d = documents.at(candidate);
+                if (!d.read_done)
+                    continue;
+                const bool hit = !d.credit && (hybrid ? d.hit : cached.count(d.id));
+                const char* denied = !hit && qd == qd_limit ? "qd"
+                    : !hit && !d.credit && q.window == window_limit ? "window"
+                    : !d.credit && document_bytes > buffer_limit - side.buffer->used() ? "buffer" : nullptr;
+                if (denied) {
+                    index = candidate;
+                    reason = denied;
+                    continue;
+                }
+                found = true;
                 index = candidate;
-                reason = denied;
-                continue;
+                break;
             }
-            found = true;
-            index = candidate;
-            break;
+            if (found)
+                break;
         }
         blocked(found ? nullptr : reason, index);
         if (!found)
@@ -810,19 +930,21 @@ void Run::State::pump_reads() {
         const auto query = index / count;
         auto& q = queries.at(query);
         auto& d = documents.at(index);
+        const bool controller = d.controller;
+        auto& side = sides[controller];
         if (!d.credit) {
-            const bool hit = cached.count(d.id);
-            if (hit)
+            const bool hit = hybrid ? d.hit : cached.count(d.id);
+            if (hit && !hybrid)
                 touch(d.id);
             reserving = true;
-            buffer->reserve(document_bytes, std::to_string(index), [this, index, query, hit](auto credit) {
+            side.buffer->reserve(document_bytes, std::to_string(index), [this, index, query, hit](auto credit) {
                 auto& document = documents.at(index);
                 auto& current = queries.at(query);
                 document.credit = credit;
                 reserving = false;
                 if (hit) {
                     ++hits;
-                    ++current.next_document;
+                    ++current.next_document[false];
                     ++next_document;
                     next_read_query = query + 1;
                     document.reads_left = 0;
@@ -843,11 +965,12 @@ void Run::State::pump_reads() {
         const auto& request = plan.reads.front();
         peak_qd = std::max(peak_qd, ++qd);
         ++submitted_reads;
+        ++side.outstanding;
         if (!compact) emit({{"type", "read_submit"}, {"candidate", index}, {"document_id", d.id}, {"slice", slice},
               {"lba", request.lba}, {"sectors", request.sectors}, {"time_ns", now()},
               {"valid_bytes", plan.logical_bytes}, {"outstanding_reads", qd},
-              {"path", offload ? "local" : "ordinary"}});
-        if (offload) {
+              {"path", controller ? "local" : "ordinary"}});
+        if (controller) {
             local->submit(plan, d.key, [this, index, slice](auto completion) {
                 require(completion.requests.size() == 1, "local request unexpectedly split");
                 complete_read(index, slice);
@@ -858,7 +981,7 @@ void Run::State::pump_reads() {
             require(ordinary.emplace(token, OrdinaryRead{index, slice}).second, "duplicate ordinary token");
         }
         if (d.submitted == d.plans.size()) {
-            ++q.next_document;
+            ++q.next_document[controller];
             ++next_document;
             next_read_query = query + 1;
         }
@@ -869,22 +992,27 @@ void Run::State::complete_read(size_t index, size_t slice) {
     auto& d = documents.at(index);
     require(qd && d.reads_left && d.credit, "read completion without in-flight resources");
     --qd;
+    --sides[d.controller].outstanding;
     ++completed_reads;
     const auto& plan = d.plans.at(slice);
     read_bytes += plan.sector_bytes;
     effective_bytes += plan.logical_bytes;
+    if (d.controller)
+        ++local_reads;
+    else
+        ordinary_bytes += plan.sector_bytes;
     if (!compact) emit({{"type", "read_complete"}, {"candidate", index}, {"slice", slice}, {"time_ns", now()},
           {"outstanding_reads", qd}});
     if (!--d.reads_left) {
         require(window > 0, "document read-window underflow");
         --window;
         --queries.at(index / count).window;
-        if (!offload)
+        if (!d.controller)
             touch(d.id);
         if (!compact) emit({{"type", "read_window"}, {"candidate", index}, {"time_ns", now()},
               {"used", window}, {"reserve", false}});
     }
-    if (offload) {
+    if (d.controller) {
         const auto bytes = plan.logical_bytes;
         staged_bytes += bytes;
         staging.submit(std::to_string(index) + "/" + std::to_string(slice),
@@ -907,12 +1035,12 @@ void Run::State::moved(size_t index) {
     }
 }
 
-void Run::State::pump_scores() {
-    // Without overlap, score only after the shared read pipeline, including
-    // controller staging, has drained. Read admission resumes after scoring.
-    if (scoring.pending() || active_queries.empty() || (!overlap && (qd || staging.pending())))
+void Run::State::pump_scores(bool controller) {
+    auto& side = sides[controller];
+    if (side.scoring.pending() || active_queries.empty() ||
+        (!overlap && (side.outstanding || (controller && staging.pending()))))
         return;
-    auto it_query = active_queries.lower_bound(next_score_query);
+    auto it_query = active_queries.lower_bound(side.next_score_query);
     size_t query = 0;
     for (size_t attempt = 0;; ++attempt) {
         if (attempt == active_queries.size())
@@ -920,11 +1048,11 @@ void Run::State::pump_scores() {
         if (it_query == active_queries.end())
             it_query = active_queries.begin();
         query = it_query++->first;
-        if (!queries.at(query).ready.empty())
+        if (!queries.at(query).ready[controller].empty())
             break;
     }
-    next_score_query = query + 1;
-    auto& ready = queries.at(query).ready;
+    side.next_score_query = query + 1;
+    auto& ready = queries.at(query).ready[controller];
     std::vector<size_t> members;
     std::vector<Done> completions;
     uint64_t flop = 0;
@@ -934,25 +1062,30 @@ void Run::State::pump_scores() {
         completions.push_back(std::move(it->second));
         flop = checked_add(flop, documents.at(index).flop);
     }
-    const auto duration = demand(flop);
+    const auto duration = demand(flop, controller);
     const auto batch = ++batches;
     flops = checked_add(flops, flop);
     compute_ns = checked_add(compute_ns, duration);
-    scoring.submit(std::to_string(batch), duration, [this, batch, members, flop, duration] {
+    ++side.batches;
+    side.compute_ns = checked_add(side.compute_ns, duration);
+    side.scoring.submit(std::to_string(batch), duration, [this, batch, members, flop, duration, controller] {
+        peak_scoring_engines = std::max(peak_scoring_engines, sides[false].scoring.busy() + sides[true].scoring.busy());
         if (!compact) emit({{"type", "score_batch"}, {"batch", batch}, {"candidates", members},
-              {"flop", flop}, {"start_ns", now()}, {"end_ns", checked_add(now(), duration)},
+              {"flop", flop}, {"side", controller ? "controller" : "host"}, {"start_ns", now()}, {"end_ns", checked_add(now(), duration)},
               {"duration_ns", duration}});
-    }, [this, query, members, completions = std::move(completions)](bool ok) {
+    }, [this, query, members, controller, completions = std::move(completions)](bool ok) {
         require(ok, "MaxSim scoring failed");
         auto& q = queries.at(query);
+        auto& current_side = sides[controller];
+        current_side.scored += members.size();
         for (size_t i = 0; i < members.size(); ++i) {
             const auto index = members.at(i);
             auto& d = documents.at(index);
             require(!scored.at(index) && d.credit, "duplicate scoring or missing buffer credit");
             scored.at(index) = true;
-            buffer->release(d.credit);
+            current_side.buffer->release(d.credit);
             d.credit = 0;
-            if (offload) {
+            if (controller) {
                 q.controller_scores += score_bytes;
                 controller_scores += score_bytes;
             } else {
@@ -967,16 +1100,19 @@ void Run::State::pump_scores() {
 
 void Run::State::send_result(size_t query) {
     auto& q = queries.at(query);
-    require(q.controller_scores == uplink && q.controller_input == downlink, "incomplete controller scores");
+    const auto candidates = offloaded(q);
+    const auto bytes = candidates * score_bytes;
+    require(candidates && q.controller_scores == bytes && q.controller_input == command_bytes(candidates),
+            "incomplete controller scores");
+    controller_input -= q.controller_input;
     q.controller_input = 0;
-    controller_input -= downlink;
     occupancy(query);
-    pcie->send({protocol, MessageKind::Result, query, 1, 1, 1, 1, count}, [this, query](const auto&) {
+    pcie->send({protocol, MessageKind::Result, query, 1, 1, 1, 1, candidates}, [this, query, bytes](const auto&) {
         auto& current = queries.at(query);
-        current.host_scores = current.controller_scores;
+        current.host_scores += bytes;
         current.controller_scores = 0;
-        host_scores += uplink;
-        controller_scores -= uplink;
+        host_scores += bytes;
+        controller_scores -= bytes;
         occupancy(query);
         auto completions = std::move(current.awaiting_return);
         current.awaiting_return.clear();
@@ -995,13 +1131,19 @@ void Run::State::occupancy(size_t) {
 
 void Run::State::verify() const {
     require(finished && bridge.idle() && executor->drained() && !runtime.task_records() &&
-                !runtime.owners() && !runtime.pins() && !host.pending() && !scoring.pending() &&
+                !runtime.owners() && !runtime.pins() && !host.pending() && !command_service.pending() &&
                 !staging.pending() && active_queries.empty() &&
                 std::all_of(queries.begin(), queries.end(), [](const auto& q) {
-                    return !q.window && q.ready.empty() && q.awaiting_return.empty();
+                    return !q.window && q.routes[false].empty() && q.routes[true].empty() &&
+                           q.ready[false].empty() && q.ready[true].empty() &&
+                           q.awaiting_return.empty() && !q.controller_input && !q.controller_scores && !q.host_scores;
                 }),
             "MaxSim DAG, tokens or services not drained");
-    require(!qd && !window && !reserving && !buffer->used() && !buffer->waiting() && !buffer->live() &&
+    require(std::all_of(sides.begin(), sides.end(), [](const auto& side) {
+                return !side.outstanding && !side.scoring.pending() && !side.buffer->used() &&
+                       !side.buffer->waiting() && !side.buffer->live();
+            }), "MaxSim side resources not drained");
+    require(!qd && !window && !reserving &&
                 ordinary.empty() && !device->flow->pending() && !local->pending() &&
                 !local->pending_requests() && !pcie->pending() && !Simulator->Peek_next_time() &&
                 !controller_scores && !controller_input && !host_scores,
@@ -1014,8 +1156,16 @@ void Run::State::verify() const {
                 std::all_of(scored.begin(), scored.end(), [](bool done) { return done; }) &&
                 visible >= origin && now() >= visible && Simulator->Time() <= now(),
             "MaxSim terminal or Work accounting disagreement");
-    require(offload ? (dma == 0 && staged_bytes == effective_bytes && protocol_messages == 2 * queries.size())
-                    : (dma == read_bytes && staged_bytes == 0 && protocol_messages == 0),
+    const uint64_t commands = std::count_if(queries.begin(), queries.end(), [this](const auto& q) {
+        return offloaded(q) > 0;
+    });
+    const auto offloaded_documents = sides[true].scored;
+    require(dma == ordinary_bytes && (!hybrid || (dma == 0 && hits + offloaded_documents == documents.size())) &&
+                local_reads == offloaded_documents * (expected_reads / count) &&
+                staged_bytes == offloaded_documents * document_bytes &&
+                protocol_messages == 2 * commands &&
+                command_payload == commands * query_vector_bytes + offloaded_documents * document_id_bytes &&
+                result_payload == offloaded_documents * score_bytes,
             "MaxSim placement or protocol ledger mismatch");
 }
 
@@ -1026,11 +1176,18 @@ void Run::State::report() {
     for (const auto& [direction, total] : link_ledger)
         link[direction] = {{"messages", total.messages}, {"payload_bytes", total.payload},
                            {"wire_bytes", total.wire}, {"service_ns", total.service}};
+    J scoring_report = J::object();
+    for (bool controller : {false, true}) {
+        const auto& side = sides[controller];
+        scoring_report[controller ? "controller" : "host"] = {
+            {"scores", side.scored}, {"batches", side.batches}, {"compute_ns", side.compute_ns},
+            {"peak_input_buffer_bytes", side.buffer->peak()}};
+    }
     emit({{"type", "summary"}, {"success", true}, {"scope", "synthetic_fixture_execution"},
           {"configured_unvalidated", true}, {"placement", placement},
           {"origin_ns", origin}, {"visible_ns", visible}, {"drained_ns", now()},
           {"query_latency_ns", visible - origin}, {"logical_reads", completed_reads},
-          {"ordinary_nvme_reads", offload ? 0 : completed_reads}, {"mqsim_local_reads", offload ? completed_reads : 0},
+          {"ordinary_nvme_reads", completed_reads - local_reads}, {"mqsim_local_reads", local_reads},
           {"logical_request_bytes", read_bytes}, {"effective_document_bytes", effective_bytes},
           {"document_d2h_payload_bytes", dma}, {"nand_read_transactions", nand_reads},
           {"nand_read_bytes", nand_read_bytes}, {"nand_user_read_bytes", nand_user_read_bytes},
@@ -1038,7 +1195,9 @@ void Run::State::report() {
           {"controller_staging_bytes", staged_bytes}, {"scores", documents.size()}, {"topk_count", topk_count},
           {"topk_bytes", topk_bytes}, {"flop", flops}, {"batches", batches}, {"compute_ns", compute_ns},
           {"peak_outstanding_reads", peak_qd}, {"peak_read_window_documents", peak_window},
-          {"peak_input_buffer_bytes", buffer->peak()}, {"peak_scoring_engines", scoring.peak_busy()},
+          {"peak_input_buffer_bytes", std::max(sides[false].buffer->peak(), sides[true].buffer->peak())},
+          {"peak_scoring_engines", peak_scoring_engines}, {"scoring_by_side", scoring_report},
+          {"command_payload_bytes", command_payload}, {"result_payload_bytes", result_payload},
           {"peak_controller_query_ids_bytes", peak_controller_input},
           {"peak_controller_score_bytes", peak_controller_scores}, {"peak_host_score_bytes", peak_host_scores},
           {"cache_hits", hits}, {"cache_hit_rate", double(hits) / documents.size()},

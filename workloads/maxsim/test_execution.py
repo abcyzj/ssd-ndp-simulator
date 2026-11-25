@@ -410,6 +410,94 @@ class Execution(unittest.TestCase):
             self.assertEqual(s[f"peak_{field}"], expected)
         return s, by_type
 
+    def test_hybrid_miss_only_routes_and_overlap(self):
+        bundle = self.bundle({
+            "workload": {"candidate_count": 12, "top_k": 4},
+            "execution": {"input_buffer_bytes_per_side": 655360,
+                          "read_window_documents_per_query": 1, "global_outstanding_reads": 2},
+            "compute": {"host_effective_tflops": 0.025, "device_effective_tflops": 4},
+        })
+        ids = json_file(bundle / "candidates.jsonl")["document_ids"]
+        for name, initial in (("cold", []), ("all-hit", ids), ("mixed", ids[1::2])):
+            with self.subTest(name=name):
+                output = self.directory / name
+                snapshot = dict(host_capacity_bytes=len(initial) * 655360, cache_oldest_first=initial)
+                summary = run(bundle, BUILD, output, ("hybrid_miss_only",), cache_snapshot=snapshot,
+                              local_read_die_admission=True)["hybrid_miss_only"]
+                events = defaultdict(list)
+                for event in rows(output / "hybrid_miss_only.jsonl"):
+                    events[event["type"]].append(event)
+                hits = {index for index, doc in enumerate(ids) if doc in initial}
+                misses = set(range(len(ids))) - hits
+                self.assertEqual([e["candidate"] for e in events["candidate_route"]], list(range(len(ids))))
+                self.assertEqual({e["candidate"] for e in events["candidate_route"] if e["path"] == "cache"}, hits)
+                self.assertEqual(Counter(e["candidate"] for e in events["read_submit"]),
+                                 {index: 10 for index in misses})
+                self.assertTrue(all(e["path"] == "local" for e in events["read_submit"]))
+                self.assertEqual(summary["nand_user_read_bytes"], len(misses) * 655360)
+                self.assertEqual(summary["nand_read_transactions"], len(misses) * 40)
+
+                batches = events["score_batch"]
+                self.assertEqual(Counter(i for batch in batches for i in batch["candidates"]),
+                                 dict.fromkeys(range(len(ids)), 1))
+                stage = {e["op"]: e for e in events["stage"]}
+                self.assertEqual(stage["topk"]["submitted_ns"], max(
+                    stage[f"score-{index}"]["visible_ns"] for index in range(len(ids))))
+                self.assertEqual(events["metadata_buffers"][-1]["host_score_bytes"], 0)
+                for side, candidates, rate in (("host", hits, 25), ("controller", misses, 4000)):
+                    site_batches = [b for b in batches if b["side"] == side]
+                    self.assertEqual({i for b in site_batches for i in b["candidates"]}, candidates)
+                    self.assertTrue(all(b["duration_ns"] == 10_000 + ceil_div(b["flop"], rate)
+                                        for b in site_batches))
+                    self.assertTrue(all(a["end_ns"] <= b["start_ns"] for a, b in zip(site_batches, site_batches[1:])))
+                    credits = [e for e in events["input_buffer"] if e["side"] == side]
+                    self.assertEqual(Counter(e["candidate"] for e in credits if e["reserve"]),
+                                     dict.fromkeys(candidates, 1))
+                    self.assertTrue(all(0 <= e["used"] <= 655360 for e in credits))
+                    self.assertEqual(credits[-1]["used"] if credits else 0, 0)
+                if misses:
+                    command, result = events["protocol"]
+                    self.assertEqual((command["kind"], result["kind"]), ("command", "result"))
+                    self.assertEqual((command["candidates"], result["candidates"]), (len(misses), len(misses)))
+                    self.assertEqual(command["effective_payload_bytes"], 20480 + 8 * len(misses))
+                    self.assertEqual(result["effective_payload_bytes"], 12 * len(misses))
+                    self.assertLessEqual(command["arrived_ns"], min(e["time_ns"] for e in events["read_submit"]))
+                    self.assertTrue(all(stage[f"score-{i}"]["visible_ns"] == result["arrived_ns"] for i in misses))
+                else:
+                    self.assertEqual(events["protocol"], [])
+                    self.assertEqual(events["nand_read"], [])
+                if hits and misses:
+                    host = [b for b in batches if b["side"] == "host"]
+                    controller = [b for b in batches if b["side"] == "controller"]
+                    self.assertLess(host[0]["start_ns"], command["arrived_ns"])
+                    self.assertTrue(any(h["start_ns"] < c["end_ns"] and c["start_ns"] < h["end_ns"]
+                                        for h in host for c in controller))
+                    self.assertEqual(summary["peak_scoring_engines"], 2)
+                    self.assertIn("buffer", {e["reason"] for e in events["backpressure"]})
+                    self.assertLess(result["arrived_ns"], stage["topk"]["submitted_ns"])
+
+    def test_hybrid_miss_only_concurrent_fixed_snapshot(self):
+        from config import load_config
+        from e1 import run_point
+        from generate import generate
+        from run import backend_digest
+
+        profile = HERE / "e0.json"
+        config = load_config(profile, dict(
+            workload=dict(corpus_documents=16, candidate_count=8, top_k=4),
+            generation=dict(queries=6), execution=dict(overlap_read_compute=False,
+                input_buffer_bytes_per_side=655360, global_outstanding_reads=2)))
+        bundle = self.directory / "bundle"
+        generate(config, bundle, ["test_hybrid_miss_only_concurrent_fixed_snapshot"], override_path=profile)
+        sst = Path(json_file(BUILD / "sst-paths.json")["sst"])
+        metrics = run_point(self.directory, "closed", "hybrid_miss_only", bundle, json_file(HERE / "e0-run.json"),
+                            backend_digest(), sst, BUILD / "workloads/maxsim", 2, 16 * 655360, [0, 1, 2, 3], 6)
+        self.assertGreater(metrics["host_scores"], 0)
+        self.assertGreater(metrics["controller_scores"], 0)
+        self.assertEqual(metrics["host_scores"] + metrics["controller_scores"], 48)
+        self.assertEqual(metrics["peak_qd"], 2)
+        self.assertEqual(metrics["document_d2h_bytes"], 0)
+
     def test_main_and_replay(self):
         bundle = self.bundle()
         runs = [self.directory / name for name in ("first run", "replay")]

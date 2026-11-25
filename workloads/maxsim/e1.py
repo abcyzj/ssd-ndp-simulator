@@ -12,12 +12,13 @@ import shutil
 import subprocess
 import sys
 
-from ndpsim.execution import launch
+from ndpsim.execution import budget, launch
 from ndpsim.static_ir import decode, file_hash, require
 
 from config import derive, load_config
 from generate import generate, write
-from run import HERE, PLACEMENTS, ROOT, backend_digest, checked_inputs, execute, json_file
+from run import (HERE, LOCAL_PLACEMENTS, NVME_PLACEMENTS, PLACEMENTS, ROOT, SUPPORTED_PLACEMENTS,
+                 backend_digest, checked_inputs, die_admission, execute, json_file, scoring_metrics, verify_hybrid)
 from sampling import Candidates
 from scan import points
 
@@ -56,7 +57,7 @@ def prewarm(config, capacities, window, max_windows):
                 oldest_first={size: list(caches.get(size, [])) for size in capacities})
 
 
-def summarize(trace, queries, concurrency):
+def summarize(trace, queries, concurrency, bundle=None, snapshot=()):
     with trace.open("rb") as stream:
         records = [decode(line) for line in stream]
     header, summary = records[0], records[-1]
@@ -76,7 +77,8 @@ def summarize(trace, queries, concurrency):
     require(summary["logical_reads"] == misses * derived["logical_reads_per_document"] and
             summary["logical_request_bytes"] == summary["nand_user_read_bytes"] ==
             misses * derived["document_stride_bytes"], "MaxSim I/O and NAND user-byte conservation")
-    offload = header["placement"] == "device_all"
+    verify_hybrid(bundle, snapshot, header, summary, completed)
+    offload = header["placement"] in LOCAL_PLACEMENTS
     require(summary["document_d2h_payload_bytes"] == (0 if offload else summary["logical_request_bytes"]) and
             summary["controller_staging_bytes"] == (summary["effective_document_bytes"] if offload else 0),
             "MaxSim placement byte conservation")
@@ -126,6 +128,8 @@ def summarize(trace, queries, concurrency):
                 flops=summary["flop"],
                 logical_reads=summary["logical_reads"],
                 scoring_utilization=summary["compute_ns"] / span, scoring_batches=summary["batches"],
+                protocol_messages=summary["protocol_messages"], command_payload_bytes=summary["command_payload_bytes"],
+                result_payload_bytes=summary["result_payload_bytes"], **scoring_metrics(summary, span),
                 average_batch_documents=documents / summary["batches"],
                 channel_utilization=sum(bus) / (channels * span),
                 die_array_busy_ns=sum(array),
@@ -146,10 +150,10 @@ def run_point(directory, name, placement, bundle, platform, source, sst, library
                 scratch=f"{name}.sqlite", output=trace.name, platform=platform,
                 closed_loop=dict(concurrency=concurrency, host_capacity_bytes=capacity, cache_oldest_first=snapshot))
     if local_read_die_admission:
-        require(placement == "device_all", "die admission requires device_all placement")
+        require(placement in LOCAL_PLACEMENTS, "die admission requires a controller placement")
         spec["local_read_die_admission"] = True
     if nvme_read_die_admission:
-        require(placement in ("host", "host_compute_free"), "NVMe read die admission requires a host placement")
+        require(placement in NVME_PLACEMENTS, "NVMe read die admission requires an ordinary-read placement")
         spec["nvme_read_die_admission"] = True
     if device_limits is not None:
         spec["device_limits"] = device_limits
@@ -168,7 +172,7 @@ def run_point(directory, name, placement, bundle, platform, source, sst, library
                 "missing non-allocating device preflight report")
         return header["device"]
     result = dict(run=name, placement=placement, concurrency=concurrency, capacity_bytes=capacity,
-                  **summarize(trace, queries, concurrency))
+                  **summarize(trace, queries, concurrency, bundle, snapshot))
     write(directory / f"{name}.metrics.json", result)
     return result
 
@@ -183,10 +187,16 @@ def main():
     parser.add_argument("--seed", type=int, action="append", required=True)
     parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--warmup-window", type=int, default=10_000)
+    parser.add_argument("--placement", action="append", choices=SUPPORTED_PLACEMENTS)
+    parser.add_argument("--local-read-die-admission", action="store_true")
+    parser.add_argument("--nvme-read-die-admission", action="store_true")
+    parser.add_argument("--budget", type=Path, help="apply a RAM, disk and wall-time budget to each run")
     parser.add_argument("--cold", action="store_true")
     parser.add_argument("--point", action="append", help="restrict execution to named E1 points")
     parser.add_argument("--reuse-candidates", type=Path, help="use matching bundles and prewarm snapshots from an existing sweep")
     args = parser.parse_args()
+    placements = tuple(dict.fromkeys(args.placement or PLACEMENTS))
+    execution_budget = budget(json_file(args.budget)) if args.budget else None
     output, build = args.output.resolve(), args.build.resolve()
     matrix = [(name, point) for name, point in points()
               if name.startswith("E1-") and (args.point is None or name in args.point)]
@@ -209,7 +219,7 @@ def main():
                                                                             cwd=ROOT, text=True).strip(),
                                     sources_sha256={p.name: file_hash(p) for p in sorted(HERE.iterdir())
                                                     if p.suffix in (".py", ".cc", ".h", ".json", ".xml")},
-                                    platform_sha256=file_hash(platform_path),
+                                    platform_sha256=file_hash(platform_path), execution_budget=execution_budget,
                                     config_path=str(args.config.resolve()), config_sha256=file_hash(args.config),
                                     model_revision=MODEL_REVISION, sst_sha256=file_hash(sst),
                                     element_sha256=file_hash(modules[0]), matrix=dict(matrix)))
@@ -233,7 +243,7 @@ def main():
                     snapshot = {} if args.cold else json_file(previous / "warmup.json")
                     expected = json_file(old_bundle / "effective-config.json")["config"]
                     if configuration == expected:
-                        bundle = old_bundle
+                        bundle.symlink_to(old_bundle, target_is_directory=True)
                     else:
                         generate(configuration, bundle, sys.argv, override_path=args.config)
                         for name in ("candidates.jsonl", "logical-reads.jsonl"):
@@ -249,7 +259,7 @@ def main():
                 write(group / "backend.json", backend)
                 for name, point in subset:
                     concurrency = point["load"]["closed_loop_concurrency"]
-                    for placement in PLACEMENTS:
+                    for placement in placements:
                         effective_capacity = sizes[name] if placement != "device_all" else 0
                         run = f"c{concurrency}-b{effective_capacity}-{placement}"
                         key = (str(group), run)
@@ -259,7 +269,10 @@ def main():
                                        if snapshot and effective_capacity else [])
                             futures[key] = workers.submit(run_point, group, run, placement, bundle, platform, source,
                                                           sst, library, concurrency, effective_capacity, initial,
-                                                          args.queries)
+                                                          args.queries, execution_budget=execution_budget,
+                                                          **die_admission(
+                                                              placement, args.local_read_die_admission,
+                                                              args.nvme_read_die_admission))
         reverse = {future: key for key, future in futures.items()}
         results = {}
         for future in as_completed(reverse):

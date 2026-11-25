@@ -20,6 +20,57 @@ sys.path.insert(0, str(ROOT / "tools"))
 from source_snapshot import mqsim_source_snapshot
 
 PLACEMENTS = ("host", "host_compute_free", "device_all")
+HYBRID = "hybrid_miss_only"
+LOCAL_PLACEMENTS = ("device_all", HYBRID)
+NVME_PLACEMENTS = ("host", "host_compute_free")
+SUPPORTED_PLACEMENTS = (*PLACEMENTS, HYBRID)
+
+
+def die_admission(placement, local, nvme):
+    return {key: True for key, selected in (
+        ("local_read_die_admission", local and placement in LOCAL_PLACEMENTS),
+        ("nvme_read_die_admission", nvme and placement in NVME_PLACEMENTS),
+    ) if selected}
+
+
+def scoring_metrics(summary, span):
+    return {f"{side}_{key}": value for side, scoring in summary["scoring_by_side"].items()
+            for key, value in dict(scoring, scoring_utilization=scoring["compute_ns"] / span).items()}
+
+
+def verify_hybrid(bundle, snapshot, header, summary, completed):
+    """Reconcile hybrid routes and bytes against the original candidate IDs and fixed snapshot."""
+    if header["placement"] != HYBRID:
+        return
+    cached = set(snapshot)
+    with (bundle / "candidates.jsonl").open("rb") as stream:
+        misses = [sum(doc not in cached for doc in decode(line)["document_ids"]) for line in stream]
+    require(len(misses) == len(completed) and all(
+        row["offloaded_candidates"] == misses[row.get("query", 0)] for row in completed
+    ), "hybrid route differs from fixed cache snapshot")
+    config = header["effective_config"]
+    protocol = config["protocol"]
+    derived = derive(config)
+    count = sum(misses)
+    commands = sum(m > 0 for m in misses)
+    command_bytes = commands * derived["query_bytes"] + count * protocol["document_id_bytes"]
+    result_bytes = count * (protocol["document_id_bytes"] + protocol["score_bytes"])
+    require(summary["ordinary_nvme_reads"] == summary["document_d2h_payload_bytes"] == 0 and
+            summary["mqsim_local_reads"] == count * derived["logical_reads_per_document"] and
+            summary["controller_staging_bytes"] == count * derived["document_bytes"] and
+            summary["cache_hits"] == len(misses) * config["workload"]["candidate_count"] - count and
+            summary["scoring_by_side"]["host"]["scores"] == summary["cache_hits"] and
+            summary["scoring_by_side"]["controller"]["scores"] == count and
+            summary["protocol_messages"] == 2 * commands and
+            summary["command_payload_bytes"] == command_bytes and summary["result_payload_bytes"] == result_bytes,
+            "hybrid route or protocol ledger disagrees")
+    for direction, payload, header_key in (("H2D", command_bytes, "command_header_bytes"),
+                                           ("D2H", result_bytes, "result_header_bytes")):
+        link = summary["pcie"].get(direction, {})
+        require(link.get("messages", 0) == commands and
+                link.get("payload_bytes", 0) == payload + commands * header["effective_platform"][header_key],
+                "hybrid PCIe ledger disagrees")
+
 
 
 def json_file(path):
@@ -85,14 +136,20 @@ def execute(command, output, name):
 
 def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-run.json", *,
         device_limits=None, execution_budget=None, preflight_only=False, expected_backend_source=None,
-        local_read_die_admission=False, nvme_read_die_admission=False):
+        local_read_die_admission=False, nvme_read_die_admission=False, cache_snapshot=None):
     bundle, build, output, platform_path = (p.resolve() for p in (bundle, build, output, platform_path))
-    require(placements and len(placements) == len(set(placements)) and all(p in PLACEMENTS for p in placements),
+    require(placements and len(placements) == len(set(placements)) and all(p in SUPPORTED_PLACEMENTS for p in placements),
             "invalid MaxSim placements")
-    require(not local_read_die_admission or "device_all" in placements,
-            "local read die admission requires selecting device_all")
-    require(not nvme_read_die_admission or any(p != "device_all" for p in placements),
-            "NVMe read die admission requires selecting a host placement")
+    require(not local_read_die_admission or any(p in LOCAL_PLACEMENTS for p in placements),
+            "local read die admission requires selecting a controller placement")
+    require(not nvme_read_die_admission or any(p in NVME_PLACEMENTS for p in placements),
+            "NVMe read die admission requires selecting an ordinary-read placement")
+    if cache_snapshot is not None:
+        require(type(cache_snapshot) is dict and cache_snapshot.keys() == {"host_capacity_bytes", "cache_oldest_first"}
+                and type(cache_snapshot["cache_oldest_first"]) is list, "invalid cache snapshot fields")
+        uint(cache_snapshot["host_capacity_bytes"], "host_capacity_bytes", 0)
+        for doc in cache_snapshot["cache_oldest_first"]:
+            uint(doc, "cache document ID", 0)
     require(bundle != output and bundle not in output.parents, "output must be outside the immutable input bundle")
     if device_limits is not None:
         require(type(device_limits) is dict and device_limits.keys() == {"xml_bytes", "metadata_bytes", "preload_pages"},
@@ -136,10 +193,9 @@ def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-r
             "receipt_sha256": file_hash(bundle / "receipt.json"), "mqsim_source_sha256": source_digest,
             "scratch": f"{name}.sqlite", "output": trace.name, "platform": platform, **extra,
         }
-        if local_read_die_admission and placement == "device_all":
-            spec["local_read_die_admission"] = True
-        if nvme_read_die_admission and placement != "device_all":
-            spec["nvme_read_die_admission"] = True
+        spec.update(die_admission(placement, local_read_die_admission, nvme_read_die_admission))
+        if cache_snapshot is not None and placement != "device_all":
+            spec["cache_snapshot"] = cache_snapshot
         if device_limits is not None:
             spec["device_limits"] = device_limits
         write(run_name, spec)
@@ -174,10 +230,15 @@ def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-r
             launch(command, output, execution_budget, cwd="/tmp", prefix=f"{placement}.")
         summary = {}
         with trace.open("rb") as stream:
+            header = decode(next(stream))
+            completed = []
             for line in stream:
                 summary = decode(line)
+                if summary["type"] == "query":
+                    completed.append(summary)
         require(summary.get("type") == "summary" and summary["success"] and summary["all_resources_drained"],
                 f"{placement}: no successful drained summary")
+        verify_hybrid(bundle, (cache_snapshot or {}).get("cache_oldest_first", []), header, summary, completed)
         summaries[placement] = summary
     write(output / "execution.json", dict(format="ndpsim-maxsim-execution/1", configured_unvalidated=True,
                                         package_sha256=audit["package_sha256"], placements=summaries,
@@ -191,13 +252,14 @@ def main():
     parser.add_argument("--build", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--platform", type=Path, default=HERE / "e0-run.json")
-    parser.add_argument("--placement", action="append", choices=PLACEMENTS)
+    parser.add_argument("--placement", action="append", choices=SUPPORTED_PLACEMENTS)
+    parser.add_argument("--cache-snapshot", type=Path, help="JSON with host_capacity_bytes and cache_oldest_first")
     parser.add_argument("--device-limits", type=Path, help="explicit DeviceLimits JSON")
     parser.add_argument("--budget", type=Path, help="RAM, disk and wall-time budget JSON for execution")
     parser.add_argument("--preflight-only", action="store_true", help="validate device and layout without allocating MQSim")
     parser.add_argument("--backend-source-sha256", help="bind an experimental in-tree MQSim source revision")
     parser.add_argument("--local-read-die-admission", action="store_true",
-                        help="enable experimental die admission on device_all")
+                        help="enable experimental die admission on device_all and hybrid_miss_only")
     parser.add_argument("--nvme-read-die-admission", action="store_true",
                         help="enable experimental die admission on host and host_compute_free")
     args = parser.parse_args()
@@ -207,7 +269,8 @@ def main():
                       execution_budget=json_file(args.budget) if args.budget else None,
                       preflight_only=args.preflight_only, expected_backend_source=args.backend_source_sha256,
                       local_read_die_admission=args.local_read_die_admission,
-                      nvme_read_die_admission=args.nvme_read_die_admission)
+                      nvme_read_die_admission=args.nvme_read_die_admission,
+                      cache_snapshot=json_file(args.cache_snapshot) if args.cache_snapshot else None)
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
         print(f"MaxSim E0: {error}", file=sys.stderr)
         return 1

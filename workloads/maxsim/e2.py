@@ -13,7 +13,8 @@ import sys
 from ndpsim.static_ir import decode, file_hash, require
 
 from generate import write
-from run import HERE, PLACEMENTS, ROOT, backend_digest, checked_inputs, execute, json_file
+from run import (HERE, LOCAL_PLACEMENTS, PLACEMENTS, ROOT, SUPPORTED_PLACEMENTS, backend_digest,
+                 checked_inputs, die_admission, execute, json_file, scoring_metrics, verify_hybrid)
 from sampling import arrivals
 
 
@@ -40,7 +41,7 @@ def percentiles(values, prefix):
             for label, fraction in (("p50", .5), ("p95", .95), ("p99", .99))}
 
 
-def summarize(trace, offsets, capacity):
+def summarize(trace, offsets, capacity, bundle=None, snapshot=()):
     with trace.open("rb") as stream:
         rows = [decode(line) for line in stream]
     header, total = rows[0], rows[-1]
@@ -67,7 +68,8 @@ def summarize(trace, offsets, capacity):
             total["effective_document_bytes"] + total["cache_hits"] * 655_360 == count * 98_304_000 and
             total["logical_reads"] * 65_536 == total["effective_document_bytes"] == total["nand_user_read_bytes"],
             "E2 Work or storage ledger disagrees")
-    offload = header["placement"] == "device_all"
+    verify_hybrid(bundle, snapshot, header, total, completed)
+    offload = header["placement"] in LOCAL_PLACEMENTS
     require(total["document_d2h_payload_bytes"] == (0 if offload else total["effective_document_bytes"]) and
             total["controller_staging_bytes"] == (total["effective_document_bytes"] if offload else 0),
             "E2 placement byte ledger disagrees")
@@ -108,12 +110,16 @@ def summarize(trace, offsets, capacity):
         **percentiles(latencies, "within_cutoff"),
         **percentiles(waits, "entry_wait_including_drain"),
         cache_capacity_bytes=capacity, cache_hit_rate=total["cache_hit_rate"],
+        local_read_die_admission=header.get("local_read_die_admission", False),
+        nvme_read_die_admission=header.get("nvme_read_die_admission", False),
         logical_reads=total["logical_reads"], effective_read_bytes=total["effective_document_bytes"],
         nand_bytes=total["nand_read_bytes"], nand_amplification=total["nand_read_amplification"],
         staging_bytes=total["controller_staging_bytes"], vector_d2h_bytes=total["document_d2h_payload_bytes"],
         pcie_d2h_bytes=total["pcie"].get("D2H", {}).get("payload_bytes", 0),
         pcie_h2d_bytes=total["pcie"].get("H2D", {}).get("payload_bytes", 0),
         flops=total["flop"], scoring_ns=total["compute_ns"], scoring_batches=total["batches"],
+        protocol_messages=total["protocol_messages"], command_payload_bytes=total["command_payload_bytes"],
+        result_payload_bytes=total["result_payload_bytes"], **scoring_metrics(total, service_span),
         average_batch_documents=count * 150 / total["batches"],
         scoring_utilization=total["compute_ns"] / service_span,
         full_drain_effective_read_GBps=total["effective_document_bytes"] / service_span,
@@ -123,7 +129,8 @@ def summarize(trace, offsets, capacity):
         trace_sha256=file_hash(trace))
 
 
-def run_point(group, bundle, platform, source, sst, library, capacity, initial, rate, offsets, placement):
+def run_point(group, bundle, platform, source, sst, library, capacity, initial, rate, offsets, placement, *,
+              local_read_die_admission=False, nvme_read_die_admission=False):
     name = f"qps{rate}-{placement}"
     spec_path = group / f"{name}.json"
     trace = spec_path.with_suffix(".jsonl")
@@ -132,11 +139,12 @@ def run_point(group, bundle, platform, source, sst, library, capacity, initial, 
     write(spec_path, dict(format="ndpsim-maxsim-run/1", placement=placement, bundle=str(bundle),
                           receipt_sha256=file_hash(bundle / "receipt.json"), mqsim_source_sha256=source,
                           scratch=f"{name}.sqlite", output=trace.name, platform=platform,
+                          **die_admission(placement, local_read_die_admission, nvme_read_die_admission),
                           open_loop=dict(concurrency=CONCURRENCY_LIMIT, host_capacity_bytes=capacity,
                                          cache_oldest_first=initial, qps=rate, offered_offsets_ns=offsets)))
     command = [str(sst), f"--add-lib-path={library}", str(HERE / "sst.py"), "--", json.dumps(str(spec_path))]
     execute(command, group, name)
-    result = dict(qps_target=rate, placement=placement, **summarize(trace, offsets, capacity))
+    result = dict(qps_target=rate, placement=placement, **summarize(trace, offsets, capacity, bundle, initial))
     write(group / f"{name}.metrics.json", result)
     return result
 
@@ -151,7 +159,11 @@ def main():
     parser.add_argument("--scenario", action="append", choices=SCENARIOS)
     parser.add_argument("--capacity-bytes", type=int, help="select a different tested E1 capacity for one scenario")
     parser.add_argument("--rate", type=int, action="append", help="override the selected scenarios' rates")
+    parser.add_argument("--placement", action="append", choices=SUPPORTED_PLACEMENTS)
+    parser.add_argument("--local-read-die-admission", action="store_true")
+    parser.add_argument("--nvme-read-die-admission", action="store_true")
     args = parser.parse_args()
+    placements = tuple(dict.fromkeys(args.placement or PLACEMENTS))
     output, e1, build = (path.resolve() for path in (args.output, args.e1, args.build))
     require(args.workers > 0 and shutil.disk_usage(output.parent).free >= 4 * 1024**3,
             "invalid worker limit or insufficient free space")
@@ -213,7 +225,7 @@ def main():
                                       key=lambda value: (value <= CONCURRENCY_LIMIT, value))
                     knee = {max(1, round(float(row["qps"]) * factor)) for row in matching
                             if int(row["concurrency"]) == concurrency
-                            and row["placement"] in ("host", "device_all")
+                            and row["placement"] in placements and row["placement"] != "host_compute_free"
                             for factor in (.8, 1, 1.2)}
                     rates = set(args.rate) if args.rate else set(MAIN_RATES) | knee
                 else:
@@ -223,9 +235,11 @@ def main():
                     offsets = [row["offered_ns"] for row in arrivals(config)]
                     require(all(b >= a for a, b in zip(offsets, offsets[1:])) and offsets[-1] > 0,
                             "invalid Poisson arrival sequence")
-                    for placement in PLACEMENTS:
+                    for placement in placements:
                         future = workers.submit(run_point, group, bundle, platform, source, sst, library,
-                                                capacity, initial, rate, offsets, placement)
+                                                capacity, initial, rate, offsets, placement,
+                                                local_read_die_admission=args.local_read_die_admission,
+                                                nvme_read_die_admission=args.nvme_read_die_admission)
                         futures[future] = (scenario, seed, rate, placement)
         errors = []
         for future in as_completed(futures):

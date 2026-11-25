@@ -128,6 +128,24 @@ python workloads/maxsim/run.py --input /tmp/maxsim-e04 --build build/delivery \
 
 按重跑手册将 `--e1` 指向同一批次的 E1 结果。默认压力点为 10/30/100/300/1000 QPS，加上从新 E1 吞吐估计派生的探针。可重复使用 `--scenario`、`--rate` 和 `--seed` 选择子集。在最后一次到达时截取完成数、入口排队和在途数，随后排空以复检资源和流量。窗口内延迟仅对后半段到达且在截点前完成的查询统计。持续积压需结合增长、入口等待和种子间变化判断。
 
+## 混合放置 `hybrid_miss_only`
+
+查询准入时按主机 LRU 快照逐候选分流。命中项更新 LRU 顺序，通过主机侧的暂存和评分服务。未命中项等下沉命令到达后走 MQSim 本地读、盘控暂存和盘控评分。快照成员在运行中固定，重复未命中按各次查询分别读取。两侧各有一个评分引擎和独立暂存预算，读取沿用全局 QD 和每查询读窗口。
+
+有 `M` 个未命中时，PCIe 上每查询有一条命令和一条结果。命令有效载荷为查询矩阵字节加 `8 × M`，结果有效载荷为 `12 × M`，另计消息头和 TLP 开销。主机命中可在命令飞行期间评分。全命中时没有下沉消息。统一 Top-K 等待主机评分和盘控结果全部可见。
+
+单查询可用 `run.py --placement host --placement hybrid_miss_only --cache-snapshot snapshot.json` 核验细粒度轨迹。快照 JSON 采用 `{"host_capacity_bytes": 1310720, "cache_oldest_first": [42, 17]}`，ID 按最旧到最新排列，容量按有效向量字节计。省略快照时单查询使用零缓存。闭环使用 E1 预热生成的配对快照。按方案 §7.2 运行 9550 PRO 首个种子的先导点，复用重跑手册中的 `profile`、`build`、`budget` 和 `backend`：
+
+```sh
+"$maxsim_python" workloads/maxsim/e1.py --config "$profile" --build "$build" \
+  --output "$run_root/hybrid-pilot" --backend-source-sha256 "$backend" --budget "$budget" \
+  --queries 144 --seed 11 --workers 1 --point E1-boundary-43 --point E1-boundary-44 \
+  --placement host --placement hybrid_miss_only --placement device_all \
+  --nvme-read-die-admission --local-read-die-admission
+```
+
+上述两点为 Zipf 0.8、20.97152% 缓存覆盖率、并发 16 和 64。普通读 Die 准入应用于 `host`，本地读 Die 准入应用于 `hybrid_miss_only` 和 `device_all`。E2 也可通过重复 `--placement` 选择同组放置并共享到达序列。两种负载的汇总按侧报告评分数、批次、计算时间、利用率和暂存峰值，同时记录协议载荷。对于混合方案，两侧总计算时间可以重叠，资源占用分别看 `host_scoring_utilization` 和 `controller_scoring_utilization`。结果适用范围为精排子系统和 `configured_unvalidated` 设备模型。
+
 ## Micron 9550 PRO 候选设备与重跑
 
 [`micron-9550-pro.json`](micron-9550-pro.json) 是本轮 E0～E5 的设备入口。它绑定 [XML](micron-9550-pro-device.xml) 和 MQSim fork 身份。主候选使用 Gen5 ×4、256 B MPS、设备队列 1024、`fetch=128`、16 条 2400 MT/s 通道、每通道 4 chip、每 chip 2 die、每 die 4 plane、TLC、55 µs 等效阵列读、8 MiB CMT 和 128 GiB raw。全程使用 64 GB/s 盘控暂存。设备状态为 `configured_unvalidated`。
