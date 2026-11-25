@@ -498,7 +498,7 @@ class Execution(unittest.TestCase):
         self.assertEqual(metrics["peak_qd"], 2)
         self.assertEqual(metrics["document_d2h_bytes"], 0)
 
-    def check_backfill_trace(self, bundle, trace, initial, byte_budget):
+    def check_backfill_trace(self, bundle, trace, initial):
         document_bytes, read_bytes, page_bytes = 655360, 65536, 16384
         candidates = [doc for query in rows(bundle / "candidates.jsonl") for doc in query["document_ids"]]
         count = json_file(bundle / "effective-config.json")["config"]["workload"]["candidate_count"]
@@ -510,44 +510,71 @@ class Execution(unittest.TestCase):
         chosen, deduplicated, paths = set(), set(), {}
         path_a = spec["placement"] == "hybrid_backfill_a"
         path_b = spec["placement"] == "hybrid_backfill_b"
-        remaining = byte_budget // document_bytes
+        backfill = spec.get("backfill", {})
+        policy = backfill.get("policy")
+        history = backfill.get("initial_history_oldest_first", []).copy()
+        published = set()
+        origin = reuse_hits = evictions = publication_count = 0
+        admitted_by_epoch = Counter()
         for event in rows(trace):
             kind = event["type"]
             entries[kind].append(event)
-            if kind == "candidate_route":
+            if kind == "measurement_start":
+                origin = event["time_ns"]
+            elif kind == "candidate_route":
                 index, doc = event["candidate"], event["document_id"]
                 self.assertEqual(doc, candidates[index])
                 self.assertNotIn(index, paths)
+                if policy == "frequency":
+                    history.append(doc)
+                    history = history[-backfill["history_window_accesses"]:]
                 decision = None
                 path = "local"
                 if doc in lru:
+                    reuse_hits += doc in published
                     lru.remove(doc)
                     lru.append(doc)
                     path = "cache"
                 elif path_a or path_b:
+                    epoch = (event["time_ns"] - origin) // backfill["budget_window_ns"]
                     if doc in inflight:
                         decision = "inflight"
                         deduplicated.add(index)
                     elif not capacity:
                         decision = "capacity"
-                    elif not remaining:
+                    elif policy == "second" and doc not in history:
+                        decision = "history"
+                    elif policy == "frequency" and len(lru) == capacity and history.count(doc) <= history.count(lru[0]):
+                        decision = "frequency"
+                    elif (admitted_by_epoch[epoch] + 1) * document_bytes > backfill["budget_bytes"]:
                         decision = "budget"
                     else:
-                        remaining -= 1
+                        admitted_by_epoch[epoch] += 1
                         inflight[doc] = index
                         chosen.add(index)
                         decision = "admitted"
                         if path_a:
                             path = "ordinary"
+                if policy == "second":
+                    history.append(doc)
+                    history = history[-backfill["history_window_accesses"]:]
                 self.assertEqual((event["path"], event.get("backfill_decision")), (path, decision))
                 paths[index] = path
             elif kind == "backfill_complete":
                 doc = event["document_id"]
                 self.assertEqual(inflight.pop(doc), event["candidate"])
                 self.assertNotIn(doc, lru)
-                evicted = lru.pop(0) if len(lru) == capacity else None
-                self.assertEqual((event["published"], event["evicted_document_id"]), (True, evicted))
-                lru.append(doc)
+                victim = lru[0] if len(lru) == capacity else None
+                publish = policy != "frequency" or victim is None or history.count(doc) > history.count(victim)
+                self.assertEqual((event["published"], event["evicted_document_id"]),
+                                 (publish, victim if publish else None))
+                if publish:
+                    if victim is not None:
+                        published.discard(lru.pop(0))
+                        evictions += 1
+                    lru.append(doc)
+                    published.add(doc)
+                    publication_count += 1
 
         self.assertEqual(inflight, {})
         self.assertEqual(set(paths), set(range(len(candidates))))
@@ -660,8 +687,11 @@ class Execution(unittest.TestCase):
             self.assertEqual(ledger[-1]["used"] if ledger else 0, 0)
         if path_a or path_b:
             fill = summary["backfill"]
-            self.assertEqual((fill["admitted"], fill["completed"], fill["published"]), (len(chosen),) * 3)
+            self.assertEqual((fill["admitted"], fill["completed"], fill["published"]),
+                             (len(chosen), len(chosen), publication_count))
             self.assertEqual(fill["deduplicated"], len(deduplicated))
+            self.assertEqual(fill["reuse_hits"], reuse_hits)
+            self.assertEqual(summary["cache_evictions"], evictions)
             self.assertEqual(fill["ordinary_d2h_payload_bytes"], ordinary * document_bytes)
             self.assertEqual(fill["vector_d2h_payload_bytes"], len(chosen) * document_bytes if path_b else 0)
             self.assertEqual(fill["last_completion_ns"], max((e["time_ns"] for e in fills.values()), default=0))
@@ -689,23 +719,33 @@ class Execution(unittest.TestCase):
                                       f"Execution.{self._testMethodName}"], override_path=profile)
             return bundle
 
-        def check(case, bundle, pages, cached, budget_pages, selected=placements, concurrency=None):
+        def check(case, bundle, pages, cached, budget_pages, selected=placements, concurrency=None,
+                  policy="all", history=()):
             output = self.directory / case
             snapshot = dict(host_capacity_bytes=pages * document_bytes, cache_oldest_first=cached)
-            backfill = dict(policy="all", history_window_accesses=0, initial_history_oldest_first=[],
+            backfill = dict(policy=policy, history_window_accesses=64, initial_history_oldest_first=list(history),
                             budget_window_ns=10**9, budget_bytes=budget_pages * document_bytes)
             run(bundle, BUILD, output, selected, cache_snapshot=snapshot, backfill=backfill,
                 closed_concurrency=concurrency, local_read_die_admission=True,
                 nvme_read_die_admission="hybrid_backfill_a" in selected,
                 execution_budget=execution_budget if os.environ.get("NDPSIM_MAXSIM_EVIDENCE") else None)
             return {placement: self.check_backfill_trace(bundle, output / f"{placement}.jsonl",
-                                                        snapshot, backfill["budget_bytes"])
+                                                        snapshot)
                     for placement in selected if placement in placements}
 
         bundle = fixture("single", 8, 1)
         ids = next(rows(bundle / "candidates.jsonl"))["document_ids"]
         check("zero-cache", bundle, 0, [], 8)
         check("all-hit", bundle, len(ids), ids, 8)
+        second = check("second", bundle, 4, ids[::2], 2, ("hybrid_backfill_a",),
+                       policy="second", history=[ids[1]])["hybrid_backfill_a"][0]
+        self.assertEqual({e.get("backfill_decision") for e in second["candidate_route"]},
+                         {None, "admitted", "history"})
+        history = [ids[1]] * 3 + [ids[0]] * 3 + [ids[2]] * 3 + ids[4::2]
+        frequency = check("frequency", bundle, 4, ids[::2], 2, ("hybrid_backfill_a",),
+                          policy="frequency", history=history)["hybrid_backfill_a"][0]
+        self.assertIn("frequency", {e.get("backfill_decision") for e in frequency["candidate_route"]})
+        self.assertEqual([event["published"] for event in frequency["backfill_complete"]], [False])
         mixed = check("mixed", bundle, 4, ids[::2], 2, (*placements, "host", "device_all"))
         self.assertEqual(set(mixed["hybrid_backfill_a"][1].values()), {"cache", "ordinary", "local"})
         limited, _ = mixed["hybrid_backfill_b"]

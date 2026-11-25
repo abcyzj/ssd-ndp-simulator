@@ -16,6 +16,7 @@
 #include <fstream>
 #include <list>
 #include <unordered_map>
+#include <unordered_set>
 #include <nlohmann/json.hpp>
 
 namespace maxsim {
@@ -99,9 +100,11 @@ struct Run::State {
         uint64_t epoch = 0, used = 0, admitted = 0, deduplicated = 0;
         uint64_t completed = 0, published = 0, vector_bytes = 0;
         uint64_t ordinary_documents = 0, last_completion = 0;
+        uint64_t reuse_hits = 0;
         std::deque<uint64_t> history;
         std::unordered_map<uint64_t, uint64_t> frequency;
         std::unordered_map<uint64_t, size_t> inflight;
+        std::unordered_set<uint64_t> resident;
         std::vector<size_t> ready;
     } fill;
     struct LinkLedger {
@@ -133,6 +136,7 @@ struct Run::State {
     std::vector<Query> queries;
     std::list<uint64_t> cache_order;
     std::unordered_map<uint64_t, std::list<uint64_t>::iterator> cached;
+    uint64_t cache_evictions = 0;
     size_t cache_pages = 0, count = 0, concurrency = 1;
     size_t next_read_query = 0;
     uint64_t hits = 0;
@@ -892,6 +896,8 @@ void Run::State::route(size_t query) {
         d.hit = cached.count(d.id);
         const char* decision = nullptr;
         if (fill.path != FillPath::None) {
+            if (d.hit && fill.resident.count(d.id))
+                ++fill.reuse_hits;
             if (fill.policy != Admission::Second)
                 observe_access(d.id);
             if (!d.hit)
@@ -1000,6 +1006,7 @@ void Run::State::complete_backfill(size_t index) {
     }
     if (publish) {
         touch(d.id);
+        fill.resident.insert(d.id);
         ++fill.published;
     }
     if (detailed)
@@ -1047,8 +1054,10 @@ void Run::State::touch(uint64_t id) {
     require(!hybrid || !launched || fill.path != FillPath::None,
             "hybrid cache membership changed during execution");
     if (cached.size() == cache_pages) {
+        fill.resident.erase(cache_order.front());
         cached.erase(cache_order.front());
         cache_order.pop_front();
+        ++cache_evictions;
     }
     cached.emplace(id, cache_order.insert(cache_order.end(), id));
 }
@@ -1398,11 +1407,12 @@ void Run::State::report() {
           {"peak_controller_query_ids_bytes", peak_controller_input},
           {"peak_controller_score_bytes", peak_controller_scores}, {"peak_host_score_bytes", peak_host_scores},
           {"cache_hits", hits}, {"cache_hit_rate", double(hits) / documents.size()},
+          {"cache_evictions", cache_evictions},
           {"backpressure_ns", blocked_ns}, {"peak_active_queries", executor->metrics().peak_queries},
           {"protocol_messages", protocol_messages}, {"pcie", link}, {"all_resources_drained", true}};
     if (fill.path != FillPath::None)
         summary["backfill"] = {{"admitted", fill.admitted}, {"deduplicated", fill.deduplicated},
-            {"completed", fill.completed}, {"published", fill.published},
+            {"completed", fill.completed}, {"published", fill.published}, {"reuse_hits", fill.reuse_hits},
             {"ordinary_d2h_payload_bytes", dma}, {"vector_d2h_payload_bytes", fill.vector_bytes},
             {"foreground_ordinary_documents", fill.ordinary_documents}, {"last_completion_ns", fill.last_completion},
             {"background_tail_ns", fill.path == FillPath::Staged && fill.last_completion > visible

@@ -17,7 +17,7 @@ from ndpsim.static_ir import decode, file_hash, require
 
 from config import derive, load_config
 from generate import generate, write
-from run import (HERE, LOCAL_PLACEMENTS, NVME_PLACEMENTS, PLACEMENTS, ROOT, SUPPORTED_PLACEMENTS,
+from run import (BACKFILL_PLACEMENTS, EXECUTION_PLACEMENTS, HERE, LOCAL_PLACEMENTS, PLACEMENTS, ROOT,
                  backend_digest, checked_inputs, die_admission, execute, json_file, scoring_metrics, verify_hybrid)
 from sampling import Candidates
 from scan import points
@@ -78,9 +78,38 @@ def summarize(trace, queries, concurrency, bundle=None, snapshot=()):
             summary["logical_request_bytes"] == summary["nand_user_read_bytes"] ==
             misses * derived["document_stride_bytes"], "MaxSim I/O and NAND user-byte conservation")
     verify_hybrid(bundle, snapshot, header, summary, completed)
-    offload = header["placement"] in LOCAL_PLACEMENTS
-    require(summary["document_d2h_payload_bytes"] == (0 if offload else summary["logical_request_bytes"]) and
-            summary["controller_staging_bytes"] == (summary["effective_document_bytes"] if offload else 0),
+    placement = header["placement"]
+    fill = summary.get("backfill", {})
+    if placement in BACKFILL_PLACEMENTS:
+        local_documents = sum(row["offloaded_candidates"] for row in completed)
+        ordinary_documents = fill["completed"] if placement == "hybrid_backfill_a" else 0
+        vector_bytes = (fill["completed"] * derived["document_bytes"] if placement == "hybrid_backfill_b" else 0)
+        commands = sum(row["offloaded_candidates"] > 0 for row in completed)
+        protocol = config["protocol"]
+        require(misses == ordinary_documents + local_documents and
+                fill["foreground_ordinary_documents"] == ordinary_documents and
+                fill["admitted"] == fill["completed"] >= fill["published"] >= summary["cache_evictions"] and
+                fill["published"] - summary["cache_evictions"] <=
+                config["cache"]["host_capacity_bytes"] // derived["document_bytes"] - len(snapshot) and
+                0 <= fill["reuse_hits"] <= summary["cache_hits"] and
+                (fill["published"] > 0 or fill["reuse_hits"] == 0) and
+                fill["vector_d2h_payload_bytes"] == vector_bytes and
+                fill["ordinary_d2h_payload_bytes"] == summary["document_d2h_payload_bytes"],
+                "MaxSim backfill or cache ledger disagrees")
+        require(summary["mqsim_local_reads"] == local_documents * derived["logical_reads_per_document"] and
+                summary["scoring_by_side"]["controller"]["scores"] == local_documents and
+                summary["scoring_by_side"]["host"]["scores"] == documents - local_documents and
+                summary["protocol_messages"] == 2 * commands and
+                summary["command_payload_bytes"] == commands * derived["query_bytes"] +
+                local_documents * protocol["document_id_bytes"] and
+                summary["result_payload_bytes"] == local_documents *
+                (protocol["document_id_bytes"] + protocol["score_bytes"]),
+                "MaxSim backfill route or protocol ledger disagrees")
+    else:
+        local_documents = misses if placement in LOCAL_PLACEMENTS else 0
+        ordinary_documents = misses - local_documents
+    require(summary["document_d2h_payload_bytes"] == ordinary_documents * derived["document_stride_bytes"] and
+            summary["controller_staging_bytes"] == local_documents * derived["document_bytes"],
             "MaxSim placement byte conservation")
     schedule = config["execution"]
     require(summary["peak_outstanding_reads"] <= schedule["global_outstanding_reads"] and
@@ -113,6 +142,12 @@ def summarize(trace, queries, concurrency, bundle=None, snapshot=()):
                 qps=queries * 1e9 / (end - begin), mean_ms=sum(latencies) / len(latencies) / 1e6,
                 p50_ms=quantile(.5), p95_ms=quantile(.95), p99_ms=quantile(.99),
                 cache_hit_rate=summary["cache_hit_rate"],
+                cache_evictions=summary.get("cache_evictions"),
+                backfill_policy=header.get("backfill", {}).get("policy"),
+                backfill_admitted=fill.get("admitted", 0), backfill_completed=fill.get("completed", 0),
+                backfill_published=fill.get("published", 0), backfill_deduplicated=fill.get("deduplicated", 0),
+                backfill_reuse_hits=fill.get("reuse_hits", 0),
+                backfill_vector_bytes=fill.get("completed", 0) * derived["document_bytes"],
                 effective_read_GBps=summary["effective_document_bytes"] / span,
                 local_read_die_admission=header.get("local_read_die_admission", False),
                 nvme_read_die_admission=header.get("nvme_read_die_admission", False),
@@ -142,19 +177,21 @@ def summarize(trace, queries, concurrency, bundle=None, snapshot=()):
 
 def run_point(directory, name, placement, bundle, platform, source, sst, library, concurrency, capacity, snapshot,
               queries, *, device_limits=None, execution_budget=None, preflight_only=False,
-              local_read_die_admission=False, nvme_read_die_admission=False):
+              local_read_die_admission=False, nvme_read_die_admission=False, backfill=None):
     spec_path = directory / f"{name}.json"
     trace = spec_path.with_suffix(".jsonl")
     spec = dict(format="ndpsim-maxsim-run/1", placement=placement, bundle=str(bundle),
                 receipt_sha256=file_hash(bundle / "receipt.json"), mqsim_source_sha256=source,
                 scratch=f"{name}.sqlite", output=trace.name, platform=platform,
                 closed_loop=dict(concurrency=concurrency, host_capacity_bytes=capacity, cache_oldest_first=snapshot))
-    if local_read_die_admission:
-        require(placement in LOCAL_PLACEMENTS, "die admission requires a controller placement")
-        spec["local_read_die_admission"] = True
-    if nvme_read_die_admission:
-        require(placement in NVME_PLACEMENTS, "NVMe read die admission requires an ordinary-read placement")
-        spec["nvme_read_die_admission"] = True
+    flags = die_admission(placement, local_read_die_admission, nvme_read_die_admission)
+    require(len(flags) == local_read_die_admission + nvme_read_die_admission,
+            "Die admission requires a matching read path")
+    spec.update(flags)
+    require((backfill is not None) == (placement in BACKFILL_PLACEMENTS),
+            "backfill configuration required for path A or B")
+    if backfill is not None:
+        spec["backfill"] = backfill
     if device_limits is not None:
         spec["device_limits"] = device_limits
     if preflight_only:
@@ -187,7 +224,8 @@ def main():
     parser.add_argument("--seed", type=int, action="append", required=True)
     parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--warmup-window", type=int, default=10_000)
-    parser.add_argument("--placement", action="append", choices=SUPPORTED_PLACEMENTS)
+    parser.add_argument("--placement", action="append", choices=EXECUTION_PLACEMENTS)
+    parser.add_argument("--backfill", type=Path, action="append", help="one backfill configuration per policy")
     parser.add_argument("--local-read-die-admission", action="store_true")
     parser.add_argument("--nvme-read-die-admission", action="store_true")
     parser.add_argument("--budget", type=Path, help="apply a RAM, disk and wall-time budget to each run")
@@ -196,6 +234,13 @@ def main():
     parser.add_argument("--reuse-candidates", type=Path, help="use matching bundles and prewarm snapshots from an existing sweep")
     args = parser.parse_args()
     placements = tuple(dict.fromkeys(args.placement or PLACEMENTS))
+    backfills = [json_file(path) for path in args.backfill or ()]
+    policies = [spec["policy"] for spec in backfills]
+    require(bool(backfills) == any(p in BACKFILL_PLACEMENTS for p in placements) and
+            len(set(policies)) == len(policies) and set(policies) <= {"all", "second", "frequency"},
+            "select one configuration per policy when running backfill placements")
+    variants = [(placement, spec) for placement in placements
+                for spec in (backfills if placement in BACKFILL_PLACEMENTS else [None])]
     execution_budget = budget(json_file(args.budget)) if args.budget else None
     output, build = args.output.resolve(), args.build.resolve()
     matrix = [(name, point) for name, point in points()
@@ -221,6 +266,7 @@ def main():
                                                     if p.suffix in (".py", ".cc", ".h", ".json", ".xml")},
                                     platform_sha256=file_hash(platform_path), execution_budget=execution_budget,
                                     config_path=str(args.config.resolve()), config_sha256=file_hash(args.config),
+                                    backfills=backfills, cold=args.cold,
                                     model_revision=MODEL_REVISION, sst_sha256=file_hash(sst),
                                     element_sha256=file_hash(modules[0]), matrix=dict(matrix)))
     futures, pairs = {}, []
@@ -230,7 +276,8 @@ def main():
                                                      for _, point in matrix):
                 group = output / f"{distribution}-{alpha}-seed{seed}"
                 group.mkdir()
-                subset = [(name, point) for name, point in matrix if point["workload"]["zipf_alpha"] == alpha]
+                subset = [(name, point) for name, point in matrix
+                          if (point["workload"]["distribution"], point["workload"]["zipf_alpha"]) == (distribution, alpha)]
                 overrides = dict(workload=dict(distribution=distribution, zipf_alpha=alpha, model_revision=MODEL_REVISION),
                                  generation=dict(queries=args.queries))
                 configuration = load_config(args.config, overrides, seed)
@@ -259,9 +306,11 @@ def main():
                 write(group / "backend.json", backend)
                 for name, point in subset:
                     concurrency = point["load"]["closed_loop_concurrency"]
-                    for placement in placements:
+                    for placement, backfill in variants:
                         effective_capacity = sizes[name] if placement != "device_all" else 0
                         run = f"c{concurrency}-b{effective_capacity}-{placement}"
+                        if backfill is not None:
+                            run += f"-{backfill['policy']}"
                         key = (str(group), run)
                         pairs.append((name, seed, distribution, alpha, sizes[name], concurrency, placement, key))
                         if key not in futures:
@@ -269,7 +318,7 @@ def main():
                                        if snapshot and effective_capacity else [])
                             futures[key] = workers.submit(run_point, group, run, placement, bundle, platform, source,
                                                           sst, library, concurrency, effective_capacity, initial,
-                                                          args.queries, execution_budget=execution_budget,
+                                                          args.queries, execution_budget=execution_budget, backfill=backfill,
                                                           **die_admission(
                                                               placement, args.local_read_die_admission,
                                                               args.nvme_read_die_admission))

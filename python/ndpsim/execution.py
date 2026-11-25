@@ -4,6 +4,7 @@ from pathlib import Path
 import platform
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -85,9 +86,20 @@ def preflight(output, b, input_bytes=0):
 
 
 def enforce(output, b):
-    scratch = sum(p.stat().st_size for p in output.rglob('*') if p.is_file() and ('.sqlite' in p.name))
+    scratch = result = 0
+    for path in output.rglob('*'):
+        try:
+            info = path.stat()
+        except FileNotFoundError:
+            # SQLite journals can disappear while the child is running.
+            continue
+        if stat.S_ISREG(info.st_mode):
+            if '.sqlite' in path.name:
+                scratch += info.st_size
+            else:
+                result += info.st_size
     require(scratch <= b['scratch_bytes'], 'scratch disk budget')
-    require(size(output)-scratch <= b['output_bytes'], 'output disk budget')
+    require(result <= b['output_bytes'], 'output disk budget')
     require(shutil.disk_usage(output).free >= b['min_disk_free_bytes'], 'disk free reserve')
 
 

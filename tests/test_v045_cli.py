@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
 if '--evidence-dir' in sys.argv:
     index=sys.argv.index('--evidence-dir');os.environ['NDPSIM_CLI_EVIDENCE']=sys.argv[index+1];del sys.argv[index:index+2]
@@ -16,7 +17,26 @@ sys.path[:0]=[str(ROOT/'python'),str(ROOT/'tests')]
 sys.argv.insert(1,str(BUILD))
 import test_v045_memory as memory
 from ndpsim.static_ir import ValidationError,canonical,file_hash
-from ndpsim.execution import TRACE_RECORD_BYTES,launch,trace_records
+from ndpsim.execution import TRACE_RECORD_BYTES,enforce,launch,trace_records
+
+class ExecutionBudget(unittest.TestCase):
+ def test_journal_removed_during_disk_budget_check(self):
+    with tempfile.TemporaryDirectory() as tmp:
+      output=Path(tmp)
+      journal=output/'work.sqlite-journal'
+      journal.write_bytes(b'journal')
+      original_stat=Path.stat
+
+      def stat_then_remove(path, *args, **kwargs):
+        info=original_stat(path,*args,**kwargs)
+        if path==journal:
+          journal.unlink()
+        return info
+
+      limits=dict(scratch_bytes=1024,output_bytes=1024,min_disk_free_bytes=1)
+      with patch.object(Path,'stat',stat_then_remove):
+        enforce(output,limits)
+      self.assertFalse(journal.exists())
 
 class TraceRecords(unittest.TestCase):
  def test_only_leading_configuration_can_exceed_event_record_budget(self):

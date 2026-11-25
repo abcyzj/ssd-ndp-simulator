@@ -177,6 +177,40 @@ printf '%s\n' "$?" > "$run_root/path-test.exit"
 
 `document_d2h_payload_bytes` 记录普通 NVMe 数据回传，路径 B 的向量另记于 `backfill.vector_d2h_payload_bytes`，两者都计入 PCIe D2H 总账。B 在同一 MQSim 链路发送独立向量 envelope，模型对向量计有效字节及 TLP 开销，源缓冲保留到向量到达。前台 `visible_ns`、实验 `drained_ns` 和 `backfill.background_tail_ns` 可对照读取。
 
+### 路径 A 缓存准入对比
+
+用 E1 闭环入口在同一个候选包和初始缓存快照上运行三种策略及三个对照。以下命令复用重跑手册的 `maxsim_python`、`profile`、`build`、`backend`、`budget` 和 `run_root`，其中 `profile` 显式指向 `micron-9550-pro.json`。先按 9550 PRO 重跑手册核对设备证据并检查资源。示例逐进程运行，也可按可用内存调整 worker 数。
+
+```sh
+for policy in all second frequency; do
+  printf '{"policy":"%s","history_window_accesses":10000,"initial_history_oldest_first":[],"budget_window_ns":1000000,"budget_bytes":5242880}\n' \
+    "$policy" > "$run_root/admission-$policy.json"
+done
+
+admission() {
+  "$maxsim_python" workloads/maxsim/e1.py --config "$profile" --build "$build" \
+    --backend-source-sha256 "$backend" --budget "$budget" --workers 1 --queries 144 \
+    --placement host --placement hybrid_miss_only --placement hybrid_backfill_a --placement device_all \
+    --backfill "$run_root/admission-all.json" --backfill "$run_root/admission-second.json" \
+    --backfill "$run_root/admission-frequency.json" \
+    --nvme-read-die-admission --local-read-die-admission "$@"
+}
+
+admission --output "$run_root/admission-pilot" --seed 11 \
+  --point E1-boundary-43 --point E1-boundary-44
+# 核对先导的 matrix.csv、成功退出与资源排空后，再扩展矩阵。
+admission_matrix() {
+  admission --seed 11 --seed 23 --seed 47 \
+    --point E1-boundary-39 --point E1-boundary-40 --point E1-boundary-43 \
+    --point E1-boundary-44 --point E1-boundary-47 --point E1-boundary-48 "$@"
+}
+admission_matrix --output "$run_root/admission-warm"
+admission_matrix --output "$run_root/admission-cold" --cold \
+  --reuse-candidates "$run_root/admission-warm"
+```
+
+同一启动条件、局部性、并发和种子构成一个配对组。`cache_evictions` 含运行期间的实际淘汰，`backfill_completed` 含传输后复核未发布的回填，`backfill_vector_bytes` 记录已搬运的有效向量字节。每次命中当前由本轮回填发布的驻留条目，`backfill_reuse_hits` 加一，预热条目的命中只计入总命中率。`host` 的普通读及动态缓存淘汰可从其独立账本查看。比较结果见[实验记录](../../docs/MaxSim_ndp.md#缓存准入策略对比记录)。
+
 ## Micron 9550 PRO 候选设备与重跑
 
 [`micron-9550-pro.json`](micron-9550-pro.json) 是本轮 E0～E5 的设备入口。它绑定 [XML](micron-9550-pro-device.xml) 和 MQSim fork 身份。主候选使用 Gen5 ×4、256 B MPS、设备队列 1024、`fetch=128`、16 条 2400 MT/s 通道、每通道 4 chip、每 chip 2 die、每 die 4 plane、TLC、55 µs 等效阵列读、8 MiB CMT 和 128 GiB raw。全程使用 64 GB/s 盘控暂存。设备状态为 `configured_unvalidated`。
