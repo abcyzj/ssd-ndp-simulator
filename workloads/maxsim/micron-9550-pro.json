@@ -12,7 +12,7 @@
   "hardware": {
     "mqsim_config_path": "micron-9550-pro-device.xml",
     "mqsim_config_hash": "b7c758b6c68f4cca7eebe6d359e168d76d0b8457fc221a5d9bd618afd95bf7a0",
-    "backend_commit": "4eb7f3446e5e699ed38706bfaabf958c330e3d0a",
+    "backend_commit": "834c5e82d5700646314842e63b843d5a5735041e",
     "external_effective_GBps": 15.75384,
     "target_internal_GBps_reference_only": 38.4
   },

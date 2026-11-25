@@ -12,7 +12,7 @@
   "hardware": {
     "mqsim_config_path": "local-10k-device.xml",
     "mqsim_config_hash": "acc1e37fb355e17c6a5ec5126dbb5aef7ee3610a65192c758a2811e5dcb3e635",
-    "backend_commit": "4eb7f3446e5e699ed38706bfaabf958c330e3d0a"
+    "backend_commit": "834c5e82d5700646314842e63b843d5a5735041e"
   },
   "load": {
     "mode": "closed_loop",
