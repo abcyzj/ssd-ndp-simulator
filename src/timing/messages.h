@@ -5,7 +5,7 @@
 #include <set>
 #include <memory>
 namespace ndpsim::timing {
-enum class MessageKind { Open, OpenAck, Execute, Result, Close, CloseAck, Error };
+enum class MessageKind { Open, OpenAck, Execute, Result, Close, CloseAck, Error, VectorBackfill };
 enum class Direction { H2D, D2H };
 struct Message {
     std::string protocol = "graph-readonly/1";

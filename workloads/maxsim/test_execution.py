@@ -498,6 +498,244 @@ class Execution(unittest.TestCase):
         self.assertEqual(metrics["peak_qd"], 2)
         self.assertEqual(metrics["document_d2h_bytes"], 0)
 
+    def check_backfill_trace(self, bundle, trace, initial, byte_budget):
+        document_bytes, read_bytes, page_bytes = 655360, 65536, 16384
+        candidates = [doc for query in rows(bundle / "candidates.jsonl") for doc in query["document_ids"]]
+        count = json_file(bundle / "effective-config.json")["config"]["workload"]["candidate_count"]
+        spec = json_file(trace.with_suffix(".json"))
+        lru = list(initial["cache_oldest_first"])
+        capacity = initial["host_capacity_bytes"] // document_bytes
+        entries = defaultdict(list)
+        inflight = {}
+        chosen, deduplicated, paths = set(), set(), {}
+        path_a = spec["placement"] == "hybrid_backfill_a"
+        path_b = spec["placement"] == "hybrid_backfill_b"
+        remaining = byte_budget // document_bytes
+        for event in rows(trace):
+            kind = event["type"]
+            entries[kind].append(event)
+            if kind == "candidate_route":
+                index, doc = event["candidate"], event["document_id"]
+                self.assertEqual(doc, candidates[index])
+                self.assertNotIn(index, paths)
+                decision = None
+                path = "local"
+                if doc in lru:
+                    lru.remove(doc)
+                    lru.append(doc)
+                    path = "cache"
+                elif path_a or path_b:
+                    if doc in inflight:
+                        decision = "inflight"
+                        deduplicated.add(index)
+                    elif not capacity:
+                        decision = "capacity"
+                    elif not remaining:
+                        decision = "budget"
+                    else:
+                        remaining -= 1
+                        inflight[doc] = index
+                        chosen.add(index)
+                        decision = "admitted"
+                        if path_a:
+                            path = "ordinary"
+                self.assertEqual((event["path"], event.get("backfill_decision")), (path, decision))
+                paths[index] = path
+            elif kind == "backfill_complete":
+                doc = event["document_id"]
+                self.assertEqual(inflight.pop(doc), event["candidate"])
+                self.assertNotIn(doc, lru)
+                evicted = lru.pop(0) if len(lru) == capacity else None
+                self.assertEqual((event["published"], event["evicted_document_id"]), (True, evicted))
+                lru.append(doc)
+
+        self.assertEqual(inflight, {})
+        self.assertEqual(set(paths), set(range(len(candidates))))
+        scores = [index for batch in entries["score_batch"] for index in batch["candidates"]]
+        self.assertEqual(Counter(scores), dict.fromkeys(paths, 1))
+        self.assertEqual(sum(batch["flop"] for batch in entries["score_batch"]), len(candidates) * 20971520)
+        batch_by_candidate = {index: batch for batch in entries["score_batch"] for index in batch["candidates"]}
+        submits, completes = defaultdict(dict), defaultdict(dict)
+        for event in entries["read_submit"]:
+            index, part = event["candidate"], event["slice"]
+            self.assertNotIn(part, submits[index])
+            self.assertEqual(event["document_id"], candidates[index])
+            self.assertEqual((event["valid_bytes"], event["path"]), (read_bytes, paths[index]))
+            submits[index][part] = event["time_ns"]
+        for event in entries["read_complete"]:
+            index, part = event["candidate"], event["slice"]
+            self.assertNotIn(part, completes[index])
+            self.assertLessEqual(submits[index][part], event["time_ns"])
+            completes[index][part] = event["time_ns"]
+        credits = defaultdict(list)
+        for event in entries["input_buffer"]:
+            self.assertTrue(0 <= event["used"] <= document_bytes)
+            credits[event["candidate"]].append(event)
+        stages = {(event.get("query", 0), event["op"]): event for event in entries["stage"]}
+        queries = {event.get("query", 0): event for event in entries["query"]}
+        protocol = {(event["kind"], event.get("candidate", event["query"])): event
+                    for event in entries["protocol"]}
+        self.assertEqual(len(protocol), len(entries["protocol"]))
+        fills = {event["candidate"]: event for event in entries["backfill_complete"]}
+        self.assertEqual(set(fills), chosen)
+        for index, path in paths.items():
+            query, position = divmod(index, count)
+            batch = batch_by_candidate[index]
+            stage = stages[query, f"score-{position}"]
+            self.assertEqual(batch["side"], "controller" if path == "local" else "host")
+            needed = 0 if path == "cache" else document_bytes // read_bytes
+            self.assertEqual(sorted(submits[index]), list(range(needed)))
+            self.assertEqual(sorted(completes[index]), list(range(needed)))
+            self.assertLessEqual(max(completes[index].values(), default=0), batch["start_ns"])
+            self.assertLessEqual(batch["end_ns"], stage["visible_ns"])
+            if path == "local":
+                self.assertLessEqual(protocol["command", query]["arrived_ns"], min(submits[index].values()))
+                self.assertEqual(stage["visible_ns"], protocol["result", query]["arrived_ns"])
+            else:
+                self.assertEqual(stage["visible_ns"], batch["end_ns"])
+            reserve, release = credits[index]
+            self.assertTrue(reserve["reserve"])
+            self.assertFalse(release["reserve"])
+            self.assertEqual(reserve["credit"], release["credit"])
+            if path_a and index in chosen:
+                self.assertEqual(fills[index]["time_ns"], max(completes[index].values()))
+            if path_b and index in chosen:
+                vector = protocol["backfill", index]
+                self.assertEqual((vector["effective_payload_bytes"], vector["header_bytes"]), (document_bytes, 0))
+                self.assertLessEqual(batch["end_ns"], vector["submitted_ns"])
+                self.assertEqual(release["time_ns"], vector["arrived_ns"])
+                self.assertEqual(fills[index]["time_ns"], vector["arrived_ns"])
+            else:
+                self.assertEqual(release["time_ns"], batch["end_ns"])
+        for query, record in queries.items():
+            ids = range(query * count, (query + 1) * count)
+            local = sum(paths[index] == "local" for index in ids)
+            self.assertEqual(record["offloaded_candidates"], local)
+            for kind, effective in (("command", 20480 + 8 * local), ("result", 12 * local)):
+                if local:
+                    self.assertEqual(protocol[kind, query]["effective_payload_bytes"], effective)
+                else:
+                    self.assertNotIn((kind, query), protocol)
+            topk = stages[query, "topk"]
+            self.assertEqual(topk["submitted_ns"], max(stages[query, f"score-{i}"]["visible_ns"] for i in range(count)))
+            self.assertEqual(topk["visible_ns"], record["visible_ns"])
+            self.assertLessEqual(record["visible_ns"], record["drained_ns"])
+
+        summary, = entries["summary"]
+        ordinary = sum(path == "ordinary" for path in paths.values())
+        local = sum(path == "local" for path in paths.values())
+        self.assertEqual(summary["ordinary_nvme_reads"], ordinary * 10)
+        self.assertEqual(summary["mqsim_local_reads"], local * 10)
+        self.assertEqual(summary["nand_user_read_bytes"], (ordinary + local) * document_bytes)
+        self.assertEqual(summary["nand_user_read_bytes"], sum(e["bytes"] for e in entries["nand_read"] if e["user_data"]))
+        self.assertEqual(summary["nand_read_transactions"], (ordinary + local) * (document_bytes // page_bytes))
+        self.assertEqual(summary["nand_read_bytes"], summary["nand_user_read_bytes"])
+        self.assertEqual(summary["document_d2h_payload_bytes"], ordinary * document_bytes)
+        link = [event for event in entries["pcie"] if event["event"] == "arrive"]
+        self.assertEqual(sum(e["payload_bytes"] for e in link if e["layer"] == "data"), ordinary * document_bytes)
+        platform = {e["platform_id"]: e for e in link if e["layer"] == "platform"}
+        self.assertEqual(set(platform), {e["link_platform_id"] for e in protocol.values()})
+        for event in protocol.values():
+            landed = platform[event["link_platform_id"]]
+            self.assertEqual(landed["time_ns"], event["arrived_ns"])
+            self.assertEqual(landed["payload_bytes"], event["link_payload_bytes"])
+        for direction in ("H2D", "D2H"):
+            transfers = [event for event in link if event["direction"] == direction]
+            for event in transfers:
+                payload = event["payload_bytes"]
+                self.assertEqual(event["wire_bytes"], payload + 28 * ceil_div(payload, 256))
+            if transfers:
+                self.assertEqual(summary["pcie"][direction], {
+                    "messages": len(transfers),
+                    **{key: sum(event[key] for event in transfers) for key in ("payload_bytes", "wire_bytes", "service_ns")},
+                })
+            else:
+                self.assertNotIn(direction, summary["pcie"])
+        self.assertEqual(summary["visible_ns"], max(query["visible_ns"] for query in queries.values()))
+        self.assertTrue(summary["all_resources_drained"])
+        self.assertEqual(summary["drained_ns"], max(
+            [query["drained_ns"] for query in queries.values()] + [e["time_ns"] for e in fills.values()]))
+        for side in ("host", "controller"):
+            ledger = [e for e in entries["input_buffer"] if e["side"] == side]
+            self.assertEqual(ledger[-1]["used"] if ledger else 0, 0)
+        if path_a or path_b:
+            fill = summary["backfill"]
+            self.assertEqual((fill["admitted"], fill["completed"], fill["published"]), (len(chosen),) * 3)
+            self.assertEqual(fill["deduplicated"], len(deduplicated))
+            self.assertEqual(fill["ordinary_d2h_payload_bytes"], ordinary * document_bytes)
+            self.assertEqual(fill["vector_d2h_payload_bytes"], len(chosen) * document_bytes if path_b else 0)
+            self.assertEqual(fill["last_completion_ns"], max((e["time_ns"] for e in fills.values()), default=0))
+            self.assertEqual(fill["background_tail_ns"], max(0, fill["last_completion_ns"] - summary["visible_ns"]))
+        return entries, paths
+
+    def test_hybrid_backfill_micron_9550_path_correctness(self):
+        from config import load_config
+        from e1 import MODEL_REVISION
+        from generate import generate
+
+        profile = HERE / "micron-9550-pro.json"
+        placements = ("hybrid_miss_only", "hybrid_backfill_a", "hybrid_backfill_b")
+        document_bytes = 655360
+        execution_budget = dict(rss_bytes=4 * 1024**3, output_bytes=64 * 1024**2, scratch_bytes=64 * 1024**2,
+                                min_disk_free_bytes=1024**3, timeout_seconds=180)
+
+        def fixture(name, docs, queries):
+            config = load_config(profile, dict(workload=dict(corpus_documents=docs, candidate_count=docs, top_k=1,
+                                                            model_revision=MODEL_REVISION),
+                generation=dict(queries=queries), execution=dict(input_buffer_bytes_per_side=document_bytes,
+                    global_outstanding_reads=2, read_window_documents_per_query=2)))
+            bundle = self.directory / name
+            generate(config, bundle, [sys.executable, str(Path(__file__).resolve()), str(BUILD),
+                                      f"Execution.{self._testMethodName}"], override_path=profile)
+            return bundle
+
+        def check(case, bundle, pages, cached, budget_pages, selected=placements, concurrency=None):
+            output = self.directory / case
+            snapshot = dict(host_capacity_bytes=pages * document_bytes, cache_oldest_first=cached)
+            backfill = dict(policy="all", history_window_accesses=0, initial_history_oldest_first=[],
+                            budget_window_ns=10**9, budget_bytes=budget_pages * document_bytes)
+            run(bundle, BUILD, output, selected, cache_snapshot=snapshot, backfill=backfill,
+                closed_concurrency=concurrency, local_read_die_admission=True,
+                nvme_read_die_admission="hybrid_backfill_a" in selected,
+                execution_budget=execution_budget if os.environ.get("NDPSIM_MAXSIM_EVIDENCE") else None)
+            return {placement: self.check_backfill_trace(bundle, output / f"{placement}.jsonl",
+                                                        snapshot, backfill["budget_bytes"])
+                    for placement in selected if placement in placements}
+
+        bundle = fixture("single", 8, 1)
+        ids = next(rows(bundle / "candidates.jsonl"))["document_ids"]
+        check("zero-cache", bundle, 0, [], 8)
+        check("all-hit", bundle, len(ids), ids, 8)
+        mixed = check("mixed", bundle, 4, ids[::2], 2, (*placements, "host", "device_all"))
+        self.assertEqual(set(mixed["hybrid_backfill_a"][1].values()), {"cache", "ordinary", "local"})
+        limited, _ = mixed["hybrid_backfill_b"]
+        self.assertIn("buffer", {e["reason"] for e in limited["backpressure"]})
+        self.assertGreater(limited["summary"][0]["backpressure_ns"]["buffer"], 0)
+
+        repeated = check("repeated", fixture("repeated-input", 1, 4), 1, [], 1, concurrency=2)
+        for placement in placements[1:]:
+            events, routes = repeated[placement]
+            first, second, *_ = events["candidate_route"]
+            self.assertEqual(first["time_ns"], second["time_ns"])
+            self.assertEqual((first["backfill_decision"], second["backfill_decision"]), ("admitted", "inflight"))
+            self.assertIn("cache", routes.values())
+            if placement == "hybrid_backfill_b":
+                records = {query["query"]: query for query in events["query"]}
+                self.assertEqual(records[2]["offered_ns"], records[0]["drained_ns"])
+                self.assertLess(records[2]["offered_ns"], events["backfill_complete"][0]["time_ns"])
+                self.assertEqual(routes[2], "local")
+
+        tail = check("background-tail", fixture("tail-input", 1, 1), 1, [], 1,
+                     ("hybrid_backfill_b",))["hybrid_backfill_b"][0]
+        front, = tail["query"]
+        back, = tail["backfill_complete"]
+        self.assertEqual(front["visible_ns"], front["drained_ns"])
+        result, vector = [event for event in tail["protocol"] if event["direction"] == "D2H"]
+        self.assertEqual((result["kind"], vector["kind"]), ("result", "backfill"))
+        self.assertEqual(result["submitted_ns"], vector["submitted_ns"])
+        self.assertLess(front["drained_ns"], back["time_ns"])
+        self.assertEqual(tail["summary"][0]["drained_ns"], back["time_ns"])
+
     def test_main_and_replay(self):
         bundle = self.bundle()
         runs = [self.directory / name for name in ("first run", "replay")]

@@ -21,6 +21,7 @@ Direction direction(MessageKind k) {
     case MessageKind::Result:
     case MessageKind::CloseAck:
     case MessageKind::Error:
+    case MessageKind::VectorBackfill:
         return Direction::D2H;
     }
     throw std::invalid_argument("unknown message kind");
@@ -41,6 +42,8 @@ MessageRules::MessageRules() {
             require(m.count && m.count <= UINT32_MAX && m.chunk && !m.dimension,
                     "invalid result count/chunk");
             return {mul(12, m.count), checked_add(56, mul(12, m.count))};
+        case MessageKind::VectorBackfill:
+            throw std::invalid_argument("unsupported graph vector backfill");
         default:
             require(!m.count && !m.dimension && !m.chunk, "control has body metadata");
             return {0, 48};

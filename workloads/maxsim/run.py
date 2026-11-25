@@ -24,12 +24,14 @@ HYBRID = "hybrid_miss_only"
 LOCAL_PLACEMENTS = ("device_all", HYBRID)
 NVME_PLACEMENTS = ("host", "host_compute_free")
 SUPPORTED_PLACEMENTS = (*PLACEMENTS, HYBRID)
+BACKFILL_PLACEMENTS = ("hybrid_backfill_a", "hybrid_backfill_b")
+EXECUTION_PLACEMENTS = (*SUPPORTED_PLACEMENTS, *BACKFILL_PLACEMENTS)
 
 
 def die_admission(placement, local, nvme):
     return {key: True for key, selected in (
-        ("local_read_die_admission", local and placement in LOCAL_PLACEMENTS),
-        ("nvme_read_die_admission", nvme and placement in NVME_PLACEMENTS),
+        ("local_read_die_admission", local and placement in (*LOCAL_PLACEMENTS, *BACKFILL_PLACEMENTS)),
+        ("nvme_read_die_admission", nvme and placement in (*NVME_PLACEMENTS, "hybrid_backfill_a")),
     ) if selected}
 
 
@@ -136,14 +138,19 @@ def execute(command, output, name):
 
 def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-run.json", *,
         device_limits=None, execution_budget=None, preflight_only=False, expected_backend_source=None,
-        local_read_die_admission=False, nvme_read_die_admission=False, cache_snapshot=None):
+        local_read_die_admission=False, nvme_read_die_admission=False, cache_snapshot=None,
+        backfill=None, closed_concurrency=None):
     bundle, build, output, platform_path = (p.resolve() for p in (bundle, build, output, platform_path))
-    require(placements and len(placements) == len(set(placements)) and all(p in SUPPORTED_PLACEMENTS for p in placements),
+    require(placements and len(placements) == len(set(placements)) and all(p in EXECUTION_PLACEMENTS for p in placements),
             "invalid MaxSim placements")
-    require(not local_read_die_admission or any(p in LOCAL_PLACEMENTS for p in placements),
+    require(not local_read_die_admission or any(p in (*LOCAL_PLACEMENTS, *BACKFILL_PLACEMENTS) for p in placements),
             "local read die admission requires selecting a controller placement")
-    require(not nvme_read_die_admission or any(p in NVME_PLACEMENTS for p in placements),
+    require(not nvme_read_die_admission or any(p in (*NVME_PLACEMENTS, "hybrid_backfill_a") for p in placements),
             "NVMe read die admission requires selecting an ordinary-read placement")
+    require((backfill is not None) == any(p in BACKFILL_PLACEMENTS for p in placements),
+            "backfill configuration required when selecting path A or B")
+    if closed_concurrency is not None:
+        uint(closed_concurrency, "closed_concurrency", 1)
     if cache_snapshot is not None:
         require(type(cache_snapshot) is dict and cache_snapshot.keys() == {"host_capacity_bytes", "cache_oldest_first"}
                 and type(cache_snapshot["cache_oldest_first"]) is list, "invalid cache snapshot fields")
@@ -160,6 +167,8 @@ def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-r
     if execution_budget is not None:
         execution_budget = budget(execution_budget)
     config, audit, backend, platform = checked_inputs(bundle, platform_path, expected_backend_source)
+    if closed_concurrency is not None:
+        require(closed_concurrency <= config["generation"]["queries"], "closed concurrency exceeds query count")
     sst = Path(json_file(build / "sst-paths.json")["sst"])
     library_dir = build / "workloads/maxsim"
     modules = [p for p in library_dir.glob("libndpsim_maxsim.*") if p.suffix in (".so", ".dylib")]
@@ -171,7 +180,8 @@ def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-r
     sources = [*HERE.glob("*.cc"), *HERE.glob("*.h"), *HERE.glob("*.h.in"), *HERE.glob("*.py"),
                HERE / "CMakeLists.txt", ROOT / "CMakeLists.txt", ROOT / "src/backend/event_bridge.h",
                ROOT / "src/backend/device_config.cc", ROOT / "src/backend/device_config.h",
-               ROOT / "src/layout/layout.h", ROOT / "src/layout/layout.cc", ROOT / "python/ndpsim/execution.py"]
+               ROOT / "src/layout/layout.h", ROOT / "src/layout/layout.cc", ROOT / "python/ndpsim/execution.py",
+               ROOT / "src/timing/messages.h", ROOT / "src/timing/messages.cc"]
     write(output / "inputs.json", {
         "bundle": str(bundle), "generation_receipt_sha256": file_hash(bundle / "receipt.json"),
         "requested_device_limits": device_limits, "execution_budget": execution_budget,
@@ -194,8 +204,15 @@ def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-r
             "scratch": f"{name}.sqlite", "output": trace.name, "platform": platform, **extra,
         }
         spec.update(die_admission(placement, local_read_die_admission, nvme_read_die_admission))
-        if cache_snapshot is not None and placement != "device_all":
-            spec["cache_snapshot"] = cache_snapshot
+        snapshot = cache_snapshot if placement != "device_all" else None
+        if closed_concurrency is not None:
+            spec["closed_loop"] = dict(snapshot or {"host_capacity_bytes": 0, "cache_oldest_first": []},
+                                       concurrency=closed_concurrency)
+            spec["detailed_trace"] = True
+        elif snapshot is not None:
+            spec["cache_snapshot"] = snapshot
+        if placement in BACKFILL_PLACEMENTS:
+            spec["backfill"] = backfill
         if device_limits is not None:
             spec["device_limits"] = device_limits
         write(run_name, spec)
@@ -252,16 +269,18 @@ def main():
     parser.add_argument("--build", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--platform", type=Path, default=HERE / "e0-run.json")
-    parser.add_argument("--placement", action="append", choices=SUPPORTED_PLACEMENTS)
+    parser.add_argument("--placement", action="append", choices=EXECUTION_PLACEMENTS)
     parser.add_argument("--cache-snapshot", type=Path, help="JSON with host_capacity_bytes and cache_oldest_first")
+    parser.add_argument("--backfill", type=Path, help="admission, access history and byte budget JSON for A/B")
+    parser.add_argument("--closed-concurrency", type=int, help="run a directed closed loop with a detailed trace")
     parser.add_argument("--device-limits", type=Path, help="explicit DeviceLimits JSON")
     parser.add_argument("--budget", type=Path, help="RAM, disk and wall-time budget JSON for execution")
     parser.add_argument("--preflight-only", action="store_true", help="validate device and layout without allocating MQSim")
     parser.add_argument("--backend-source-sha256", help="bind an experimental in-tree MQSim source revision")
     parser.add_argument("--local-read-die-admission", action="store_true",
-                        help="enable experimental die admission on device_all and hybrid_miss_only")
+                        help="enable experimental die admission on placements using local reads")
     parser.add_argument("--nvme-read-die-admission", action="store_true",
-                        help="enable experimental die admission on host and host_compute_free")
+                        help="enable experimental die admission on placements using ordinary reads")
     args = parser.parse_args()
     try:
         summary = run(args.input, args.build, args.output, args.placement or PLACEMENTS, args.platform,
@@ -270,7 +289,9 @@ def main():
                       preflight_only=args.preflight_only, expected_backend_source=args.backend_source_sha256,
                       local_read_die_admission=args.local_read_die_admission,
                       nvme_read_die_admission=args.nvme_read_die_admission,
-                      cache_snapshot=json_file(args.cache_snapshot) if args.cache_snapshot else None)
+                      cache_snapshot=json_file(args.cache_snapshot) if args.cache_snapshot else None,
+                      backfill=json_file(args.backfill) if args.backfill else None,
+                      closed_concurrency=args.closed_concurrency)
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
         print(f"MaxSim E0: {error}", file=sys.stderr)
         return 1

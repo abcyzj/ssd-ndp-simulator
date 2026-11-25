@@ -146,6 +146,37 @@ python workloads/maxsim/run.py --input /tmp/maxsim-e04 --build build/delivery \
 
 上述两点为 Zipf 0.8、20.97152% 缓存覆盖率、并发 16 和 64。普通读 Die 准入应用于 `host`，本地读 Die 准入应用于 `hybrid_miss_only` 和 `device_all`。E2 也可通过重复 `--placement` 选择同组放置并共享到达序列。两种负载的汇总按侧报告评分数、批次、计算时间、利用率和暂存峰值，同时记录协议载荷。对于混合方案，两侧总计算时间可以重叠，资源占用分别看 `host_scoring_utilization` 和 `controller_scoring_utilization`。结果适用范围为精排子系统和 `configured_unvalidated` 设备模型。
 
+### 路径正确性核验
+
+用根 CMake 更新 `build/delivery`，从仓库根目录运行以下命令。定向夹具显式绑定 `micron-9550-pro.json`，在同组放置之间复用候选包和初始快照。核验器独立核对逐候选路由、评分与发布时序，以及逻辑读、NAND、PCIe 和缓冲账本。证据目录需为新目录。 [§7.2 核验记录](../../docs/MaxSim_ndp.md#路径正确性核验记录)
+
+```sh
+mkdir -p results/maxsim
+run_root=$(mktemp -d "$PWD/results/maxsim/hybrid-path-9550.XXXXXX")
+export PYTHONPATH="$PWD/python:$PWD/workloads/maxsim"
+export NDPSIM_MAXSIM_EVIDENCE="$run_root"
+export NDPSIM_MAXSIM_BACKEND_SOURCE_SHA256=$(.venv/bin/python -c 'from run import backend_digest; print(backend_digest())')
+.venv/bin/python workloads/maxsim/test_execution.py build/delivery \
+  Execution.test_hybrid_backfill_micron_9550_path_correctness > "$run_root/path-test.log" 2>&1
+printf '%s\n' "$?" > "$run_root/path-test.exit"
+```
+
+单查询和定向闭环可用 `run.py --placement hybrid_backfill_a --placement hybrid_backfill_b --backfill backfill.json --cache-snapshot snapshot.json` 配对运行。闭环样本附加 `--closed-concurrency 2` 以保留逐事件轨迹。按需传 `--nvme-read-die-admission` 和 `--local-read-die-admission`，A 可同时使用两种准入，B 使用本地读准入。回填配置示例适用于每个 1 ms 模拟时间窗最多接纳两篇 640 KiB 文档。
+
+```json
+{
+  "policy": "all",
+  "history_window_accesses": 0,
+  "initial_history_oldest_first": [],
+  "budget_window_ns": 1000000,
+  "budget_bytes": 1310720
+}
+```
+
+策略值是 `all`、`second` 或 `frequency`。后两种按候选访问数维护有界历史，初始历史由旧到新提供，可以重复文档 ID。回填预算从测量起点按固定模拟时间窗划分，按准入时的有效向量字节扣减。`frequency` 在向量到达时用当时的 LRU 对象和频次复核，拒绝发布时已经发生的传输照常计费。
+
+`document_d2h_payload_bytes` 记录普通 NVMe 数据回传，路径 B 的向量另记于 `backfill.vector_d2h_payload_bytes`，两者都计入 PCIe D2H 总账。B 在同一 MQSim 链路发送独立向量 envelope，模型对向量计有效字节及 TLP 开销，源缓冲保留到向量到达。前台 `visible_ns`、实验 `drained_ns` 和 `backfill.background_tail_ns` 可对照读取。
+
 ## Micron 9550 PRO 候选设备与重跑
 
 [`micron-9550-pro.json`](micron-9550-pro.json) 是本轮 E0～E5 的设备入口。它绑定 [XML](micron-9550-pro-device.xml) 和 MQSim fork 身份。主候选使用 Gen5 ×4、256 B MPS、设备队列 1024、`fetch=128`、16 条 2400 MT/s 通道、每通道 4 chip、每 chip 2 die、每 die 4 plane、TLC、55 µs 等效阵列读、8 MiB CMT 和 128 GiB raw。全程使用 64 GB/s 盘控暂存。设备状态为 `configured_unvalidated`。

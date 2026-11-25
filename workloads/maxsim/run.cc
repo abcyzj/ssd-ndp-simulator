@@ -12,6 +12,7 @@
 
 #include <array>
 #include <cmath>
+#include <deque>
 #include <fstream>
 #include <list>
 #include <unordered_map>
@@ -66,7 +67,7 @@ struct Run::State {
     struct Document {
         uint64_t id = 0, credit = 0, reads_left = 0, moves_left = 0, flop = 0;
         size_t submitted = 0;
-        bool controller = false, hit = false;
+        bool controller = false, hit = false, fill = false;
         std::vector<layout::Plan> plans;
         capture::Key key;
         Done read_done;
@@ -89,6 +90,20 @@ struct Run::State {
     struct OrdinaryRead {
         size_t candidate, slice;
     };
+    enum class FillPath { None, Ordinary, Staged };
+    enum class Admission { All, Second, Frequency };
+    struct Backfill {
+        FillPath path = FillPath::None;
+        Admission policy = Admission::All;
+        uint64_t history_limit = 0, window_ns = 0, budget_bytes = 0;
+        uint64_t epoch = 0, used = 0, admitted = 0, deduplicated = 0;
+        uint64_t completed = 0, published = 0, vector_bytes = 0;
+        uint64_t ordinary_documents = 0, last_completion = 0;
+        std::deque<uint64_t> history;
+        std::unordered_map<uint64_t, uint64_t> frequency;
+        std::unordered_map<uint64_t, size_t> inflight;
+        std::vector<size_t> ready;
+    } fill;
     struct LinkLedger {
         uint64_t messages = 0, payload = 0, wire = 0, service = 0;
     };
@@ -121,7 +136,7 @@ struct Run::State {
     size_t cache_pages = 0, count = 0, concurrency = 1;
     size_t next_read_query = 0;
     uint64_t hits = 0;
-    bool compact = false, open_loop = false, overlap = true;
+    bool experiment = false, detailed = true, open_loop = false, overlap = true;
     std::string last_block;
     uint64_t blocked_since = 0;
     std::map<std::string, uint64_t> blocked_ns;
@@ -161,6 +176,12 @@ struct Run::State {
     size_t offloaded(const Query&) const;
     uint64_t command_bytes(size_t candidates) const;
     void route(size_t query);
+    void configure_backfill(const J&, uint64_t corpus_documents);
+    void observe_access(uint64_t id);
+    uint64_t access_frequency(uint64_t id) const;
+    const char* admit_backfill(size_t index);
+    void complete_backfill(size_t index);
+    void pump_backfill();
     void send_command(size_t query, Done done = {});
     void connect();
     void start_executor();
@@ -188,7 +209,7 @@ struct Run::State {
         run.nand_read_bytes += bytes;
         run.nand_user_read_bytes += user ? bytes : 0;
         ++run.nand_reads;
-        if (!run.compact) run.emit({{"type", "nand_read"}, {"time_ns", run.now()}, {"bytes", bytes},
+        if (run.detailed) run.emit({{"type", "nand_read"}, {"time_ns", run.now()}, {"bytes", bytes},
                   {"source", int(tr->Source)}, {"user_data", user},
                   {"channel", tr->Address.ChannelID}, {"lpa", tr->LPA},
                   {"transfer_ns", tr->STAT_transfer_time},
@@ -206,7 +227,8 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
                     + size_t(run.contains("closed_loop")) + size_t(run.contains("open_loop"))
                     + size_t(run.contains("local_read_die_admission"))
                     + size_t(run.contains("nvme_read_die_admission"))
-                    + size_t(run.contains("cache_snapshot")),
+                    + size_t(run.contains("cache_snapshot"))
+                    + size_t(run.contains("backfill")) + size_t(run.contains("detailed_trace")),
             "MaxSim run format/fields");
     const bool preflight_only = run.value("preflight_only", false);
     DeviceLimits limits;
@@ -218,13 +240,18 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     }
     placement = run.at("placement");
     offload = placement == "device_all";
-    hybrid = placement == "hybrid_miss_only";
+    if (placement == "hybrid_backfill_a")
+        fill.path = FillPath::Ordinary;
+    if (placement == "hybrid_backfill_b")
+        fill.path = FillPath::Staged;
+    hybrid = placement == "hybrid_miss_only" || fill.path != FillPath::None;
+    require(run.contains("backfill") == (fill.path != FillPath::None), "MaxSim backfill configuration required for A/B");
     free = placement == "host_compute_free";
     local_read_die_admission = run.value("local_read_die_admission", false);
     nvme_read_die_admission = run.value("nvme_read_die_admission", false);
     require(!local_read_die_admission || offload || hybrid,
             "local read die admission requires a controller placement");
-    require(!nvme_read_die_admission || (!offload && !hybrid),
+    require(!nvme_read_die_admission || (!offload && !hybrid) || fill.path == FillPath::Ordinary,
             "NVMe read die admission requires an ordinary-read placement");
     require(offload || hybrid || free || placement == "host", "unsupported MaxSim placement");
     const auto directory = fs::absolute(path).parent_path();
@@ -272,12 +299,13 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     require(!open_loop || !run.contains("closed_loop"), "MaxSim load modes are exclusive");
     const char* mode = open_loop ? "open_loop" : "closed_loop";
     const auto* initial_cache = run.contains("cache_snapshot") ? &run.at("cache_snapshot") : nullptr;
-    if (run.contains(mode)) {
+    experiment = run.contains(mode);
+    detailed = run.value("detailed_trace", !experiment);
+    if (experiment) {
         require(!initial_cache, "standalone cache snapshot and experiment settings are exclusive");
         const auto& experiment = run.at(mode);
         require(experiment.size() == (open_loop ? 5 : 3), "MaxSim experiment configuration fields");
         concurrency = integer(experiment.at("concurrency"));
-        compact = true;
         if (open_loop) {
             const auto& offsets = experiment.at("offered_offsets_ns");
             const auto qps = experiment.at("qps").get<double>();
@@ -300,9 +328,9 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
                     c.at("cache").at("host_capacity_bytes") == 0,
                 "MaxSim E0 requires one query and zero cache capacity");
     }
-    require(!initial_cache || compact || !offload, "standalone cache snapshot requires a host cache");
+    require(!initial_cache || experiment || !offload, "standalone cache snapshot requires a host cache");
     if (initial_cache) {
-        require(compact || (initial_cache->is_object() && initial_cache->size() == 2),
+        require(experiment || (initial_cache->is_object() && initial_cache->size() == 2),
                 "MaxSim cache snapshot fields");
         c.at("cache").at("host_capacity_bytes") = initial_cache->at("host_capacity_bytes");
         c.at("cache").at("host_capacity_fraction") = nullptr;
@@ -443,12 +471,19 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
             const auto bytes = command_bytes(m.count);
             return {bytes, checked_add(bytes, command_header)};
         }
+        if (m.kind == MessageKind::VectorBackfill) {
+            require(fill.path == FillPath::Staged && m.count == 1, "invalid MaxSim vector backfill");
+            return {document_bytes, document_bytes};
+        }
         require(m.kind == MessageKind::Result, "unsupported MaxSim message");
         const auto bytes = m.count * score_bytes;
         return {bytes, checked_add(bytes, result_header)};
     });
-    for (auto kind : {MessageKind::Execute, MessageKind::Result}) {
-        auto size = rules.size({protocol, kind, 0, 1, 1, 1, 1, count});
+    for (auto kind : {MessageKind::Execute, MessageKind::Result, MessageKind::VectorBackfill}) {
+        const bool vector = kind == MessageKind::VectorBackfill;
+        if (vector && fill.path != FillPath::Staged)
+            continue;
+        auto size = rules.size({protocol, kind, 0, 1, 1, 1, 1, vector ? 1 : count});
         // MQSim's configured TLP payload and fixed 28 B overhead.
         require(size.payload + 28 * ceil_div(size.payload, g.pcie_max_payload_bytes) <= INT32_MAX,
                 "MaxSim protocol envelope exceeds link bounds");
@@ -468,7 +503,9 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
         }
     }
     if (hybrid)
-        c.at("cache").at("host_fill_on_miss") = false;
+        c.at("cache").at("host_fill_on_miss") = fill.path != FillPath::None;
+    if (fill.path != FillPath::None)
+        configure_backfill(run.at("backfill"), integer(c.at("workload").at("corpus_documents")));
     for (auto& d : documents)
         d.controller = offload;
     const auto geometry = J::parse(config->effective_json());
@@ -477,7 +514,7 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
         side.buffer = std::make_unique<timing::BufferModel>(bridge, now, buffer_limit);
     require(!fs::exists(output), "trace output must be new");
     trace.open(output);
-    emit({{"type", "configuration"}, {"placement", placement}, {"effective_config", c},
+    J configuration = {{"type", "configuration"}, {"placement", placement}, {"effective_config", c},
           {"local_read_die_admission", local_read_die_admission},
           {"nvme_read_die_admission", nvme_read_die_admission},
           {"effective_platform", platform}, {"device", geometry}, {"layout_sha256", layout->source_sha256()},
@@ -486,7 +523,10 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
           {"mqsim_commit", mqsim_commit}, {"mqsim_source_sha256", mqsim_source_sha256},
           {"cost_profile_sha256", cost_profile->source_sha256()},
           {"mqsim_pcie_configured_GBps", g.lanes * g.lane_bandwidth},
-          {"configured_unvalidated", true}});
+          {"configured_unvalidated", true}};
+    if (fill.path != FillPath::None)
+        configuration["backfill"] = run.at("backfill");
+    emit(configuration);
 
     if (preflight_only) {
         emit({{"type", "device_preflight"}, {"success", true}, {"allocated", false},
@@ -610,13 +650,13 @@ void Run::State::connect() {
         auto& side = sides[controller];
         side.scoring.observations().enabled = false;
         side.buffer->observations().sink = [this, controller](const auto& x) {
-            if (!compact) emit({{"type", "input_buffer"}, {"time_ns", x.time}, {"candidate", std::stoull(x.lifetime)},
+            if (detailed) emit({{"type", "input_buffer"}, {"time_ns", x.time}, {"candidate", std::stoull(x.lifetime)},
                   {"side", controller ? "controller" : "host"}, {"credit", x.id},
                   {"bytes", x.bytes}, {"used", x.used}, {"reserve", x.reserve}});
         };
     }
     staging.observations().sink = [this](const auto& x) {
-        if (!compact) emit({{"type", "controller_staging"}, {"key", x.key}, {"submitted_ns", x.submitted},
+        if (detailed) emit({{"type", "controller_staging"}, {"key", x.key}, {"submitted_ns", x.submitted},
               {"start_ns", x.start}, {"end_ns", x.end}, {"duration_ns", x.duration_ns}});
     };
     device->root->data_arrived = [this](auto address, auto bytes) {
@@ -638,14 +678,25 @@ void Run::State::connect() {
         });
     };
     pcie->observations().sink = [this](const auto& x) {
-        ++protocol_messages;
-        (x.kind == MessageKind::Execute ? command_payload : result_payload) += x.logical;
-        if (!compact) emit({{"type", "protocol"}, {"kind", x.kind == MessageKind::Execute ? "command" : "result"},
-              {"direction", x.direction == timing::Direction::H2D ? "H2D" : "D2H"},
-              {"link_platform_id", x.id}, {"query", x.query}, {"candidates", x.count},
-              {"effective_payload_bytes", x.logical},
-              {"header_bytes", x.payload - x.logical}, {"link_payload_bytes", x.payload},
-              {"wire_bytes", x.wire}, {"submitted_ns", x.submitted}, {"arrived_ns", x.arrived}});
+        const bool vector = x.kind == MessageKind::VectorBackfill;
+        if (vector) {
+            fill.vector_bytes += x.logical;
+        } else {
+            ++protocol_messages;
+            (x.kind == MessageKind::Execute ? command_payload : result_payload) += x.logical;
+        }
+        if (detailed) {
+            const char* kind = vector ? "backfill" : x.kind == MessageKind::Execute ? "command" : "result";
+            J entry = {{"type", "protocol"}, {"kind", kind},
+                       {"direction", x.direction == timing::Direction::H2D ? "H2D" : "D2H"},
+                       {"link_platform_id", x.id}, {"query", x.query}, {"candidates", x.count},
+                       {"effective_payload_bytes", x.logical}, {"header_bytes", x.payload - x.logical},
+                       {"link_payload_bytes", x.payload}, {"wire_bytes", x.wire},
+                       {"submitted_ns", x.submitted}, {"arrived_ns", x.arrived}};
+            if (vector)
+                entry["candidate"] = x.chunk;
+            emit(entry);
+        }
     };
     device->link->observe = [this](const char* event, const auto& x) {
         using namespace Host_Components;
@@ -668,7 +719,7 @@ void Run::State::connect() {
             accounting.wire += x.wire;
             accounting.service += x.service;
         }
-        if (!compact) emit({{"type", "pcie"}, {"event", event}, {"layer", layer},
+        if (detailed) emit({{"type", "pcie"}, {"event", event}, {"layer", layer},
               {"id", x.id}, {"platform_id", x.platform_id}, {"time_ns", x.time},
               {"direction", upload ? "H2D" : "D2H"}, {"payload_bytes", x.payload},
               {"wire_bytes", x.wire}, {"service_ns", x.service}});
@@ -684,16 +735,21 @@ void Run::State::start_executor() {
     executor = std::make_unique<dag::Executor>(*package, runtime, bridge, now, std::move(scheduling),
         [this](const auto& stage) { return lower(stage); });
     executor->stages().sink = [this](const auto& x) {
-        if (!compact) emit({{"type", "stage"}, {"op", x.key.op}, {"submitted_ns", x.submitted},
-              {"visible_ns", x.completed}, {"success", x.success}});
+        if (detailed) {
+            J entry = {{"type", "stage"}, {"op", x.key.op}, {"submitted_ns", x.submitted},
+                       {"visible_ns", x.completed}, {"success", x.success}};
+            if (experiment)
+                entry["query"] = x.key.query;
+            emit(entry);
+        }
     };
     executor->requests().sink = [this](const auto& x) {
         visible = x.visible;
         active_queries.erase(x.query);
-        J record = {{"type", "query"}, {"offered_ns", compact && !open_loop ? x.worker_start : x.offered},
+        J record = {{"type", "query"}, {"offered_ns", experiment && !open_loop ? x.worker_start : x.offered},
                     {"visible_ns", x.visible},
                     {"drained_ns", x.drained}, {"success", x.success}};
-        if (compact)
+        if (experiment)
             record["query"] = x.query;
         if (hybrid) {
             auto& q = queries.at(x.query);
@@ -755,7 +811,7 @@ timing::Operation Run::State::lower(const dag::Stage& stage) {
             require(!d.reads_left && !d.moves_left && d.credit && !scored.at(index) &&
                         queries.at(query).ready[d.controller].emplace(std::make_pair(now(), index), std::move(done)).second,
                     "document score queued before input or more than once");
-            if (!compact) emit({{"type", "score_ready"}, {"candidate", index}, {"time_ns", now()}});
+            if (detailed) emit({{"type", "score_ready"}, {"candidate", index}, {"time_ns", now()}});
         };
         op.send_return = [this, index, query](Done done) {
             require(scored.at(index), "score before batch completion");
@@ -772,7 +828,12 @@ timing::Operation Run::State::lower(const dag::Stage& stage) {
         require(q.host_scores == uplink, "Top-K before all scores reached the Host");
         op.send_return = [this, query](Done done) {
             ++topk_count;
-            if (!compact) emit({{"type", "topk"}, {"time_ns", now()}, {"descriptor_bytes", topk_bytes}});
+            if (detailed) {
+                J entry = {{"type", "topk"}, {"time_ns", now()}, {"descriptor_bytes", topk_bytes}};
+                if (experiment)
+                    entry["query"] = query;
+                emit(entry);
+            }
             queries.at(query).host_scores = 0;
             host_scores -= uplink;
             occupancy(query);
@@ -800,6 +861,8 @@ void Run::State::poll() {
     // MetadataLocalReads may have just moved backend completions into the bridge.
     if (!launched || bridge.pending_now())
         return;
+    // A result made ready at this timestamp enters PCIe before newly ready backfills.
+    pump_backfill();
     if (finished) {
         if (bridge.idle() && !reported) {
             blocked(nullptr, 0);
@@ -827,20 +890,140 @@ void Run::State::route(size_t query) {
         const auto index = query * count + candidate;
         auto& d = documents.at(index);
         d.hit = cached.count(d.id);
-        d.controller = !d.hit;
+        const char* decision = nullptr;
+        if (fill.path != FillPath::None) {
+            if (fill.policy != Admission::Second)
+                observe_access(d.id);
+            if (!d.hit)
+                decision = admit_backfill(index);
+            if (fill.policy == Admission::Second)
+                observe_access(d.id);
+        }
+        d.controller = !d.hit && !(d.fill && fill.path == FillPath::Ordinary);
         q.routes[d.controller].push_back(index);
         if (d.hit)
             touch(d.id);
-        if (!compact)
-            emit({{"type", "candidate_route"}, {"query", query}, {"candidate", index}, {"document_id", d.id},
-                  {"time_ns", now()}, {"path", d.hit ? "cache" : "local"}});
+        if (detailed) {
+            J entry = {{"type", "candidate_route"}, {"query", query}, {"candidate", index}, {"document_id", d.id},
+                       {"time_ns", now()}, {"path", d.hit ? "cache" : d.controller ? "local" : "ordinary"}};
+            if (decision)
+                entry["backfill_decision"] = decision;
+            emit(entry);
+        }
     }
     q.controller_candidates = q.routes[true].size();
 }
 
+void Run::State::configure_backfill(const J& spec, uint64_t corpus_documents) {
+    require(spec.is_object() && spec.size() == 5, "MaxSim backfill fields");
+    const auto& policy = spec.at("policy");
+    if (policy == "second")
+        fill.policy = Admission::Second;
+    else if (policy == "frequency")
+        fill.policy = Admission::Frequency;
+    else
+        require(policy == "all", "unsupported MaxSim cache admission policy");
+    fill.history_limit = integer(spec.at("history_window_accesses"));
+    fill.window_ns = integer(spec.at("budget_window_ns"));
+    fill.budget_bytes = integer(spec.at("budget_bytes"));
+    const auto& history = spec.at("initial_history_oldest_first");
+    require(fill.window_ns && (fill.policy == Admission::All || fill.history_limit) &&
+                history.is_array() && history.size() <= fill.history_limit, "invalid MaxSim backfill window");
+    for (const auto& entry : history) {
+        const auto id = integer(entry);
+        require(id < corpus_documents, "invalid MaxSim history document");
+        observe_access(id);
+    }
+}
+
+void Run::State::observe_access(uint64_t id) {
+    if (fill.policy == Admission::All)
+        return;
+    if (fill.history.size() == fill.history_limit) {
+        auto old = fill.frequency.find(fill.history.front());
+        if (!--old->second)
+            fill.frequency.erase(old);
+        fill.history.pop_front();
+    }
+    fill.history.push_back(id);
+    ++fill.frequency[id];
+}
+
+uint64_t Run::State::access_frequency(uint64_t id) const {
+    const auto entry = fill.frequency.find(id);
+    return entry == fill.frequency.end() ? 0 : entry->second;
+}
+
+const char* Run::State::admit_backfill(size_t index) {
+    auto& d = documents.at(index);
+    if (fill.inflight.count(d.id)) {
+        ++fill.deduplicated;
+        return "inflight";
+    }
+    if (!cache_pages)
+        return "capacity";
+    if (fill.policy == Admission::Second && !fill.frequency.count(d.id))
+        return "history";
+    if (fill.policy == Admission::Frequency && cached.size() == cache_pages &&
+        access_frequency(d.id) <= access_frequency(cache_order.front()))
+        return "frequency";
+    const auto epoch = (now() - origin) / fill.window_ns;
+    if (epoch != fill.epoch) {
+        fill.epoch = epoch;
+        fill.used = 0;
+    }
+    if (document_bytes > fill.budget_bytes - fill.used)
+        return "budget";
+    fill.used += document_bytes;
+    ++fill.admitted;
+    if (fill.path == FillPath::Ordinary)
+        ++fill.ordinary_documents;
+    require(fill.inflight.emplace(d.id, index).second, "duplicate MaxSim backfill");
+    d.fill = true;
+    return "admitted";
+}
+
+void Run::State::complete_backfill(size_t index) {
+    const auto& d = documents.at(index);
+    require(fill.inflight.at(d.id) == index && !cached.count(d.id), "invalid MaxSim backfill completion");
+    fill.inflight.erase(d.id);
+    ++fill.completed;
+    fill.last_completion = now();
+    J evicted = nullptr;
+    bool publish = true;
+    if (cached.size() == cache_pages) {
+        const auto victim = cache_order.front();
+        if (fill.policy == Admission::Frequency)
+            publish = access_frequency(d.id) > access_frequency(victim);
+        if (publish)
+            evicted = victim;
+    }
+    if (publish) {
+        touch(d.id);
+        ++fill.published;
+    }
+    if (detailed)
+        emit({{"type", "backfill_complete"}, {"candidate", index}, {"document_id", d.id},
+              {"time_ns", now()}, {"published", publish}, {"evicted_document_id", evicted}});
+}
+
+void Run::State::pump_backfill() {
+    for (const auto index : fill.ready) {
+        pcie->send({protocol, MessageKind::VectorBackfill, index / count, index + 2, 1, 1, index, 1},
+            [this, index](const auto&) {
+                auto& d = documents.at(index);
+                require(d.credit && scored.at(index), "MaxSim vector returned without scored input");
+                complete_backfill(index);
+                sides[true].buffer->release(d.credit);
+                d.credit = 0;
+            });
+    }
+    fill.ready.clear();
+}
+
 void Run::State::send_command(size_t query, Done done) {
     const auto candidates = offloaded(queries.at(query));
-    if (!compact) emit({{"type", "offload_command_service"}, {"query", query},
+    if (detailed) emit({{"type", "offload_command_service"}, {"query", query},
                         {"duration_ns", command_ns}, {"end_ns", now()}});
     pcie->send({protocol, MessageKind::Execute, query, 1, 1, 1, 1, candidates},
         [this, query, candidates, done = std::move(done)](const auto&) {
@@ -861,7 +1044,8 @@ void Run::State::touch(uint64_t id) {
         cache_order.splice(cache_order.end(), cache_order, it->second);
         return;
     }
-    require(!hybrid || !launched, "hybrid cache membership changed during execution");
+    require(!hybrid || !launched || fill.path != FillPath::None,
+            "hybrid cache membership changed during execution");
     if (cached.size() == cache_pages) {
         cached.erase(cache_order.front());
         cache_order.pop_front();
@@ -877,7 +1061,7 @@ void Run::State::blocked(const char* reason, size_t index) {
         blocked_ns[last_block] += now() - blocked_since;
     blocked_since = now();
     last_block = next;
-    if (reason && !compact)
+    if (reason && detailed)
         emit({{"type", "backpressure"}, {"reason", reason}, {"time_ns", now()},
               {"candidate", index}, {"outstanding_reads", qd},
               {"window_documents", window}, {"input_buffer_bytes", sides[documents.at(index).controller].buffer->used()}});
@@ -954,7 +1138,7 @@ void Run::State::pump_reads() {
                 }
                 ++window;
                 peak_window = std::max(peak_window, ++current.window);
-                if (!compact)
+                if (detailed)
                     emit({{"type", "read_window"}, {"candidate", index}, {"time_ns", now()},
                           {"used", window}, {"reserve", true}});
             });
@@ -966,7 +1150,7 @@ void Run::State::pump_reads() {
         peak_qd = std::max(peak_qd, ++qd);
         ++submitted_reads;
         ++side.outstanding;
-        if (!compact) emit({{"type", "read_submit"}, {"candidate", index}, {"document_id", d.id}, {"slice", slice},
+        if (detailed) emit({{"type", "read_submit"}, {"candidate", index}, {"document_id", d.id}, {"slice", slice},
               {"lba", request.lba}, {"sectors", request.sectors}, {"time_ns", now()},
               {"valid_bytes", plan.logical_bytes}, {"outstanding_reads", qd},
               {"path", controller ? "local" : "ordinary"}});
@@ -1001,15 +1185,17 @@ void Run::State::complete_read(size_t index, size_t slice) {
         ++local_reads;
     else
         ordinary_bytes += plan.sector_bytes;
-    if (!compact) emit({{"type", "read_complete"}, {"candidate", index}, {"slice", slice}, {"time_ns", now()},
+    if (detailed) emit({{"type", "read_complete"}, {"candidate", index}, {"slice", slice}, {"time_ns", now()},
           {"outstanding_reads", qd}});
     if (!--d.reads_left) {
         require(window > 0, "document read-window underflow");
         --window;
         --queries.at(index / count).window;
-        if (!d.controller)
+        if (d.fill && fill.path == FillPath::Ordinary)
+            complete_backfill(index);
+        else if (!hybrid && !d.controller)
             touch(d.id);
-        if (!compact) emit({{"type", "read_window"}, {"candidate", index}, {"time_ns", now()},
+        if (detailed) emit({{"type", "read_window"}, {"candidate", index}, {"time_ns", now()},
               {"used", window}, {"reserve", false}});
     }
     if (d.controller) {
@@ -1070,7 +1256,7 @@ void Run::State::pump_scores(bool controller) {
     side.compute_ns = checked_add(side.compute_ns, duration);
     side.scoring.submit(std::to_string(batch), duration, [this, batch, members, flop, duration, controller] {
         peak_scoring_engines = std::max(peak_scoring_engines, sides[false].scoring.busy() + sides[true].scoring.busy());
-        if (!compact) emit({{"type", "score_batch"}, {"batch", batch}, {"candidates", members},
+        if (detailed) emit({{"type", "score_batch"}, {"batch", batch}, {"candidates", members},
               {"flop", flop}, {"side", controller ? "controller" : "host"}, {"start_ns", now()}, {"end_ns", checked_add(now(), duration)},
               {"duration_ns", duration}});
     }, [this, query, members, controller, completions = std::move(completions)](bool ok) {
@@ -1083,8 +1269,12 @@ void Run::State::pump_scores(bool controller) {
             auto& d = documents.at(index);
             require(!scored.at(index) && d.credit, "duplicate scoring or missing buffer credit");
             scored.at(index) = true;
-            current_side.buffer->release(d.credit);
-            d.credit = 0;
+            if (d.fill && fill.path == FillPath::Staged) {
+                fill.ready.push_back(index);
+            } else {
+                current_side.buffer->release(d.credit);
+                d.credit = 0;
+            }
             if (controller) {
                 q.controller_scores += score_bytes;
                 controller_scores += score_bytes;
@@ -1125,7 +1315,7 @@ void Run::State::occupancy(size_t) {
     peak_controller_input = std::max(peak_controller_input, controller_input);
     peak_controller_scores = std::max(peak_controller_scores, controller_scores);
     peak_host_scores = std::max(peak_host_scores, host_scores);
-    if (!compact) emit({{"type", "metadata_buffers"}, {"time_ns", now()}, {"controller_query_ids_bytes", controller_input},
+    if (detailed) emit({{"type", "metadata_buffers"}, {"time_ns", now()}, {"controller_query_ids_bytes", controller_input},
           {"controller_score_bytes", controller_scores}, {"host_score_bytes", host_scores}});
 }
 
@@ -1160,7 +1350,14 @@ void Run::State::verify() const {
         return offloaded(q) > 0;
     });
     const auto offloaded_documents = sides[true].scored;
-    require(dma == ordinary_bytes && (!hybrid || (dma == 0 && hits + offloaded_documents == documents.size())) &&
+    require(fill.inflight.empty() && fill.ready.empty() && fill.admitted == fill.completed &&
+                fill.published <= fill.completed && fill.last_completion <= now() &&
+                (fill.path != FillPath::Ordinary || fill.ordinary_documents == fill.completed) &&
+                (fill.path != FillPath::Staged || fill.vector_bytes == fill.completed * document_bytes),
+            "MaxSim backfill resources or ledger not drained");
+    require(dma == ordinary_bytes &&
+                (!hybrid || (completed_reads - local_reads == fill.ordinary_documents * (expected_reads / count) &&
+                             hits + offloaded_documents + fill.ordinary_documents == documents.size())) &&
                 local_reads == offloaded_documents * (expected_reads / count) &&
                 staged_bytes == offloaded_documents * document_bytes &&
                 protocol_messages == 2 * commands &&
@@ -1171,7 +1368,7 @@ void Run::State::verify() const {
 
 void Run::State::report() {
     verify();
-    observation.report(origin, now(), !compact);
+    observation.report(origin, now(), detailed);
     J link = J::object();
     for (const auto& [direction, total] : link_ledger)
         link[direction] = {{"messages", total.messages}, {"payload_bytes", total.payload},
@@ -1183,7 +1380,7 @@ void Run::State::report() {
             {"scores", side.scored}, {"batches", side.batches}, {"compute_ns", side.compute_ns},
             {"peak_input_buffer_bytes", side.buffer->peak()}};
     }
-    emit({{"type", "summary"}, {"success", true}, {"scope", "synthetic_fixture_execution"},
+    J summary = {{"type", "summary"}, {"success", true}, {"scope", "synthetic_fixture_execution"},
           {"configured_unvalidated", true}, {"placement", placement},
           {"origin_ns", origin}, {"visible_ns", visible}, {"drained_ns", now()},
           {"query_latency_ns", visible - origin}, {"logical_reads", completed_reads},
@@ -1202,7 +1399,15 @@ void Run::State::report() {
           {"peak_controller_score_bytes", peak_controller_scores}, {"peak_host_score_bytes", peak_host_scores},
           {"cache_hits", hits}, {"cache_hit_rate", double(hits) / documents.size()},
           {"backpressure_ns", blocked_ns}, {"peak_active_queries", executor->metrics().peak_queries},
-          {"protocol_messages", protocol_messages}, {"pcie", link}, {"all_resources_drained", true}});
+          {"protocol_messages", protocol_messages}, {"pcie", link}, {"all_resources_drained", true}};
+    if (fill.path != FillPath::None)
+        summary["backfill"] = {{"admitted", fill.admitted}, {"deduplicated", fill.deduplicated},
+            {"completed", fill.completed}, {"published", fill.published},
+            {"ordinary_d2h_payload_bytes", dma}, {"vector_d2h_payload_bytes", fill.vector_bytes},
+            {"foreground_ordinary_documents", fill.ordinary_documents}, {"last_completion_ns", fill.last_completion},
+            {"background_tail_ns", fill.path == FillPath::Staged && fill.last_completion > visible
+                                      ? fill.last_completion - visible : 0}};
+    emit(summary);
     trace.flush();
     require(bool(trace), "cannot flush MaxSim trace");
     reported = true;
