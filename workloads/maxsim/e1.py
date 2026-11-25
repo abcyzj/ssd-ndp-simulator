@@ -112,6 +112,8 @@ def summarize(trace, queries, concurrency):
                 p50_ms=quantile(.5), p95_ms=quantile(.95), p99_ms=quantile(.99),
                 cache_hit_rate=summary["cache_hit_rate"],
                 effective_read_GBps=summary["effective_document_bytes"] / span,
+                local_read_die_admission=header.get("local_read_die_admission", False),
+                nvme_read_die_admission=header.get("nvme_read_die_admission", False),
                 nand_read_GBps=summary["nand_read_bytes"] / span,
                 nand_user_read_GBps=summary["nand_user_read_bytes"] / span,
                 nand_read_transactions=summary["nand_read_transactions"],
@@ -136,7 +138,7 @@ def summarize(trace, queries, concurrency):
 
 def run_point(directory, name, placement, bundle, platform, source, sst, library, concurrency, capacity, snapshot,
               queries, *, device_limits=None, execution_budget=None, preflight_only=False,
-              local_read_die_admission=False):
+              local_read_die_admission=False, nvme_read_die_admission=False):
     spec_path = directory / f"{name}.json"
     trace = spec_path.with_suffix(".jsonl")
     spec = dict(format="ndpsim-maxsim-run/1", placement=placement, bundle=str(bundle),
@@ -146,6 +148,9 @@ def run_point(directory, name, placement, bundle, platform, source, sst, library
     if local_read_die_admission:
         require(placement == "device_all", "die admission requires device_all placement")
         spec["local_read_die_admission"] = True
+    if nvme_read_die_admission:
+        require(placement in ("host", "host_compute_free"), "NVMe read die admission requires a host placement")
+        spec["nvme_read_die_admission"] = True
     if device_limits is not None:
         spec["device_limits"] = device_limits
     if preflight_only:

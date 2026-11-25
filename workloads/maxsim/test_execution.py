@@ -434,6 +434,42 @@ class Execution(unittest.TestCase):
         self.assertEqual(baseline, free)
         write(self.directory / "verified.json", dict(identical_replay=True, verified=verified))
 
+    def test_nvme_read_die_admission(self):
+        # The 9550 fixture supplies eligible reads to both dies while the chip is busy.
+        bundle = self.bundle(base="micron-9550-pro.json")
+        traces = {}
+        for enabled in (False, True):
+            output = self.directory / ("die" if enabled else "chip")
+            run(bundle, BUILD, output, PLACEMENTS, nvme_read_die_admission=enabled)
+            for placement in PLACEMENTS:
+                trace = output / f"{placement}.jsonl"
+                summary, events = self.verify_execution(bundle, trace)
+                header, = events["configuration"]
+                active = enabled and placement != "device_all"
+                self.assertEqual(header["nvme_read_die_admission"], active)
+                self.assertFalse(header["local_read_die_admission"])
+                arrays = defaultdict(lambda: defaultdict(list))
+                for record in events["nand_interval"]:
+                    span = record["mqsim"]
+                    if span["kind"] == "array":
+                        arrays[span["channel"], span["chip"]][span["die"]].append(
+                            (span["start_ns"], span["end_ns"]))
+                overlap = sum(sum(interval_union(die) for die in chip.values()) -
+                              interval_union(span for die in chip.values() for span in die)
+                              for chip in arrays.values())
+                if active:
+                    self.assertGreater(overlap, 0)
+                else:
+                    self.assertEqual(overlap, 0)
+                traces[enabled, placement] = (summary, file_hash(trace))
+
+        for placement in ("host", "host_compute_free"):
+            chip, die = (traces[enabled, placement][0] for enabled in (False, True))
+            for key in ("origin_ns", "logical_reads", "ordinary_nvme_reads", "nand_user_read_bytes",
+                        "document_d2h_payload_bytes", "pcie", "flop", "topk_count"):
+                self.assertEqual(chip[key], die[key], key)
+        self.assertEqual(traces[False, "device_all"], traces[True, "device_all"])
+
     def pressure(self, reason, limits):
         bundle = self.bundle({"workload": {"corpus_documents": 16, "candidate_count": 8, "top_k": 4},
                               "execution": limits})

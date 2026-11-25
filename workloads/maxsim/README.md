@@ -251,7 +251,9 @@ done
 
 ### 完整 MaxSim 的调度 A/B
 
-对同一个 E0 包分别运行两次 `run.py --placement device_all`，B 额外传入 `--local-read-die-admission`。开关仅允许用于 `device_all`，在 NVMe 预装载排空后、DAG 启动前生效。轨迹头记录实际调度开关。E1 定向对照复用同一个闭环候选包，分别向 `e1.run_point` 传入并发度和 `local_read_die_admission`，缓存容量和初始快照均为空。E1 的 NAND GB/s 使用所有 NAND 读字节除以预装载后至排空的模拟时间，查询 QPS 使用到最后一个 Top-K 可见的有限闭环窗口，P95 使用从查询进入闭环到 Top-K 可见的时延。
+对同一个 E0 包分别运行两次 `run.py`。默认使用 chip 级准入。传入 `--nvme-read-die-admission` 为 `host` 和 `host_compute_free` 启用跨 die 调度，传入 `--local-read-die-admission` 为 `device_all` 启用。两个开关可以独立使用，也可以在一次包含三种放置的执行中同时使用。普通读仍通过 NVMe 提交和完成。开关在预装载排空后、DAG 启动前生效，轨迹头记录每种放置实际启用的开关。
+
+E1 定向对照复用同一个闭环候选包，向 `e1.run_point` 传入并发度以及对应的 `nvme_read_die_admission` 或 `local_read_die_admission`。零缓存对照使用容量 0 和空快照。E1 的 NAND GB/s 使用所有 NAND 读字节除以预装载后至排空的模拟时间，查询 QPS 使用到最后一个 Top-K 可见的有限闭环窗口，P95 使用从查询进入闭环到 Top-K 可见的时延。
 
 9550 PRO 候选的定向验证采用种子 11、Zipf 0.8 和 144 个 E1 查询，E0 使用同序列首查询。E0 A/B 的 6,000 个 NAND 页事务、98,304,000 B 有效输入和 3,145,728,000 FLOP 一致。E1 并发 1 的 NAND 带宽为 11.96 → 17.12 GB/s，QPS 为 121.71 → 174.19，P95 为 8.57 → 6.01 ms。并发 64 的对应结果为 12.80 → 18.76 GB/s、130.25 → 190.89 QPS 和 493.56 → 336.88 ms。结果标记为 `configured_unvalidated`。
 

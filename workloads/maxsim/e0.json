@@ -51,7 +51,7 @@
   "hardware": {
     "mqsim_config_path": "e0-device.xml",
     "mqsim_config_hash": "35c52d7b020bcada0b6aebaafae218389a6aa5805bd9cc426370bd809b780305",
-    "backend_commit": "adf0f167c12ca59eb2ec3c84d95fbf567e61d95d",
+    "backend_commit": "4eb7f3446e5e699ed38706bfaabf958c330e3d0a",
     "external_effective_GBps": 28,
     "internal_bandwidth_mode": "simulated",
     "hbf_enabled": false

@@ -84,12 +84,15 @@ def execute(command, output, name):
 
 
 def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-run.json", *,
-        device_limits=None, execution_budget=None, preflight_only=False, expected_backend_source=None, local_read_die_admission=False):
+        device_limits=None, execution_budget=None, preflight_only=False, expected_backend_source=None,
+        local_read_die_admission=False, nvme_read_die_admission=False):
     bundle, build, output, platform_path = (p.resolve() for p in (bundle, build, output, platform_path))
     require(placements and len(placements) == len(set(placements)) and all(p in PLACEMENTS for p in placements),
             "invalid MaxSim placements")
-    require(not local_read_die_admission or placements == ("device_all",) or placements == ["device_all"],
-            "die admission requires selecting only device_all")
+    require(not local_read_die_admission or "device_all" in placements,
+            "local read die admission requires selecting device_all")
+    require(not nvme_read_die_admission or any(p != "device_all" for p in placements),
+            "NVMe read die admission requires selecting a host placement")
     require(bundle != output and bundle not in output.parents, "output must be outside the immutable input bundle")
     if device_limits is not None:
         require(type(device_limits) is dict and device_limits.keys() == {"xml_bytes", "metadata_bytes", "preload_pages"},
@@ -133,8 +136,10 @@ def run(bundle, build, output, placements=PLACEMENTS, platform_path=HERE / "e0-r
             "receipt_sha256": file_hash(bundle / "receipt.json"), "mqsim_source_sha256": source_digest,
             "scratch": f"{name}.sqlite", "output": trace.name, "platform": platform, **extra,
         }
-        if local_read_die_admission:
+        if local_read_die_admission and placement == "device_all":
             spec["local_read_die_admission"] = True
+        if nvme_read_die_admission and placement != "device_all":
+            spec["nvme_read_die_admission"] = True
         if device_limits is not None:
             spec["device_limits"] = device_limits
         write(run_name, spec)
@@ -192,14 +197,17 @@ def main():
     parser.add_argument("--preflight-only", action="store_true", help="validate device and layout without allocating MQSim")
     parser.add_argument("--backend-source-sha256", help="bind an experimental in-tree MQSim source revision")
     parser.add_argument("--local-read-die-admission", action="store_true",
-                        help="enable experimental die admission for --placement device_all")
+                        help="enable experimental die admission on device_all")
+    parser.add_argument("--nvme-read-die-admission", action="store_true",
+                        help="enable experimental die admission on host and host_compute_free")
     args = parser.parse_args()
     try:
         summary = run(args.input, args.build, args.output, args.placement or PLACEMENTS, args.platform,
                       device_limits=json_file(args.device_limits) if args.device_limits else None,
                       execution_budget=json_file(args.budget) if args.budget else None,
                       preflight_only=args.preflight_only, expected_backend_source=args.backend_source_sha256,
-                      local_read_die_admission=args.local_read_die_admission)
+                      local_read_die_admission=args.local_read_die_admission,
+                      nvme_read_die_admission=args.nvme_read_die_admission)
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
         print(f"MaxSim E0: {error}", file=sys.stderr)
         return 1
