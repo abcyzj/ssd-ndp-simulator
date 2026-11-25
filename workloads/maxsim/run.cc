@@ -5,6 +5,8 @@
 #include "dag/executor.h"
 #include "model/cost/cost_model.h"
 #include "ssd/NVM_PHY_ONFI.h"
+#include "ssd/FTL.h"
+#include "ssd/TSU_Priority_OutOfOrder.h"
 #include "timing/local_reads.h"
 #include "timing/messages.h"
 
@@ -115,7 +117,8 @@ struct Run::State {
     std::vector<bool> scored;
     std::string placement;
     bool offload = false, free = false, launched = false, finished = false, reported = false;
-    bool reserving = false;
+    bool reserving = false, local_read_die_admission = false;
+    SSD_Components::TSU_Priority_OutOfOrder* die_admission_tsu = nullptr;
     uint64_t origin = 0, visible = 0, preload = 0;
     uint64_t window_limit = 0, qd_limit = 0, buffer_limit = 0, batch_limit = 0, port_rate = 0;
     uint64_t command_ns = 0, command_header = 0, result_header = 0, document_bytes = 0;
@@ -183,7 +186,8 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     const auto run = J::parse(read(path));
     require(run.at("format") == "ndpsim-maxsim-run/1" &&
                 run.size() == 8 + size_t(run.contains("device_limits")) + size_t(run.contains("preflight_only"))
-                    + size_t(run.contains("closed_loop")) + size_t(run.contains("open_loop")),
+                    + size_t(run.contains("closed_loop")) + size_t(run.contains("open_loop"))
+                    + size_t(run.contains("local_read_die_admission")),
             "MaxSim run format/fields");
     const bool preflight_only = run.value("preflight_only", false);
     DeviceLimits limits;
@@ -196,6 +200,8 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     placement = run.at("placement");
     offload = placement == "device_all";
     free = placement == "host_compute_free";
+    local_read_die_admission = run.value("local_read_die_admission", false);
+    require(!local_read_die_admission || offload, "die admission requires device_all placement");
     require(offload || free || placement == "host", "unsupported MaxSim placement");
     const auto directory = fs::absolute(path).parent_path();
     const fs::path bundle = directory / run.at("bundle").get<std::string>();
@@ -429,6 +435,7 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     require(!fs::exists(output), "trace output must be new");
     trace.open(output);
     emit({{"type", "configuration"}, {"placement", placement}, {"effective_config", c},
+          {"local_read_die_admission", local_read_die_admission},
           {"effective_platform", platform}, {"device", geometry}, {"layout_sha256", layout->source_sha256()},
           {"device_sha256", config->source_sha256()}, {"package_sha256", ir.package_sha256},
           {"registry_sha256", ir.registry_sha256}, {"receipt_sha256", run.at("receipt_sha256")},
@@ -447,6 +454,11 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
         return;
     }
     device = std::make_unique<OrdinaryDevice>(preload, *config, *layout);
+    if (local_read_die_admission) {
+        auto* ftl = dynamic_cast<SSD_Components::FTL*>(device->device->Firmware);
+        die_admission_tsu = ftl ? dynamic_cast<SSD_Components::TSU_Priority_OutOfOrder*>(ftl->TSU) : nullptr;
+        require(die_admission_tsu, "die admission requires the priority out-of-order TSU");
+    }
     local = std::make_unique<timing::MetadataLocalReads>(
         *static_cast<SSD_Components::Host_Interface_NVMe*>(device->device->Host_interface), bridge, now);
     pcie = std::make_unique<timing::MetadataPcie>(*device->link, bridge, now, rules);
@@ -706,6 +718,8 @@ void Run::State::poll() {
         launched = true;
         origin = device->window->origin();
         observation.reset_window();
+        if (die_admission_tsu)
+            die_admission_tsu->Enable_local_read_die_admission();
         emit({{"type", "measurement_start"}, {"time_ns", origin}, {"preload_sectors", preload},
               {"preload_pages", preload / config->geometry().page_sectors}});
         start_executor();

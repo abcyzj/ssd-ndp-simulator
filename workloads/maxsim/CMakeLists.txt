@@ -17,7 +17,7 @@ endforeach()
 string(SHA256 MAXSIM_MQSIM_SOURCE_SHA256 "${maxsim_mqsim_inventory}")
 configure_file(build_identity.h.in build_identity.h @ONLY)
 
-add_library(ndpsim_maxsim MODULE sst.cc run.cc nvme.cc)
+add_library(ndpsim_maxsim MODULE sst.cc run.cc nvme.cc local_read_probe.cc)
 target_include_directories(ndpsim_maxsim PRIVATE "${CMAKE_CURRENT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/third_party/sst-core/external")
 target_link_libraries(ndpsim_maxsim PRIVATE ndpsim_dag ndpsim_controller_timing ndpsim_backend SST::SSTCore)

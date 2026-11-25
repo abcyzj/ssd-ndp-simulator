@@ -102,6 +102,9 @@ def summarize(trace, queries, concurrency):
     span = summary["drained_ns"] - summary["origin_ns"]
     bus = [x["mqsim"]["union_ns"] for x in records if x["type"] == "nand_interval_union"
            and x["mqsim"]["kind"] == "bus"]
+    data_out = [x["mqsim"]["union_ns"] for x in records if x["type"] == "nand_interval_union"
+                and x["mqsim"]["kind"] == "data_out_bus"]
+    channels = len(header["device"]["partition"]["channels"])
     array = [x["mqsim"]["union_ns"] for x in records if x["type"] == "nand_interval_union"
              and x["mqsim"]["kind"] == "array"]
     return dict(simulated_queries=queries, latency_samples=len(latencies),
@@ -109,6 +112,10 @@ def summarize(trace, queries, concurrency):
                 p50_ms=quantile(.5), p95_ms=quantile(.95), p99_ms=quantile(.99),
                 cache_hit_rate=summary["cache_hit_rate"],
                 effective_read_GBps=summary["effective_document_bytes"] / span,
+                nand_read_GBps=summary["nand_read_bytes"] / span,
+                nand_user_read_GBps=summary["nand_user_read_bytes"] / span,
+                nand_read_transactions=summary["nand_read_transactions"],
+                nand_data_out_utilization=sum(data_out) / (channels * span),
                 nand_read_bytes=summary["nand_read_bytes"], nand_amplification=summary["nand_read_amplification"],
                 controller_staging_bytes=summary["controller_staging_bytes"],
                 document_d2h_bytes=summary["document_d2h_payload_bytes"],
@@ -118,7 +125,7 @@ def summarize(trace, queries, concurrency):
                 logical_reads=summary["logical_reads"],
                 scoring_utilization=summary["compute_ns"] / span, scoring_batches=summary["batches"],
                 average_batch_documents=documents / summary["batches"],
-                channel_utilization=sum(bus) / (len(header["device"]["partition"]["channels"]) * span),
+                channel_utilization=sum(bus) / (channels * span),
                 die_array_busy_ns=sum(array),
                 peak_qd=summary["peak_outstanding_reads"], peak_buffer_bytes=summary["peak_input_buffer_bytes"],
                 backpressure_ns=summary["backpressure_ns"], measurement_start_ns=begin, measurement_end_ns=end,
@@ -128,13 +135,17 @@ def summarize(trace, queries, concurrency):
 
 
 def run_point(directory, name, placement, bundle, platform, source, sst, library, concurrency, capacity, snapshot,
-              queries, *, device_limits=None, execution_budget=None, preflight_only=False):
+              queries, *, device_limits=None, execution_budget=None, preflight_only=False,
+              local_read_die_admission=False):
     spec_path = directory / f"{name}.json"
     trace = spec_path.with_suffix(".jsonl")
     spec = dict(format="ndpsim-maxsim-run/1", placement=placement, bundle=str(bundle),
                 receipt_sha256=file_hash(bundle / "receipt.json"), mqsim_source_sha256=source,
                 scratch=f"{name}.sqlite", output=trace.name, platform=platform,
                 closed_loop=dict(concurrency=concurrency, host_capacity_bytes=capacity, cache_oldest_first=snapshot))
+    if local_read_die_admission:
+        require(placement == "device_all", "die admission requires device_all placement")
+        spec["local_read_die_admission"] = True
     if device_limits is not None:
         spec["device_limits"] = device_limits
     if preflight_only:

@@ -196,6 +196,65 @@ done
 
 同一批次保存命令和退出码、种子、XML 和 IR 哈希、实际配置、SST/后端构建身份、预热和测量窗口以及排空断言。失败样本留在原目录，用新路径重跑。报告标记 `configured_unvalidated`，并列低 QD、顺序读和高 QD 校准覆盖。短样本 P99 只作描述。
 
+## 盘内整页读微基准
+
+微基准使用 9550 PRO 候选 XML 和 CWDP 排列，由盘控在 NVMe 预装载并排空后提交 16 KiB 对齐页读。先只读核对物理地址，再逐笔对上 TSU 排队、PHY 派发、NAND 区间和盘控完成。A/B 使用同一地址序列，每 die 固定一个 plane，每笔完成即补页。默认 A 沿用 chip 级准入，B 允许读忙 chip 的空闲 die 接收盘内页读。直收测量终点为 NAND 数据到达盘控，另有 64 GB/s 暂存端口对照。
+
+```sh
+mkdir -p results/maxsim
+run_root=$(mktemp -d "$PWD/results/maxsim/nand-local-read.XXXXXX")
+cat > "$run_root/budget.json" <<'JSON'
+{"rss_bytes":4294967296,"output_bytes":268435456,"scratch_bytes":67108864,"min_disk_free_bytes":1073741824,"timeout_seconds":120}
+JSON
+PYTHONPATH="$PWD/python:$PWD/workloads/maxsim" .venv/bin/python \
+  workloads/maxsim/local_read_probe.py --config workloads/maxsim/micron-9550-pro.json \
+  --build build/delivery --budget "$run_root/budget.json" --output "$run_root/matrix"
+```
+
+先用根 CMake 构建 `ndpsim_maxsim`。可重复传入 `--case` 筛选对照。全矩阵的单通道点各发 1,024 页并预热 128 页，全通道点各发 8,192 页并预热 1,024 页。每次运行预装载 4,096 页，循环访问预装载的 plane 0 页。测量窗口从预热完成时刻到停止补发的最后一次提交之前，排除预热结束时刻的完成，计入截止时刻提交前已经释放的完成。之后单独排空。验证器要求预装载后直到排空的 Host PCIe 事件数为零，并独立对账请求、NAND 页及字节。
+
+单通道的单页基线测得命令 0.290 µs、阵列 55.020 µs、数据传输 6.827 µs。同 die 从 QD1 提到 QD2 后，吞吐仍为 0.264 GB/s。关键组的同 chip 双 die 阵列重叠从 0 增至 24.464 ms，吞吐从 0.264 增至 0.475 GB/s。不同 chip 的正对照在 A/B 均为 0.475 GB/s，均出现 24.464 ms 阵列重叠。所有点的同通道命令与数据传输重叠为零。
+
+| 全盘在途页 | 盘控有效 GB/s A → B | 通道 data-out 占比 A → B | 页读 P95 µs A → B |
+| ---: | ---: | ---: | ---: |
+| 16 | 4.219 → 4.219 | 10.99% → 10.99% | 62.1 → 62.1 |
+| 64 | 12.692 → 12.692 | 33.05% → 33.05% | 82.6 → 82.6 |
+| 128 | 12.692 → 19.078 | 33.05% → 49.68% | 165.2 → 109.9 |
+| 256 | 12.692 → 19.078 | 33.05% → 49.68% | 330.5 → 219.9 |
+
+QD128 的 A 在通道空闲时累计 381.216 ms 的排队请求时间，期间目标 die 空闲、同 chip 的另一 die 有在途服务。B 的同口径为零。此指标对请求累加，单位为页·时间。B 的阵列完成至 data-out 开始等待 P95 为 45.759 µs。每条通道的 data-out 呈八页连续突发，突发间隔中有 55.310 µs 无 data-out。八次传输加上这段空档形成 109.926 µs 的周期，可重算 19.078 GB/s。继续增加 QD 到 256 只增加等待时间。下一步可在同样的单 plane 设置下测试错开各 die 的供给相位，观察能否填补突发之间的空档，并核对 data-out 优先级是否延迟下一波命令。
+
+`matrix.json` 保存逐通道利用率、等待统计、双 die 重叠、吞吐和排空指标。各点目录保留输入哈希、命令、退出码、物理页地址和原始时间区间。结果适用于这组确定性整页负载与 `configured_unvalidated` 设备模型。
+
+### 全盘暂存与启动错峰
+
+用同一个预算和已有构建分别跑直收与暂存，复用同一页清单和 NAND 完成后补发规则。暂存采用 [MaxSim 执行配置](e0-run.json)的 64 B/ns 和现有单槽 FIFO。每页 NAND 完成后提交一次暂存写入，服务耗时 256 ns。统计使用同一个 NAND 稳态窗口，并在停止补发后单独验证 NAND 与暂存全部排空。
+
+```sh
+export PYTHONPATH="$PWD/python:$PWD/workloads/maxsim"
+for endpoint in raw staging; do
+  set --
+  if [ "$endpoint" = staging ]; then set -- --staging; fi
+  .venv/bin/python workloads/maxsim/local_read_probe.py \
+    --config workloads/maxsim/micron-9550-pro.json --build build/delivery \
+    --budget "$run_root/budget.json" --output "$run_root/$endpoint" \
+    --case all-qd16 --case all-qd64 --case all-qd128 --case all-qd256 \
+    --seed-gap-ns 7000 --seed-gap-ns 7768 "$@"
+done
+```
+
+四档 QD 的 A/B 暂存后带宽与上表的直收带宽一致。B 在 QD128 和 QD256 均为 19.078 GB/s，暂存端口占用率 29.81%，暂存排队 P95 为 3.840 µs，计入服务后为 4.096 µs。直收和暂存的 NAND 页级账本哈希逐点相同。暂存验证覆盖每页 FIFO 顺序、服务时间和字节守恒。
+
+两个启动错峰对照只改变 QD128 B 的首批请求种子。各通道按 chip/die 顺序铺开，形成 8 批，每批 16 条通道各发一页；批次间隔分别为 7.000 和 7.768 µs。初始队列填满后恢复完成即补发。在通道 0，7.768 µs 点首轮是 8 次单页回传，随后从预装载结束后的 148.519 µs 起重新出现 8 页突发。7.000 µs 点在 262.780 µs 出现首个 8 页突发。两点的稳态 data-out 占比仍为 49.68%，突发间隔仍为 55.310 µs。
+
+7.768 µs 点的通道 0 第一笔补发在 62.137 µs 排队，至 93.209 µs 派发。首笔回传结束后，总线曾有 0.941 µs 空闲间隙，单页命令只需 0.290 µs。PHY 在同 chip 仍有阵列活动时保留 `DATA_OUT` 状态，当前 B 只对 `READING` 和 `WAIT_FOR_DATA_OUT` 开放空闲 die。这个状态门控与轨迹吻合，适合作为下一轮独立 A/B 的改动点。
+
+### 完整 MaxSim 的调度 A/B
+
+对同一个 E0 包分别运行两次 `run.py --placement device_all`，B 额外传入 `--local-read-die-admission`。开关仅允许用于 `device_all`，在 NVMe 预装载排空后、DAG 启动前生效。轨迹头记录实际调度开关。E1 定向对照复用同一个闭环候选包，分别向 `e1.run_point` 传入并发度和 `local_read_die_admission`，缓存容量和初始快照均为空。E1 的 NAND GB/s 使用所有 NAND 读字节除以预装载后至排空的模拟时间，查询 QPS 使用到最后一个 Top-K 可见的有限闭环窗口，P95 使用从查询进入闭环到 Top-K 可见的时延。
+
+9550 PRO 候选的定向验证采用种子 11、Zipf 0.8 和 144 个 E1 查询，E0 使用同序列首查询。E0 A/B 的 6,000 个 NAND 页事务、98,304,000 B 有效输入和 3,145,728,000 FLOP 一致。E1 并发 1 的 NAND 带宽为 11.96 → 17.12 GB/s，QPS 为 121.71 → 174.19，P95 为 8.57 → 6.01 ms。并发 64 的对应结果为 12.80 → 18.76 GB/s、130.25 → 190.89 QPS 和 493.56 → 336.88 ms。结果标记为 `configured_unvalidated`。
+
 ## 扫描与随机种子
 
 [scan.json](scan.json) 声明 E0～E5 的轴。E1 展开容量、分布和封闭并发的指定组合。E2 的默认探针是零缓存均匀、5.24288% Zipf 0.8 和 20.97152% Zipf 1.2，收益区间由新 E1 确认。E3～E5 为单因素扫描，链路取值以重跑手册的执行口径为准。扫描输出包括点 ID、覆盖项、种子组和派生账本。预检报告候选、切片、stage、IR/SQLite 估计和磁盘预算，主配置直接生成 10,000 查询包会触发默认预算拒绝。
