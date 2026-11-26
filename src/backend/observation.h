@@ -13,9 +13,11 @@
 #include <cstdarg>
 namespace ndpsim {
 class Observation {
+    // Store an ID in each raw interval. The same small set of kinds repeats
+    // throughout a run, so keep their names once in the observer.
     struct Interval {
-        char kind[64];
         uint64_t start, end;
+        uint32_t kind;
         unsigned channel, chip, die;
     };
     struct Span {
@@ -25,17 +27,20 @@ class Observation {
         }
     };
     DiskRecords<Interval> intervals_;
+    std::map<std::string, uint32_t, std::less<>> kind_ids_;
+    std::vector<std::string> kind_names_;
     void interval(const char* kind, uint64_t a, uint64_t b, unsigned c, unsigned h, unsigned d) {
-        Interval i{};
-        if (std::strlen(kind) >= sizeof(i.kind))
+        if (std::strlen(kind) >= 64)
             throw std::invalid_argument("observation kind too long");
-        std::strcpy(i.kind, kind);
-        i.start = a;
-        i.end = b;
-        i.channel = c;
-        i.chip = h;
-        i.die = d;
-        intervals_.push_back(i);
+        auto id = kind_ids_.find(kind);
+        if (id == kind_ids_.end()) {
+            const auto next = static_cast<uint32_t>(kind_names_.size());
+            if (next != kind_names_.size())
+                throw std::overflow_error("observation kind count");
+            id = kind_ids_.emplace(kind, next).first;
+            kind_names_.emplace_back(kind);
+        }
+        intervals_.push_back({a, b, id->second, c, h, d});
     }
     std::map<std::tuple<unsigned, unsigned, unsigned>, uint64_t> ready_;
     uint64_t sequence_ = 0;
@@ -123,6 +128,7 @@ public:
             auto a = std::max(begin, i.start), b = std::min(end, i.end);
             if (b < a || i.end < begin || i.start > end)
                 return;
+            const auto& kind = kind_names_.at(i.kind);
             if (detail) output(
                 false,
                 "OBS "
@@ -131,15 +137,15 @@ public:
                 "%u,\"source\":\"MQSim\",\"request_id\":null,\"transaction_ids\":null,\"null_"
                 "reason\":\"chip command hook has no request or transaction identity\"}\n",
                 ++sequence_,
-                i.kind,
+                kind.c_str(),
                 b,
                 a,
                 b,
                 i.channel,
                 i.chip,
                 i.die);
-            groups[{i.kind, i.channel, i.chip, i.die}].push_back({a, b});
-            if (std::string(i.kind).find("bus") != std::string::npos)
+            groups[{kind, i.channel, i.chip, i.die}].push_back({a, b});
+            if (kind.find("bus") != std::string::npos)
                 groups[{"bus", i.channel, -1, -1}].push_back({a, b});
         });
         for (auto& g : groups) {

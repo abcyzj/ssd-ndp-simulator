@@ -126,7 +126,49 @@ python workloads/maxsim/run.py --input /tmp/maxsim-e04 --build build/delivery \
 
 `e2.py` 复检 E1 的一万页候选包，并复用同组预热快照。每组放置共享同一独立随机流生成的泊松到达时刻。测量从预装载排空开始，查询按到达顺序准入，同时最多执行 16 个。入口等待从到达计到准入，精排延迟从到达计到 Top-K 可见。
 
-按重跑手册将 `--e1` 指向同一批次的 E1 结果。默认压力点为 10/30/100/300/1000 QPS，加上从新 E1 吞吐估计派生的探针。可重复使用 `--scenario`、`--rate` 和 `--seed` 选择子集。在最后一次到达时截取完成数、入口排队和在途数，随后排空以复检资源和流量。窗口内延迟仅对后半段到达且在截点前完成的查询统计。持续积压需结合增长、入口等待和种子间变化判断。
+§7.3 的到达压力批次将 `--e1` 指向预热 E1，显式传入 `--scenario zipf-0.8 --capacity-bytes 1374389534 --placement host --placement hybrid_backfill_a`、路径 A 的频次回填 `--backfill` JSON 和两种 Die 准入开关。可用 `--budget` 为每次仿真记录峰值 RSS、墙钟和退出码。
+
+默认压力点为 10/30/100/300/1000 QPS，加上从新 E1 吞吐估计派生的探针。可重复使用 `--scenario`、`--rate` 和 `--seed` 选择子集。在最后一次到达时截取完成数、入口排队和在途数，随后排空以复检资源和流量。分别保留窗口内已完成请求的延迟，以及跟踪后半段全部到达请求至完成的有限批次延迟。持续积压需结合增长、入口等待和种子间变化判断。
+
+§7.3 的等 SLA 容量实验使用独立入口 `e2_sla.py`。它验证 E0 普通 NVMe 校准、预热 E1、当前 SST 模块和 9550 PRO 候选配置的身份，扩展三个种子的候选包，并按 LRU 顺序从现有预热快照取得各容量的初始状态。
+
+```sh
+PYTHONPATH="$PWD/python:$PWD/workloads/maxsim" .venv/bin/python workloads/maxsim/e2_sla.py \
+  --e1 results/maxsim/e1-section-7.3.5itFRA/warm \
+  --calibration results/maxsim/e2-sla-observation-recovery \
+  --reuse-bundles results/maxsim/e2-sla-section-7.3.run1 \
+  --build build/delivery --workers 6 --output results/maxsim/e2-sla-new
+```
+
+省略 `--reuse-bundles` 可重新生成输入。上例校准目录记录了观测文件压缩前后的普通 NVMe 和 E0 时序对拍，当前构建以该目录的复跑结果绑定。
+
+220 QPS 下每种子以前 512 条到达为固定集合，继续发流至最后一条测量到达后的 100 ms。按 0、131、524、2,097 篇粗扫，在各放置最小已通过点和其下方的失败点之间加密至一篇文档。每个容量须在三个种子上均满足 P99 ≤ 40 ms、100 ms 超时率 ≤ 0.1%、后半窗积压净增 ≤ 13 条。输出 `matrix.csv` 和 `summary.json` 记录通过、失败、有限观测下的 P99 界限及实际测试到的最小通过容量，逐点配置与轨迹留在 `cases/`。
+
+2,097 篇端点失败时，`e2_sla_upper.py` 可复用该批候选、到达序列与预热流，向上测 4,096 篇和全语料 10,000 篇。有通过点时继续加密。以下为本批主机组的扩展方式。
+
+```sh
+PYTHONPATH="$PWD/python:$PWD/workloads/maxsim" .venv/bin/python workloads/maxsim/e2_sla_upper.py \
+  --batch results/maxsim/e2-sla-new --placement host \
+  --failed-point results/maxsim/e2-sla-new/cases/host-docs2097-seed11/sla.json \
+  --e1 results/maxsim/e1-section-7.3.5itFRA/warm --build build/delivery \
+  --output results/maxsim/e2-sla-new-upper
+```
+
+### E2 冷热混流
+
+`e2_mixed.py` 在同一万篇语料的固定随机排名上取前 1,024 篇为热池，池内 Zipf 0.8，其余 8,976 篇为均匀冷池。两组放置使用同一份 2,097 篇预热快照。快照由 E1 满容量 LRU 加独立热流重放得到，预热结束时全热池位于 LRU 的最新端。测量流各自独立采样，每查询仍有 150 个去重候选。候选包和轨迹用稳定的 `request_id`、`traffic_class` 与各运行的 IR 查询 ID 关联。
+
+按 §7.3 先使用当前构建核对普通 NVMe 校准与 E0。以下命令使用通过对拍的新校准目录，以及同设备的 E1 预热输入。设定新输出目录，先用 `--phase prepare` 生成输入，再用 `--phase run` 执行。两次命令共用其余参数。
+
+```sh
+export PYTHONPATH="$PWD/python:$PWD/workloads/maxsim"
+.venv/bin/python workloads/maxsim/e2_mixed.py \
+  --e1 results/maxsim/e1-section-7.3.5itFRA/warm \
+  --calibration results/maxsim/e2-mixed-calibration --build build/delivery \
+  --batch short --phase prepare --workers 4 --output results/maxsim/e2-mixed-new
+```
+
+`short` 为 2 秒测量窗，热流 100、220 QPS 分别配冷流 50、100、200 QPS，包含每条流的单跑。 `long` 在新目录复跑 220+200 QPS 及相应单跑，测量窗为 3.1 秒，并扩大生成包与账本预算。两批均使用种子 11、23、47，窗后继续发流 100 ms。按窗内到达的固定集合核算每类延迟和超时，并以主机缓存实际命中、冷请求填入导致的热池淘汰、窗内 NAND/PCIe 字节和两侧评分忙碌时间辅助归因。 `pilot` 可用于详细轨迹核验。 `matrix.csv` 是逐运行记录，`paired.csv` 给出同种子单跑与混跑差值，`summary.json` 保留各指标中位数和种子范围。所有轨迹须通过资源排空与账本核验。
 
 ## 混合放置 `hybrid_miss_only`
 

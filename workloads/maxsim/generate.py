@@ -87,14 +87,14 @@ def git_head():
         return None
 
 
-def generate(config, output, command, *, override_path=None):
+def generate(config, output, command, *, override_path=None, traffic=None):
     derived = derive(config)
     budget = preflight(config, derived, output)
     require(not output.exists() and not output.is_symlink(), "output already exists")
     pending = output.with_name(output.name + ".pending")
     pending.mkdir()
     try:
-        receipt = build_bundle(config, pending, command, override_path, derived, budget)
+        receipt = build_bundle(config, pending, command, override_path, derived, budget, traffic)
         require(not output.exists() and not output.is_symlink(), "output appeared during generation")
         pending.rename(output)
         return receipt
@@ -110,7 +110,7 @@ def generate(config, output, command, *, override_path=None):
         raise
 
 
-def build_bundle(config, output, command, override_path, derived, budget):
+def build_bundle(config, output, command, override_path, derived, budget, traffic=None):
     config_record = configuration_record(config, derived, budget)
     write(output / "effective-config.json", config_record)
     write(output / "scan-definition.json", definition())
@@ -135,11 +135,17 @@ def build_bundle(config, output, command, override_path, derived, budget):
                                                     page_bytes=layout["namespace_page_bytes"]))
 
     candidate_path = output / "candidates.jsonl"
-    sampling = Candidates(config)
-    write_rows(candidate_path, (dict(query=query, document_ids=sampling.draw())
-                                for query in range(config["generation"]["queries"])))
-    del sampling
-    if config["load"]["mode"] == "open_loop":
+    if traffic is not None:
+        require(config["load"]["mode"] == "open_loop", "explicit traffic requires open loop")
+        write_rows(candidate_path, ({key: value for key, value in row.items() if key != "offered_ns"}
+                                    for row in traffic))
+        write_rows(output / "arrivals.jsonl", ({key: value for key, value in row.items() if key != "document_ids"}
+                                                for row in traffic))
+    else:
+        sampling = Candidates(config)
+        write_rows(candidate_path, (dict(query=query, document_ids=sampling.draw())
+                                    for query in range(config["generation"]["queries"])))
+    if traffic is None and config["load"]["mode"] == "open_loop":
         write_rows(output / "arrivals.jsonl", arrivals(config))
 
     source = provenance(config, derived, corpus, candidate_path, operators)

@@ -79,6 +79,8 @@ struct Run::State {
         size_t controller_candidates = 0;
         bool command_arrived = false;
         uint64_t window = 0, controller_input = 0, controller_scores = 0, host_scores = 0;
+        uint64_t cache_hits = 0;
+        std::string traffic_class, request_id;
         std::array<std::map<std::pair<uint64_t, size_t>, Done>, 2> ready;
         std::map<size_t, Done> awaiting_return;
     };
@@ -162,6 +164,9 @@ struct Run::State {
     uint64_t peak_controller_input = 0, peak_controller_scores = 0, peak_host_scores = 0;
     uint64_t topk_count = 0, protocol_messages = 0, peak_scoring_engines = 0;
     uint64_t nand_read_bytes = 0, nand_user_read_bytes = 0, nand_reads = 0;
+    uint64_t mixed_measurement_ns = 0, window_nand_bytes = 0, window_d2h_wire_bytes = 0,
+             window_h2d_wire_bytes = 0, window_backfill_bytes = 0, window_evictions = 0;
+    std::array<uint64_t, 2> window_scoring_ns{};
     std::map<std::string, LinkLedger> link_ledger;
     static State* active;
 
@@ -199,6 +204,8 @@ struct Run::State {
     void send_result(size_t query);
     void occupancy(size_t query);
     void touch(uint64_t id);
+    void publish_document(size_t index);
+    bool measuring() const { return mixed_measurement_ns && now() - origin <= mixed_measurement_ns; }
     void blocked(const char* reason, size_t index);
     void verify() const;
     void report();
@@ -213,6 +220,8 @@ struct Run::State {
         run.nand_read_bytes += bytes;
         run.nand_user_read_bytes += user ? bytes : 0;
         ++run.nand_reads;
+        if (run.measuring())
+            run.window_nand_bytes += bytes;
         if (run.detailed) run.emit({{"type", "nand_read"}, {"time_ns", run.now()}, {"bytes", bytes},
                   {"source", int(tr->Source)}, {"user_data", user},
                   {"channel", tr->Address.ChannelID}, {"lpa", tr->LPA},
@@ -232,7 +241,8 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
                     + size_t(run.contains("local_read_die_admission"))
                     + size_t(run.contains("nvme_read_die_admission"))
                     + size_t(run.contains("cache_snapshot"))
-                    + size_t(run.contains("backfill")) + size_t(run.contains("detailed_trace")),
+                    + size_t(run.contains("backfill")) + size_t(run.contains("detailed_trace"))
+                    + size_t(run.contains("mixed_measurement_ns")),
             "MaxSim run format/fields");
     const bool preflight_only = run.value("preflight_only", false);
     DeviceLimits limits;
@@ -277,9 +287,16 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     const auto audit = bound("accounting.json");
     const auto structure = bound("structure.json");
     const auto registry = bound("operators.json");
-    const auto ledger_raw = read(bundle / "logical-reads.jsonl", 128 * 1024 * 1024);
-    require(capture::sha256(ledger_raw) == hashes.at("logical-reads.jsonl"), "logical read ledger hash mismatch");
-    std::istringstream ledger(ledger_raw);
+    const auto ledger_path = bundle / "logical-reads.jsonl";
+    mixed_measurement_ns = run.contains("mixed_measurement_ns") ? integer(run.at("mixed_measurement_ns")) : 0;
+    require(!run.contains("mixed_measurement_ns") || (mixed_measurement_ns && run.contains("open_loop")),
+            "mixed traffic measurement requires open-loop arrivals");
+    const auto ledger_limit = (mixed_measurement_ns ? 256 : 128) * 1024 * 1024;
+    require(fs::is_regular_file(ledger_path) && fs::file_size(ledger_path) <= ledger_limit,
+            "missing execution metadata or size limit exceeded");
+    std::ifstream ledger(ledger_path, std::ios::binary);
+    require(bool(ledger), "cannot open logical read ledger");
+    capture::Sha256 ledger_hash;
     const auto manifest = bound("package/manifest.json");
     const auto physical = bound("layout.json");
     require(registry.at("format") == "ndpsim-operator-registry/1" &&
@@ -420,6 +437,25 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     count = integer(c.at("workload").at("candidate_count"));
     require(count && count * total_queries == audit.at("candidates"), "MaxSim candidate coverage");
     queries.resize(total_queries);
+    if (mixed_measurement_ns) {
+        const auto raw = read(bundle / "arrivals.jsonl");
+        require(capture::sha256(raw) == hashes.at("arrivals.jsonl"), "traffic arrival hash mismatch");
+        std::istringstream arrivals(raw);
+        std::unordered_set<std::string> request_ids;
+        std::string line;
+        for (size_t i = 0; i < total_queries; ++i) {
+            require(bool(std::getline(arrivals, line)), "missing traffic identity");
+            const auto row = J::parse(line);
+            auto& q = queries.at(i);
+            q.traffic_class = row.at("traffic_class");
+            q.request_id = row.at("request_id");
+            require(row.at("query") == i && row.at("offered_ns") == scheduling.offered_ns.at(i) &&
+                        (q.traffic_class == "hot" || q.traffic_class == "cold") &&
+                        !q.request_id.empty() && request_ids.insert(q.request_id).second,
+                    "incorrect or duplicate traffic identity");
+        }
+        require(!std::getline(arrivals, line), "extra traffic arrivals");
+    }
     documents.resize(count * total_queries);
     scored.resize(documents.size());
     uint64_t checked_requests = 0, checked_flop = 0;
@@ -427,6 +463,9 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
     for (size_t query = 0; query < total_queries; ++query) {
         require(package->queries().at(query).id == query && bool(std::getline(ledger, line)),
                 "MaxSim query identity or missing ledger row");
+        ledger_hash.update(line);
+        if (!ledger.eof())
+            ledger_hash.update("\n");
         const auto row = J::parse(line);
         require(row.at("query") == query && row.at("protocol").at("downlink_bytes") == downlink &&
                     row.at("protocol").at("uplink_bytes") == uplink, "protocol ledger mismatch");
@@ -463,6 +502,8 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
         }
     }
     require(!std::getline(ledger, line), "extra logical read ledger rows");
+    require(ledger.eof() && ledger_hash.hexdigest() == hashes.at("logical-reads.jsonl"),
+            "logical read ledger hash mismatch");
     require(checked_requests == total_queries * expected_reads && checked_flop == total_queries * query_flop &&
                 std::all_of(documents.begin(), documents.end(), [](const auto& d) {
                     return d.flop && !d.plans.empty();
@@ -530,6 +571,8 @@ Run::State::State(const fs::path& path, EventBridge& b, EventBridge::Clock clock
           {"configured_unvalidated", true}};
     if (fill.path != FillPath::None)
         configuration["backfill"] = run.at("backfill");
+    if (mixed_measurement_ns)
+        configuration["mixed_measurement_ns"] = mixed_measurement_ns;
     emit(configuration);
 
     if (preflight_only) {
@@ -722,6 +765,8 @@ void Run::State::connect() {
             accounting.payload += x.payload;
             accounting.wire += x.wire;
             accounting.service += x.service;
+            if (measuring())
+                (upload ? window_h2d_wire_bytes : window_d2h_wire_bytes) += x.wire;
         }
         if (detailed) emit({{"type", "pcie"}, {"event", event}, {"layer", layer},
               {"id", x.id}, {"platform_id", x.platform_id}, {"time_ns", x.time},
@@ -762,6 +807,12 @@ void Run::State::start_executor() {
         }
         if (open_loop)
             record["admitted_ns"] = x.admitted;
+        if (mixed_measurement_ns) {
+            const auto& q = queries.at(x.query);
+            record["traffic_class"] = q.traffic_class;
+            record["request_id"] = q.request_id;
+            record["cache_hits"] = q.cache_hits;
+        }
         emit(record);
     };
     executor->start([this](auto result) {
@@ -995,6 +1046,8 @@ void Run::State::complete_backfill(size_t index) {
     fill.inflight.erase(d.id);
     ++fill.completed;
     fill.last_completion = now();
+    if (measuring())
+        window_backfill_bytes += document_bytes;
     J evicted = nullptr;
     bool publish = true;
     if (cached.size() == cache_pages) {
@@ -1005,7 +1058,7 @@ void Run::State::complete_backfill(size_t index) {
             evicted = victim;
     }
     if (publish) {
-        touch(d.id);
+        publish_document(index);
         fill.resident.insert(d.id);
         ++fill.published;
     }
@@ -1060,6 +1113,18 @@ void Run::State::touch(uint64_t id) {
         ++cache_evictions;
     }
     cached.emplace(id, cache_order.insert(cache_order.end(), id));
+}
+
+void Run::State::publish_document(size_t index) {
+    const auto id = documents.at(index).id;
+    if (mixed_measurement_ns && cache_pages && !cached.count(id)) {
+        const bool evicted = cached.size() == cache_pages;
+        if (evicted && measuring())
+            ++window_evictions;
+        emit({{"type", "cache_insert"}, {"candidate", index}, {"document_id", id}, {"time_ns", now()},
+              {"evicted_document_id", evicted ? J(cache_order.front()) : J(nullptr)}});
+    }
+    touch(id);
 }
 
 void Run::State::blocked(const char* reason, size_t index) {
@@ -1137,6 +1202,7 @@ void Run::State::pump_reads() {
                 reserving = false;
                 if (hit) {
                     ++hits;
+                    ++current.cache_hits;
                     ++current.next_document[false];
                     ++next_document;
                     next_read_query = query + 1;
@@ -1203,7 +1269,7 @@ void Run::State::complete_read(size_t index, size_t slice) {
         if (d.fill && fill.path == FillPath::Ordinary)
             complete_backfill(index);
         else if (!hybrid && !d.controller)
-            touch(d.id);
+            publish_document(index);
         if (detailed) emit({{"type", "read_window"}, {"candidate", index}, {"time_ns", now()},
               {"used", window}, {"reserve", false}});
     }
@@ -1265,6 +1331,8 @@ void Run::State::pump_scores(bool controller) {
     side.compute_ns = checked_add(side.compute_ns, duration);
     side.scoring.submit(std::to_string(batch), duration, [this, batch, members, flop, duration, controller] {
         peak_scoring_engines = std::max(peak_scoring_engines, sides[false].scoring.busy() + sides[true].scoring.busy());
+        if (measuring())
+            window_scoring_ns[controller] += std::min(duration, mixed_measurement_ns - (now() - origin));
         if (detailed) emit({{"type", "score_batch"}, {"batch", batch}, {"candidates", members},
               {"flop", flop}, {"side", controller ? "controller" : "host"}, {"start_ns", now()}, {"end_ns", checked_add(now(), duration)},
               {"duration_ns", duration}});
@@ -1417,6 +1485,12 @@ void Run::State::report() {
             {"foreground_ordinary_documents", fill.ordinary_documents}, {"last_completion_ns", fill.last_completion},
             {"background_tail_ns", fill.path == FillPath::Staged && fill.last_completion > visible
                                       ? fill.last_completion - visible : 0}};
+    if (mixed_measurement_ns)
+        summary["measurement"] = {{"window_nand_bytes", window_nand_bytes},
+            {"window_d2h_wire_bytes", window_d2h_wire_bytes}, {"window_h2d_wire_bytes", window_h2d_wire_bytes},
+            {"window_cache_evictions", window_evictions}, {"window_backfill_bytes", window_backfill_bytes},
+            {"host_scoring_pct", 100.0 * window_scoring_ns[false] / mixed_measurement_ns},
+            {"controller_scoring_pct", 100.0 * window_scoring_ns[true] / mixed_measurement_ns}};
     emit(summary);
     trace.flush();
     require(bool(trace), "cannot flush MaxSim trace");

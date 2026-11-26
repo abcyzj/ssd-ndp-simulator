@@ -10,8 +10,10 @@ import shutil
 import subprocess
 import sys
 
+from ndpsim.execution import budget, launch
 from ndpsim.static_ir import decode, file_hash, require
 
+from config import derive
 from generate import write
 from run import (HERE, LOCAL_PLACEMENTS, PLACEMENTS, ROOT, SUPPORTED_PLACEMENTS, backend_digest,
                  checked_inputs, die_admission, execute, json_file, scoring_metrics, verify_hybrid)
@@ -31,6 +33,7 @@ REPEAT_RATES = {
     "zipf-1.2": (10, 28, 30, 34, 36, 40),
 }
 CONCURRENCY_LIMIT = 16
+PATH_A = "hybrid_backfill_a"
 
 
 def percentiles(values, prefix):
@@ -41,9 +44,51 @@ def percentiles(values, prefix):
             for label, fraction in (("p50", .5), ("p95", .95), ("p99", .99))}
 
 
-def summarize(trace, offsets, capacity, bundle=None, snapshot=()):
+def verify_path_a(header, total, completed, snapshot, backfill):
+    require(header["backfill"] == backfill, "E2 path-A backfill configuration differs")
+    config = header["effective_config"]
+    work = derive(config)
+    documents = len(completed) * config["workload"]["candidate_count"]
+    document_bytes = work["document_bytes"]
+    reads = work["logical_reads_per_document"]
+    offloads = [row["offloaded_candidates"] for row in completed]
+    local = sum(offloads)
+    commands = sum(count > 0 for count in offloads)
+    fill = total["backfill"]
+    admitted = fill["admitted"]
+    published = fill["published"]
+    misses = documents - total["cache_hits"]
+    require(misses == admitted + local and
+            total["ordinary_nvme_reads"] == admitted * reads and total["mqsim_local_reads"] == local * reads and
+            total["document_d2h_payload_bytes"] == fill["ordinary_d2h_payload_bytes"] == admitted * document_bytes and
+            total["controller_staging_bytes"] == local * document_bytes and
+            total["scoring_by_side"]["host"]["scores"] == documents - local and
+            total["scoring_by_side"]["controller"]["scores"] == local,
+            "E2 path-A placement ledger disagrees")
+    windows = {(row["admitted_ns"] - total["origin_ns"]) // backfill["budget_window_ns"] for row in completed}
+    require(admitted == fill["completed"] == fill["foreground_ordinary_documents"] >= published >= 0 and
+            admitted <= len(windows) * (backfill["budget_bytes"] // document_bytes) and
+            0 <= fill["deduplicated"] <= misses - admitted and
+            0 <= fill["reuse_hits"] <= total["cache_hits"] and
+            total["cache_evictions"] == max(0, len(snapshot) + published -
+                                            config["cache"]["host_capacity_bytes"] // document_bytes) and
+            fill["vector_d2h_payload_bytes"] == fill["background_tail_ns"] == 0,
+            "E2 path-A cache or backfill ledger disagrees")
+    protocol = config["protocol"]
+    require(total["protocol_messages"] == 2 * commands and
+            total["command_payload_bytes"] == commands * work["query_bytes"] + local * protocol["document_id_bytes"] and
+            total["result_payload_bytes"] == local * (protocol["document_id_bytes"] + protocol["score_bytes"]),
+            "E2 path-A command or result ledger disagrees")
+    return dict(backfill_admitted=admitted, backfill_completed=fill["completed"], backfill_published=published,
+                backfill_deduplicated=fill["deduplicated"], backfill_reuse_hits=fill["reuse_hits"],
+                backfill_admission_rejected=misses - admitted - fill["deduplicated"],
+                backfill_publish_rejected=admitted - published, backfill_vector_bytes=admitted * document_bytes)
+
+
+def summarize(trace, offsets, capacity, bundle=None, snapshot=(), *, backfill=None):
     with trace.open("rb") as stream:
-        rows = [decode(line) for line in stream]
+        rows = [row for line in stream if (row := decode(line))["type"] in
+                ("configuration", "query", "nand_interval_union", "summary")]
     header, total = rows[0], rows[-1]
     count = len(offsets)
     origin = total["origin_ns"]
@@ -68,11 +113,15 @@ def summarize(trace, offsets, capacity, bundle=None, snapshot=()):
             total["effective_document_bytes"] + total["cache_hits"] * 655_360 == count * 98_304_000 and
             total["logical_reads"] * 65_536 == total["effective_document_bytes"] == total["nand_user_read_bytes"],
             "E2 Work or storage ledger disagrees")
-    verify_hybrid(bundle, snapshot, header, total, completed)
-    offload = header["placement"] in LOCAL_PLACEMENTS
-    require(total["document_d2h_payload_bytes"] == (0 if offload else total["effective_document_bytes"]) and
-            total["controller_staging_bytes"] == (total["effective_document_bytes"] if offload else 0),
-            "E2 placement byte ledger disagrees")
+    if header["placement"] == PATH_A:
+        backfill_metrics = verify_path_a(header, total, completed, snapshot, backfill)
+    else:
+        verify_hybrid(bundle, snapshot, header, total, completed)
+        offload = header["placement"] in LOCAL_PLACEMENTS
+        require(total["document_d2h_payload_bytes"] == (0 if offload else total["effective_document_bytes"]) and
+                total["controller_staging_bytes"] == (total["effective_document_bytes"] if offload else 0),
+                "E2 placement byte ledger disagrees")
+        backfill_metrics = {}
 
     # Maintain the same cutoff for all placements. The explicit final drain is
     # useful for accounting and completion diagnostics, but is outside offered load.
@@ -88,6 +137,7 @@ def summarize(trace, offsets, capacity, bundle=None, snapshot=()):
     all_late_half = completed[middle:]
     waits = [row["admitted_ns"] - row["offered_ns"] for row in all_late_half]
     latencies = [row["visible_ns"] - row["offered_ns"] for row in observed]
+    cohort_latencies = [row["visible_ns"] - row["offered_ns"] for row in all_late_half]
     service_span = total["drained_ns"] - origin
     bus_ns = sum(row["mqsim"]["union_ns"] for row in rows if row["type"] == "nand_interval_union"
                  and row["mqsim"]["kind"] == "bus")
@@ -107,7 +157,9 @@ def summarize(trace, offsets, capacity, bundle=None, snapshot=()):
         arrival_window_ns=offsets[-1], drain_after_cutoff_ns=total["drained_ns"] - end_ns,
         latency_samples=len(observed), within_cutoff_mean_ms=(sum(latencies) / len(latencies) / 1e6
                                                              if latencies else None),
+        cohort_latency_samples=len(cohort_latencies), peak_active_queries=total["peak_active_queries"],
         **percentiles(latencies, "within_cutoff"),
+        **percentiles(cohort_latencies, "cohort_including_drain"),
         **percentiles(waits, "entry_wait_including_drain"),
         cache_capacity_bytes=capacity, cache_hit_rate=total["cache_hit_rate"],
         local_read_die_admission=header.get("local_read_die_admission", False),
@@ -126,25 +178,32 @@ def summarize(trace, offsets, capacity, bundle=None, snapshot=()):
         full_drain_mean_channel_bus_utilization=bus_ns / (16 * service_span),
         full_drain_die_array_busy_ns=array_ns, peak_qd=total["peak_outstanding_reads"],
         peak_buffer_bytes=total["peak_input_buffer_bytes"], backpressure_ns=total["backpressure_ns"],
-        trace_sha256=file_hash(trace))
+        trace_sha256=file_hash(trace), **backfill_metrics)
 
 
 def run_point(group, bundle, platform, source, sst, library, capacity, initial, rate, offsets, placement, *,
-              local_read_die_admission=False, nvme_read_die_admission=False):
+              local_read_die_admission=False, nvme_read_die_admission=False, backfill=None, execution_budget=None):
     name = f"qps{rate}-{placement}"
     spec_path = group / f"{name}.json"
     trace = spec_path.with_suffix(".jsonl")
     if placement == "device_all":
         capacity, initial = 0, []
-    write(spec_path, dict(format="ndpsim-maxsim-run/1", placement=placement, bundle=str(bundle),
+    spec = dict(format="ndpsim-maxsim-run/1", placement=placement, bundle=str(bundle),
                           receipt_sha256=file_hash(bundle / "receipt.json"), mqsim_source_sha256=source,
                           scratch=f"{name}.sqlite", output=trace.name, platform=platform,
                           **die_admission(placement, local_read_die_admission, nvme_read_die_admission),
                           open_loop=dict(concurrency=CONCURRENCY_LIMIT, host_capacity_bytes=capacity,
-                                         cache_oldest_first=initial, qps=rate, offered_offsets_ns=offsets)))
+                                         cache_oldest_first=initial, qps=rate, offered_offsets_ns=offsets))
+    if backfill is not None:
+        spec["backfill"] = backfill
+    write(spec_path, spec)
     command = [str(sst), f"--add-lib-path={library}", str(HERE / "sst.py"), "--", json.dumps(str(spec_path))]
-    execute(command, group, name)
-    result = dict(qps_target=rate, placement=placement, **summarize(trace, offsets, capacity, bundle, initial))
+    if execution_budget is None:
+        execute(command, group, name)
+    else:
+        launch(command, group, execution_budget, cwd="/tmp", prefix=f"{name}.")
+    result = dict(qps_target=rate, placement=placement,
+                  **summarize(trace, offsets, capacity, bundle, initial, backfill=backfill))
     write(group / f"{name}.metrics.json", result)
     return result
 
@@ -159,11 +218,16 @@ def main():
     parser.add_argument("--scenario", action="append", choices=SCENARIOS)
     parser.add_argument("--capacity-bytes", type=int, help="select a different tested E1 capacity for one scenario")
     parser.add_argument("--rate", type=int, action="append", help="override the selected scenarios' rates")
-    parser.add_argument("--placement", action="append", choices=SUPPORTED_PLACEMENTS)
+    parser.add_argument("--placement", action="append", choices=(*SUPPORTED_PLACEMENTS, PATH_A))
+    parser.add_argument("--backfill", type=Path, help="path A admission, access history and byte budget JSON")
+    parser.add_argument("--budget", type=Path, help="per-run RAM, disk and wall-time budget JSON")
     parser.add_argument("--local-read-die-admission", action="store_true")
     parser.add_argument("--nvme-read-die-admission", action="store_true")
     args = parser.parse_args()
     placements = tuple(dict.fromkeys(args.placement or PLACEMENTS))
+    require((args.backfill is not None) == (PATH_A in placements), "path A requires --backfill")
+    backfill = json_file(args.backfill) if args.backfill else None
+    execution_budget = budget(json_file(args.budget)) if args.budget else None
     output, e1, build = (path.resolve() for path in (args.output, args.e1, args.build))
     require(args.workers > 0 and shutil.disk_usage(output.parent).free >= 4 * 1024**3,
             "invalid worker limit or insufficient free space")
@@ -192,7 +256,9 @@ def main():
                                                    if p.suffix in (".py", ".cc", ".h", ".json", ".xml")},
                                     sst_sha256=file_hash(sst), element_sha256=file_hash(element),
                                     e1_comparison_sha256=file_hash(comparison),
-                                    max_active_queries=CONCURRENCY_LIMIT, sst_wall_timeout_seconds=180,
+                                    max_active_queries=CONCURRENCY_LIMIT, backfill=backfill,
+                                    execution_budget=execution_budget,
+                                    sst_wall_timeout_seconds=execution_budget["timeout_seconds"] if execution_budget else 180,
                                     measurement_end="last offered arrival",
                                     unavailable=["plane_utilization", "physical_host_dram",
                                                  "independent_reduction_cost", "topk_hardware_cost"]))
@@ -239,7 +305,9 @@ def main():
                         future = workers.submit(run_point, group, bundle, platform, source, sst, library,
                                                 capacity, initial, rate, offsets, placement,
                                                 local_read_die_admission=args.local_read_die_admission,
-                                                nvme_read_die_admission=args.nvme_read_die_admission)
+                                                nvme_read_die_admission=args.nvme_read_die_admission,
+                                                backfill=backfill if placement == PATH_A else None,
+                                                execution_budget=execution_budget)
                         futures[future] = (scenario, seed, rate, placement)
         errors = []
         for future in as_completed(futures):
